@@ -33,7 +33,7 @@ A full-view image viewer (mostly for maps of any kind, but can be any image you 
 Clicking a pin opens a preview dialog to help you describe things. If a journal is linked, it renders the journal content on this screen with multi-page navigation. The preview window also allows you to add additional Journals/Lore to the image, copy the image location to clipboard to be used elsewhere, create this image as a token, and/or create it as a scene.  
 <img width="1678" height="1044" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinGallery.png" />
 
-<img width="904" height="1158" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinImagePreview.png" />
+<img width="700" height="897" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinImagePreview.png" />
 
 ### Document Tabs
 
