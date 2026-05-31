@@ -23,7 +23,7 @@ All data is stored world-scoped (not tied to any scene) so the board is always w
 The board supports three types of tabs. You can have as many tabs as you need and mix types freely.
 
 ### Image Tabs
-<img width="500" height="1018" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/ImageTabWPins.png" />
+<img width="1788" height="1194" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/ImageTabWPins.png" />
 A full-view image viewer (mostly for maps of any kind, but can be any image you want to put references on) with placeable pins. The image/map supports pan and zoom via mouse wheel and drag. Each pin can be:
 
 - Given a title, description, color, and icon (Default selectable icon set list)
@@ -31,9 +31,9 @@ A full-view image viewer (mostly for maps of any kind, but can be any image you 
 - A pin gallery with image folders imported from your data directory so you can see all your references quickly
 
 Clicking a pin opens a preview dialog to help you describe things. If a journal is linked, it renders the journal content on this screen with multi-page navigation. The preview window also allows you to add additional Journals/Lore to the image, copy the image location to clipboard to be used elsewhere, create this image as a token, and/or create it as a scene.  
-<img width="500" height="1018" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinGallery.png" />
+<img width="1678" height="1044" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinGallery.png" />
 
-<img width="500" height="1018" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinImagePreview.png" />
+<img width="904" height="1158" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinImagePreview.png" />
 
 ### Document Tabs
 
@@ -51,7 +51,7 @@ A full-pane document viewer. Drop or browse for any of the following and it rend
 The document stays loaded in the tab. You can unlink and swap to a different document at any time using the tab's header bar.
 
 ### Reference Tabs
-<img width="500" height="1018" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/ReferencesTab.png" />
+<img width="1778" height="1188" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/ReferencesTab.png" />
 A 4-column grid dashboard. Each cell links to a Foundry document or embeds a file. Cells can span multiple columns and rows. The grid scrolls and expands vertically as you add more content. To support system agnostic settings, I had to cut some visual functionality, but still act as a quick load dashboard.
 
 Supported document types per cell:
@@ -80,8 +80,8 @@ When you add or edit a cell, a visual grid picker shows the current layout and l
 
 ## Screenshots
 
-> <img width="500" height="1018" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinEditorWToggledOn.png" />
-<img width="500" height="1018" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/GameSettings.png" />
+> <img width="1876" height="1179" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinEditorWToggledOn.png" />
+<img width="1195" height="1363" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/GameSettings.png" />
 
 ---
 
