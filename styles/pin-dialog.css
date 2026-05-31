@@ -1,0 +1,335 @@
+/* Global box-sizing reset */
+.pd-layout,
+.pd-layout *,
+.pd-layout *::before,
+.pd-layout *::after {
+    box-sizing: border-box;
+}
+
+/* All text-like inputs + selects + textareas fill their parent cell */
+.pd-layout input[type="text"],
+.pd-layout input[type="number"],
+.pd-layout input[type="color"],
+.pd-layout select,
+.pd-layout textarea {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Dark-mode opened dropdown list */
+.pd-layout select {
+    color-scheme: dark;
+}
+
+.pd-layout select option {
+    background: #2a2a2a;
+    color: #eee;
+}
+
+.pd-layout button {
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Two-column grid layout */
+
+.pd-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 20px;
+    padding: 4px 0;
+    align-items: start;
+    min-width: 0;
+    width: 100%;
+}
+
+/* Left column,  pin fields */
+
+.pd-left {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;   
+}
+
+/* Centred preview icon above the fields */
+.pd-preview-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 4px 0 10px;
+}
+
+.pd-preview-icon {
+    font-size: 28px;
+    line-height: 1;
+}
+
+/* SVG mask preview */
+.pd-preview-svg-mask {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+}
+
+/* Title + Color inline row */
+.pd-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+/* Generic field block */
+.pd-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.pd-field label {
+    font-weight: bold;
+    font-size: 13px;
+    display: block;
+}
+
+.pd-field-flex { flex: 1 1 0; min-width: 0; }
+
+.pd-field-color { width: 72px; flex-shrink: 0; }
+.pd-field-color input[type="color"] {
+    width: 100%;
+    height: 32px;
+    padding: 0 2px;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+/* Right column,  journal linking panel */
+
+.pd-right {
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid #3a3a3a;
+    padding-left: 18px;
+    align-self: stretch;
+    min-width: 0;
+}
+
+.pd-journal-label {
+    font-weight: bold;
+    font-size: 13px;
+    color: #bbb;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+/* Unlinked state,  drop zone */
+.pd-journal-unlinked {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.pd-journal-dropzone {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 16px 12px;
+    border: 2px dashed #3a3a3a;
+    border-radius: 10px;
+    text-align: center;
+    background: transparent;
+    transition: border-color 0.18s, background 0.18s;
+    box-sizing: border-box;
+    min-height: 140px;
+    width: 100%;
+}
+
+/* Drag-active */
+.pd-journal-unlinked.pd-drop-active .pd-journal-dropzone {
+    border-color: #2F92FD;
+    background: rgba(47, 146, 253, 0.2);
+}
+
+.pd-journal-unlinked.pd-drop-active .pd-drop-icon {
+    color: #2F92FD;
+}
+
+.pd-drop-icon {
+    font-size: 36px;
+    color: #444;
+    margin-bottom: 14px;
+    transition: color 0.18s;
+}
+
+.pd-drop-primary {
+    font-size: 12px;
+    color: #888;
+    margin: 0 0 14px;
+    max-width: 220px;
+    line-height: 1.6;
+}
+
+.pd-drop-or {
+    font-size: 11px;
+    color: #555;
+    margin-bottom: 12px;
+}
+
+.pd-btn-create {
+    padding: 7px 18px;
+    width: auto;
+    background: #2a3f2a;
+    border: 1px solid #4a6a4a;
+    border-radius: 5px;
+    color: #9dc;
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.pd-btn-create:hover {
+    background: #3a5a3a;
+    color: #bef;
+}
+
+/* Linked state, journal bar + content preview */
+
+.pd-journal-linked {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.pd-linked-bar {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 10px;
+    background: #252525;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px 6px 0 0;
+    flex-shrink: 0;
+}
+
+.pd-linked-bar > i.fa-book-open {
+    color: #8ab4f8;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.pd-journal-title {
+    flex: 1;
+    font-size: 13px;
+    font-weight: bold;
+    color: #ccc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pd-btn-edit,
+.pd-btn-unlink {
+    padding: 3px 9px;
+    width: auto;
+    font-size: 11px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+}
+
+.pd-btn-edit {
+    background: #2a3f5a;
+    border: 1px solid #3a5a7a;
+    color: #9bd;
+}
+
+.pd-btn-edit:hover {
+    background: #3a5a7a;
+    color: #cef;
+}
+
+.pd-btn-unlink {
+    background: #3a2a2a;
+    border: 1px solid #5a3a3a;
+    color: #c99;
+}
+
+.pd-btn-unlink:hover {
+    background: #5a3a3a;
+    color: #fcc;
+}
+
+/* Scrollable journal content preview */
+.pd-linked-content {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 10px 12px;
+    background: #1e1e1e;
+    border: 1px solid #3a3a3a;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    color: #ddd;
+    font-size: 12px;
+    line-height: 1.5;
+    min-height: 60px;
+}
+
+.pd-linked-content h1,
+.pd-linked-content h2,
+.pd-linked-content h3,
+.pd-linked-content h4 {
+    color: #eee;
+    margin: 0.5em 0 0.2em;
+    font-size: 13px;
+}
+
+.pd-linked-content p { margin: 0 0 0.4em; }
+
+.pd-linked-content a { color: #8ab4f8; }
+
+.pd-linked-content blockquote {
+    border-left: 3px solid #555;
+    margin: 0.4em 0;
+    padding: 3px 10px;
+    color: #aaa;
+    font-style: italic;
+}
+
+.pd-left .pd-field:last-child {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.pd-left .pd-field:last-child textarea {
+    flex: 1 1 auto;
+    height: 0;
+    min-height: 80px;
+    resize: none;
+}
+

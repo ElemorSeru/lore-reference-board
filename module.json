@@ -1,0 +1,81 @@
+{
+  "id": "lore-reference-board",
+  "title": "GM Tools: Lore Reference Board",
+  "description": "A GM aid for theater-of-the-mind campaigns with maps, pins, and galleries that inspired you.",
+  "version": "0.1.0",
+  "compatibility": {
+    "minimum": "12",
+    "verified": "12"
+  },
+  "authors": [
+    {
+      "name": "Elemor",
+      "patreon": "https://www.patreon.com/Elemor",
+      "flags": {}
+    }
+  ],
+  "scripts": [
+    "scripts/lore-reference-board-main.js"
+  ],
+  "styles": [
+    "styles/mapboard.css",
+    "styles/pin-gallery.css",
+    "styles/pin-image-viewer.css",
+    "styles/pin-lore.css",
+    "styles/pin-dialog.css"
+  ],
+  "esmodules": [],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json",
+      "flags": {}
+    },
+    {
+      "lang": "es",
+      "name": "Español",
+      "path": "lang/es.json",
+      "flags": {}
+    },
+    {
+      "lang": "fr",
+      "name": "Français",
+      "path": "lang/fr.json",
+      "flags": {}
+    },
+    {
+      "lang": "hy",
+      "name": "Հայերեն",
+      "path": "lang/hy.json",
+      "flags": {}
+    },
+    {
+      "lang": "ja",
+      "name": "日本語",
+      "path": "lang/ja.json",
+      "flags": {}
+    },
+    {
+      "lang": "ru",
+      "name": "Русский",
+      "path": "lang/ru.json",
+      "flags": {}
+    },
+    {
+      "lang": "zh",
+      "name": "中文",
+      "path": "lang/zh.json",
+      "flags": {}
+    }
+  ],
+  "packs": [],
+  "dependencies": [],
+  "license": "",
+  "url": "https://github.com/ElemorSeru/lore-reference-board",
+  "manifest": "https://github.com/ElemorSeru/lore-reference-board/releases/latest/download/module.json",
+  "download": "https://github.com/ElemorSeru/lore-reference-board/releases/latest/download/module.zip",
+  "relationships": {
+   
+  }
+}

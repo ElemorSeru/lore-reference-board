@@ -1,0 +1,255 @@
+[id^="lore-pin-lore-"] *,
+[id^="lore-pin-lore-"] *::before,
+[id^="lore-pin-lore-"] *::after {
+    box-sizing: border-box;
+}
+
+[id^="lore-pin-lore-"] button {
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Layout chain */
+[id^="lore-pin-lore-"] .window-content {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Shell  */
+.plr-shell {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    background: #1e1e1e;
+    color: #ddd;
+    font-family: inherit;
+    overflow: hidden;
+}
+
+/* Linked state,  header bar */
+
+.plr-linked-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: #252525;
+    border-bottom: 1px solid #3a3a3a;
+    flex-shrink: 0;
+}
+
+.plr-linked-icon {
+    color: #8ab4f8;
+    font-size: 15px;
+    flex-shrink: 0;
+}
+
+.plr-journal-title {
+    flex: 1;
+    font-size: 14px;
+    font-weight: bold;
+    color: #ccc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.plr-btn-edit,
+.plr-btn-unlink {
+    padding: 5px 12px;
+    width: auto;
+    font-size: 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+}
+
+.plr-btn-edit {
+    background: #2a3f5a;
+    border: 1px solid #3a5a7a;
+    color: #9bd;
+}
+
+.plr-btn-edit:hover {
+    background: #3a5a7a;
+    color: #cef;
+}
+
+.plr-btn-unlink {
+    background: #3a2a2a;
+    border: 1px solid #5a3a3a;
+    color: #c99;
+}
+
+.plr-btn-unlink:hover {
+    background: #5a3a3a;
+    color: #fcc;
+}
+
+/* Linked state,  journal content area */
+
+.plr-content {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 16px 20px;
+    background: #1e1e1e;
+    color: #ddd;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.plr-content h1,
+.plr-content h2,
+.plr-content h3,
+.plr-content h4 {
+    color: #eee;
+    margin: 0.75em 0 0.25em;
+    border-bottom: 1px solid #3a3a3a;
+    padding-bottom: 0.2em;
+}
+
+.plr-content p {
+    margin: 0 0 0.6em;
+}
+
+.plr-content a {
+    color: #8ab4f8;
+}
+
+.plr-content a:hover {
+    color: #b8d4ff;
+    text-decoration: underline;
+}
+
+.plr-content ul,
+.plr-content ol {
+    padding-left: 1.4em;
+    margin: 0 0 0.6em;
+}
+
+.plr-content blockquote {
+    border-left: 3px solid #555;
+    margin: 0.5em 0;
+    padding: 4px 12px;
+    color: #aaa;
+    font-style: italic;
+}
+
+.plr-content table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 0.6em;
+}
+
+.plr-content th,
+.plr-content td {
+    border: 1px solid #444;
+    padding: 6px 10px;
+    font-size: 13px;
+}
+
+.plr-content th {
+    background: #2a2a2a;
+    color: #ccc;
+    font-weight: bold;
+}
+
+.plr-content em {
+    color: #aaa;
+}
+
+/* Unlinked state,  drop zone box */
+.plr-dropzone {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin: 16px;
+    padding: 40px 36px;
+    border: 2px dashed #3a3a3a;
+    border-radius: 10px;
+    text-align: center;
+    background: transparent;
+    transition: border-color 0.18s, background 0.18s;
+    min-height: 0;
+    box-sizing: border-box;
+}
+
+[id^="lore-pin-lore-"].plr-drop-active .plr-dropzone {
+    border-color: #2F92FD;
+    background: rgba(47, 146, 253, 0.2);
+}
+
+[id^="lore-pin-lore-"].plr-drop-active .plr-drop-icon {
+    color: #2F92FD;
+}
+
+/* Book icon */
+.plr-drop-icon {
+    font-size: 56px;
+    color: #444;
+    margin-bottom: 20px;
+    transition: color 0.18s;
+}
+
+/* Main instructional text */
+.plr-drop-primary {
+    font-size: 13px;
+    color: #888;
+    margin: 0 0 20px;
+    max-width: 280px;
+    line-height: 1.6;
+}
+
+/* Divider */
+.plr-drop-or {
+    font-size: 12px;
+    color: #555;
+    margin-bottom: 18px;
+}
+
+/* Create button */
+.plr-btn-create {
+    padding: 10px 28px;
+    width: auto;
+    background: #2a3f2a;
+    border: 1px solid #4a6a4a;
+    border-radius: 5px;
+    color: #9dc;
+    font-size: 13px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.plr-btn-create:hover {
+    background: #3a5a3a;
+    color: #bef;
+}
+
+/* Lore button */
+.piv-btn-lore {
+    background: #2a3a2a;
+    border-color: #4a6a4a;
+    color: #9dc;
+}
+
+.piv-btn-lore:hover {
+    background: #3a5a3a;
+    color: #bef;
+}

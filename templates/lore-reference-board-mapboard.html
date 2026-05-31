@@ -1,0 +1,49 @@
+<div class="lr-board">
+    <!-- Tab strip (left) + toolbar buttons (right) -->
+    <div class="lr-topbar">
+        <div class="lr-tabs">
+            {{#each tabs}}
+            <button class="lr-tab {{#if (eq this.id ../activeTab)}}active{{/if}}"
+                    data-tabid="{{this.id}}">
+                {{this.name}}
+            </button>
+            {{/each}}
+        </div>
+
+        <div class="lr-actions">
+            <button id="lr-new-tab" class="lr-action-btn" title="{{localize 'lore-reference-board.Toolbar.AddTab'}}">
+                <i class="fas fa-plus"></i>
+            </button>
+            <div class="lr-actions-divider"></div>
+            <button id="lr-toggle-pin" class="lr-action-btn" title="{{localize 'lore-reference-board.Toolbar.PlacePin'}}">
+                <i class="fas fa-map-pin"></i>
+            </button>
+            <button id="lr-tab-settings" class="lr-action-btn" title="{{localize 'lore-reference-board.Toolbar.TabSettings'}}">
+                <img src="modules/lore-reference-board/assets/ui-icons/gear.png" class="lr-action-img" alt="">
+            </button>
+            <button id="lr-maximize" class="lr-action-btn" title="{{localize 'lore-reference-board.Toolbar.Maximize'}}">
+                <i class="fas fa-expand"></i>
+            </button>
+            <button id="lr-reset-view" class="lr-action-btn" title="{{localize 'lore-reference-board.Toolbar.ResetView'}}">
+                <img src="modules/lore-reference-board/assets/ui-icons/arrow-rotate-left.png" class="lr-action-img" alt="">
+            </button>
+        </div>
+    </div>
+
+    <!-- Map canvas / Document pane / Reference pane -->
+    <div class="lr-map-viewport">
+        {{#if isReferenceTab}}
+        <div id="lr-ref-pane" class="lrt-ref-pane"></div>
+        {{else}}
+        {{#if isDocumentTab}}
+        <div id="lr-doc-pane" class="lrt-doc-pane"></div>
+        {{else}}
+        <div id="lr-map-wrap">
+            <div id="lr-map-image"></div>
+
+        </div>
+        {{/if}}
+        {{/if}}
+    </div>
+
+</div>

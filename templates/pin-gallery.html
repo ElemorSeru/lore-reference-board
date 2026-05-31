@@ -1,0 +1,101 @@
+<div class="pg-split">
+
+    <!-- LEFT: Gallery column-->
+    <div class="pg-shell">
+
+        <!-- Top: editable gallery/folder name + save name + add-folder button -->
+        <div class="pg-header">
+            <label class="pg-header-label">{{localize "lore-reference-board.Gallery.LabelFolderName"}}</label>
+            <input id="pg-name" type="text" class="pg-name-input"
+                   value="{{galleryName}}" placeholder="{{localize 'lore-reference-board.Gallery.FolderNamePlaceholder'}}" />
+            <button id="pg-save-name" class="pg-save-name-btn" title="{{localize 'lore-reference-board.Gallery.SaveName'}}">
+                <i class="fas fa-save"></i> {{localize "lore-reference-board.Gallery.SaveName"}}
+            </button>
+            <button id="pg-add-folder" class="pg-icon-btn" title="{{localize 'lore-reference-board.Gallery.AddSubfolder'}}">
+                <i class="fas fa-folder-plus"></i>
+            </button>
+        </div>
+
+        <!-- Scrollable list of subfolders -->
+        <div class="pg-body">
+            {{#each folders}}
+            <div class="pg-folder-section" data-folderid="{{this.id}}">
+
+                <!-- Folder header row: name | pencil | path | + -->
+                <div class="pg-folder-header">
+                    <span class="pg-folder-name">{{this.name}}</span>
+                    <button class="pg-folder-rename pg-icon-btn" title="{{localize 'lore-reference-board.Gallery.RenameFolder'}}">
+                        <i class="fas fa-pencil"></i>
+                    </button>
+                    <span class="pg-folder-path" title="{{localize 'lore-reference-board.Gallery.FolderPathHint'}}">{{this.path}}</span>
+                    <button class="pg-folder-add-images pg-icon-btn" title="{{localize 'lore-reference-board.Gallery.AddSingleImage'}}">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="pg-folder-import pg-icon-btn" title="{{localize 'lore-reference-board.Gallery.ImportImages'}}">
+                        <i class="fas fa-folder-open"></i>
+                    </button>
+                </div>
+                <div class="pg-folder-rule"></div>
+
+                <!-- Thumbnail grid -->
+                {{#if this.images.length}}
+                <div class="pg-thumb-grid">
+                    {{#each this.images}}
+                    <div class="pg-thumb-wrap">
+                        <img class="pg-thumb"
+                             src="{{this}}"
+                             data-src="{{this}}"
+                             title="{{this}} {{localize 'lore-reference-board.Gallery.RightClickRemove'}}"
+                             loading="lazy" />
+                    </div>
+                    {{/each}}
+                </div>
+                {{else}}
+                <p class="pg-empty-folder">{{localize "lore-reference-board.Gallery.NoImages"}}</p>
+                {{/if}}
+
+            </div>
+            {{else}}
+            <p class="pg-no-folders">{{localize "lore-reference-board.Gallery.NoFolders"}}</p>
+            {{/each}}
+        </div>
+
+
+    </div>
+
+
+    <!-- RIGHT: Pin journal pane -->
+    <div class="pg-journal-col">
+
+        {{#if journalLinked}}
+        <!-- Linked state: journal header + enriched content -->
+        <div class="pgj-linked-bar">
+            <i class="fas fa-book-open pgj-linked-icon"></i>
+            <span class="pgj-journal-title">{{journalName}}</span>
+            <button class="pgj-btn-edit" title="{{localize 'lore-reference-board.Lore.BtnEditTitle'}}">
+                <i class="fas fa-edit"></i> {{localize "lore-reference-board.Lore.BtnEditLabel"}}
+            </button>
+            <button class="pgj-btn-unlink" title="{{localize 'lore-reference-board.Lore.BtnUnlinkTitle'}}">
+                <i class="fas fa-unlink"></i> {{localize "lore-reference-board.Lore.BtnUnlinkLabel"}}
+            </button>
+        </div>
+        <div class="pgj-content">
+            {{{journalContent}}}
+        </div>
+
+        {{else}}
+        <!-- Unlinked state: drag-and-drop / create -->
+        <div class="pgj-dropzone">
+            <i class="fas fa-book pgj-drop-icon"></i>
+            <p class="pgj-drop-primary">{{localize "lore-reference-board.Lore.DropPrimary"}}</p>
+            <div class="pgj-drop-or">{{localize "lore-reference-board.Lore.DropOr"}}</div>
+            <button class="pgj-btn-create">
+                <i class="fas fa-plus"></i> {{localize "lore-reference-board.Lore.BtnCreateEntry"}}
+            </button>
+        </div>
+
+        {{/if}}
+
+    </div>
+
+</div>

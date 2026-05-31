@@ -1,0 +1,47 @@
+<div class="piv-shell">
+
+    <!-- Subtitle: full image path -->
+    <div class="piv-location-bar" title="{{src}}">{{src}}</div>
+
+    <!-- Large preview image -->
+    <div class="piv-preview-wrap">
+        <img class="piv-preview"
+             src="{{src}}"
+             alt="{{fileName}}"
+             draggable="false"
+             title="{{localize 'lore-reference-board.ImageViewer.RightClickHint'}}" />
+    </div>
+
+    <!-- Metadata -->
+    <div class="piv-meta">
+        <div class="piv-meta-row">
+            <span class="piv-meta-label">{{localize "lore-reference-board.ImageViewer.MetaFileName"}}</span>
+            <span class="piv-meta-value">{{fileName}}</span>
+        </div>
+        <div class="piv-meta-row">
+            <span class="piv-meta-label">{{localize "lore-reference-board.ImageViewer.MetaDimensions"}}</span>
+            <span class="piv-meta-value piv-dimensions">{{localize "lore-reference-board.ImageViewer.DimensionsLoading"}}</span>
+        </div>
+        <div class="piv-meta-row">
+            <span class="piv-meta-label">{{localize "lore-reference-board.ImageViewer.MetaLocation"}}</span>
+            <span class="piv-meta-value" title="{{locationFolder}}">{{locationFolder}}</span>
+        </div>
+    </div>
+
+    <!-- Footer buttons -->
+    <div class="piv-footer">
+        <button class="piv-btn piv-btn-lore" title="{{localize 'lore-reference-board.ImageViewer.BtnLoreTitle'}}">
+            <i class="fas fa-book"></i> {{localize "lore-reference-board.ImageViewer.BtnLore"}}
+        </button>
+        <button class="piv-btn piv-btn-clipboard" title="{{localize 'lore-reference-board.ImageViewer.BtnClipboardTitle'}}">
+            <i class="fas fa-clipboard"></i> {{localize "lore-reference-board.ImageViewer.BtnClipboard"}}
+        </button>
+        <button class="piv-btn piv-btn-token" title="{{localize 'lore-reference-board.ImageViewer.BtnTokenTitle'}}">
+            <i class="fas fa-user-circle"></i> {{localize "lore-reference-board.ImageViewer.BtnToken"}}
+        </button>
+        <button class="piv-btn piv-btn-scene" title="{{localize 'lore-reference-board.ImageViewer.BtnSceneTitle'}}">
+            <i class="fas fa-map"></i> {{localize "lore-reference-board.ImageViewer.BtnScene"}}
+        </button>
+    </div>
+
+</div>

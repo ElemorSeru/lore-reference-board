@@ -1,0 +1,37 @@
+<div class="plr-shell">
+
+    {{#if linked}}
+    <!-- Linked state: show journal content -->
+
+    <div class="plr-linked-bar">
+        <i class="fas fa-book-open plr-linked-icon"></i>
+        <span class="plr-journal-title">{{journalName}}</span>
+        <button class="plr-btn-edit" title="{{localize 'lore-reference-board.Lore.BtnEditTitle'}}">
+            <i class="fas fa-edit"></i> {{localize "lore-reference-board.Lore.BtnEditLabel"}}
+        </button>
+        <button class="plr-btn-unlink" title="{{localize 'lore-reference-board.Lore.BtnUnlinkTitle'}}">
+            <i class="fas fa-unlink"></i> {{localize "lore-reference-board.Lore.BtnUnlinkLabel"}}
+        </button>
+    </div>
+
+    <!-- Enriched journal content -->
+    <div class="plr-content">
+        {{{enrichedContent}}}
+    </div>
+
+    {{else}}
+    <!-- Unlinked state: drop zone -->
+
+    <div class="plr-dropzone">
+        <i class="fas fa-book plr-drop-icon"></i>
+        <p class="plr-drop-primary">{{localize "lore-reference-board.Lore.DropPrimary"}}</p>
+        <div class="plr-drop-or">{{localize "lore-reference-board.Lore.DropOr"}}</div>
+        <button class="plr-btn-create">
+            <i class="fas fa-plus"></i> {{localize "lore-reference-board.Lore.BtnCreateEntry"}}
+        </button>
+    </div>
+
+    {{/if}}
+
+
+</div>
