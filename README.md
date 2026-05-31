@@ -82,6 +82,7 @@ When you add or edit a cell, a visual grid picker shows the current layout and l
 
 > <img width="1876" height="1179" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinEditorWToggledOn.png" />
 <img width="1195" height="1363" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/GameSettings.png" />
+<img width="698" height="1117" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/ReferenceBoardConfig.png" />
 
 ---
 
