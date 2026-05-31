@@ -33,7 +33,7 @@ A full-view image viewer (mostly for maps of any kind, but can be any image you 
 Clicking a pin opens a preview dialog to help you describe things. If a journal is linked, it renders the journal content on this screen with multi-page navigation. The preview window also allows you to add additional Journals/Lore to the image, copy the image location to clipboard to be used elsewhere, create this image as a token, and/or create it as a scene.  
 <img width="1678" height="1044" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinGallery.png" />
 
-<img width="700" height="897" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinImagePreview.png" />
+<img width="480" height="809" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinImagePreview.png" />
 
 ### Document Tabs
 
@@ -82,7 +82,7 @@ When you add or edit a cell, a visual grid picker shows the current layout and l
 
 > <img width="1876" height="1179" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinEditorWToggledOn.png" />
 <img width="1195" height="1363" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/GameSettings.png" />
-<img width="698" height="1117" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/ReferenceBoardConfig.png" />
+<img width="480" height="809" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/ReferenceBoardConfig.png" />
 
 ---
 
