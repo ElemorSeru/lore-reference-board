@@ -129,12 +129,7 @@ You can export and import the full board state (tabs, pins, cell links) from the
 The module ships with translations for:
 
 - English
-- French
-- Spanish
-- Russian
-- Armenian
-- Japanese
-- Chinese (Simplified)
+- (Other Languages to follow in later builds)
 
 ---
 

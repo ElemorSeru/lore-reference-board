@@ -31,42 +31,6 @@
       "name": "English",
       "path": "lang/en.json",
       "flags": {}
-    },
-    {
-      "lang": "es",
-      "name": "Español",
-      "path": "lang/es.json",
-      "flags": {}
-    },
-    {
-      "lang": "fr",
-      "name": "Français",
-      "path": "lang/fr.json",
-      "flags": {}
-    },
-    {
-      "lang": "hy",
-      "name": "Հայերեն",
-      "path": "lang/hy.json",
-      "flags": {}
-    },
-    {
-      "lang": "ja",
-      "name": "日本語",
-      "path": "lang/ja.json",
-      "flags": {}
-    },
-    {
-      "lang": "ru",
-      "name": "Русский",
-      "path": "lang/ru.json",
-      "flags": {}
-    },
-    {
-      "lang": "zh",
-      "name": "中文",
-      "path": "lang/zh.json",
-      "flags": {}
     }
   ],
   "packs": [],
