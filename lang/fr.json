@@ -192,7 +192,11 @@
       "ImportModeHint": "<p><strong>Ajouter à l'existant</strong> - Ajoute les onglets importés à côté des vôtres sans rien supprimer.</p><p><strong>Tout remplacer</strong> - Écrase tous les onglets et épingles actuels par les données importées. Cette action est irréversible.</p>",
       "BtnAddTo": "Ajouter à l'existant",
       "BtnReplace": "Tout remplacer",
-      "ImportSuccess": "Données du tableau importées avec succès."
+      "ImportSuccess": "Données du tableau importées avec succès.",
+      "WindowPosLabel": "Position de la fenetre",
+      "BtnResetPos": "Reinitialiser la position de la fenetre",
+      "ResetPosHint": "Ferme le tableau et efface la taille et la position enregistrees. Rouvrez-le pour appliquer les dimensions par defaut.",
+      "ResetPosSuccess": "Position de la fenetre reinitiali­see. Rouvrez le tableau pour appliquer les dimensions par defaut."
     },
     "Settings": {
       "MaxTabRows": {

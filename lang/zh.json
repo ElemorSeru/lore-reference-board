@@ -192,7 +192,11 @@
       "ImportModeHint": "<p><strong>添加到现有内容</strong> - 将导入的标签添加到当前标签旁边，不删除任何内容。</p><p><strong>替换全部</strong> - 用导入的数据覆盖当前所有标签和图钉，此操作无法撤销。</p>",
       "BtnAddTo": "添加到现有内容",
       "BtnReplace": "替换全部",
-      "ImportSuccess": "板块数据导入成功。"
+      "ImportSuccess": "板块数据导入成功。",
+      "WindowPosLabel": "窗口位置",
+      "BtnResetPos": "重置窗口位置",
+      "ResetPosHint": "关闭面板并清除已保存的尺寸和位置。重新打开以应用默认尺寸。",
+      "ResetPosSuccess": "窗口位置已重置。请重新打开面板以应用默认尺寸。"
     },
     "Settings": {
       "MaxTabRows": {

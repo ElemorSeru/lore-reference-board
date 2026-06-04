@@ -192,7 +192,11 @@
       "ImportModeHint": "<p><strong>Añadir a los existentes</strong> - Añade las pestañas importadas junto a las actuales sin eliminar nada.</p><p><strong>Reemplazar todo</strong> - Sobrescribe todas las pestañas y marcadores actuales con los datos importados. Esta acción no se puede deshacer.</p>",
       "BtnAddTo": "Añadir a los existentes",
       "BtnReplace": "Reemplazar todo",
-      "ImportSuccess": "Datos del tablero importados correctamente."
+      "ImportSuccess": "Datos del tablero importados correctamente.",
+      "WindowPosLabel": "Posicion de ventana",
+      "BtnResetPos": "Restablecer posicion de ventana",
+      "ResetPosHint": "Cierra el tablero y borra el tamano y posicion guardados. Vuelve a abrirlo para aplicar las dimensiones predeterminadas.",
+      "ResetPosSuccess": "Posicion de ventana restablecida. Vuelve a abrir el tablero para aplicar las dimensiones predeterminadas."
     },
     "Settings": {
       "MaxTabRows": {

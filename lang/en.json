@@ -192,7 +192,11 @@
       "ImportModeHint": "<p><strong>Add to Existing</strong> - Adds the imported tabs alongside your current ones without removing anything.</p><p><strong>Replace All</strong> - Overwrites all current tabs and pins with the imported data. This cannot be undone.</p>",
       "BtnAddTo": "Add to Existing",
       "BtnReplace": "Replace All",
-      "ImportSuccess": "Board data imported successfully."
+      "ImportSuccess": "Board data imported successfully.",
+      "WindowPosLabel": "Window Position",
+      "BtnResetPos": "Reset Window Position",
+      "ResetPosHint": "Closes the board and clears its saved size and position. Re-open to apply the default dimensions.",
+      "ResetPosSuccess": "Window position reset. Re-open the board to apply the default dimensions."
     },
     "Settings": {
       "MaxTabRows": {

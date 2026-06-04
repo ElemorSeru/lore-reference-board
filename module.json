@@ -15,7 +15,15 @@
     }
   ],
   "scripts": [
-    "scripts/lore-reference-board-main.js"
+    "scripts/module-init.js",
+    "scripts/storage.js",
+    "scripts/utils.js",
+    "scripts/journal-helpers.js",
+    "scripts/lrb-app.js",
+    "scripts/pin-gallery-app.js",
+    "scripts/pin-apps.js",
+    "scripts/import-export.js",
+    "scripts/controls.js"
   ],
   "styles": [
     "styles/mapboard.css",

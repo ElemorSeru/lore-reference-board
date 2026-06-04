@@ -192,7 +192,11 @@
       "ImportModeHint": "<p><strong>既存に追加</strong> - 現在のタブを削除せずに、インポートしたタブを追加します。</p><p><strong>すべて置き換え</strong> - 現在のすべてのタブとピンをインポートしたデータで上書きします。この操作は元に戻せません。</p>",
       "BtnAddTo": "既存に追加",
       "BtnReplace": "すべて置き換え",
-      "ImportSuccess": "ボードデータを正常にインポートしました。"
+      "ImportSuccess": "ボードデータを正常にインポートしました。",
+      "WindowPosLabel": "ウィンドウ位置",
+      "BtnResetPos": "ウィンドウ位置をリセット",
+      "ResetPosHint": "ボードを閉じ、保存されたサイズと位置を削除します。デフォルトサイズで表示するには再度開いてください。",
+      "ResetPosSuccess": "ウィンドウ位置をリセットしました。ボードを再度開いてデフォルト設定を適用してください。"
     },
     "Settings": {
       "MaxTabRows": {

@@ -121,7 +121,9 @@ All board data is stored in **world-scoped game settings**, not scene flags. Thi
 - Data is not lost when switching active scenes
 - All GMs in the same world share the same board data
 
-You can export and import the full board state (tabs, pins, cell links) from the module settings panel. This is useful for backups or moving a board between worlds. Just keep in mind that links are created via reference, so if the folder structure/names differ, it wont load those things. 
+You can export and import the full board state (tabs, pins, cell links) from the module settings panel. This is useful for backups or moving a board between worlds. Just keep in mind that links are created via reference, so if the folder structure/names differ, it wont load those things.
+
+The board also remembers its window size and position between sessions. Each user stores their own position independently. If the window ever ends up off-screen or at an unusable size, there is a **Reset Window Position** button in the module settings panel that closes the board and clears the saved position. Re-opening the board after a reset will restore the default size and placement.
 
 ---
 
