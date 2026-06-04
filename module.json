@@ -2,7 +2,7 @@
   "id": "lore-reference-board",
   "title": "GM Tools: Lore Reference Board",
   "description": "A GM aid for theater-of-the-mind campaigns with maps, pins, and galleries that inspired you.",
-  "version": "0.1.0",
+  "version": "1.1.0",
   "compatibility": {
     "minimum": "12",
     "verified": "12"
