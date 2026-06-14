@@ -84,7 +84,7 @@ Each cell has a small pencil button in the header that opens the edit dialog. Yo
 When you add or edit a cell, a visual grid picker shows the current layout and lets you draw a rectangle for where the cell should go. Click once to set the start corner, hover to preview the selection, click again to confirm. Occupied cells are shown with a striped overlay and cannot be selected. Invalid overlapping selections turn red. You can also (while editing) change the dimensions of existing cells with the pencil icon in the header.
 
 ### Faction Tabs *(New in v1.2)*
-
+<img width="1788" height="1194" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/FactionMapWPartyStanding.png" />
 A freeform relationship map for tracking factions, NPCs, and how they all feel about each other and the party. Each faction is a draggable, resizable circle on a pannable/zoomable canvas.
 
 - Add factions with the **Add Faction** (plus) button. Each gets a name, a color, and a party standing rating
