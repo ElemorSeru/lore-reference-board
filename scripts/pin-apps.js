@@ -146,10 +146,9 @@ class LoreRefBoardPinImageViewer extends Application {
         const fileName = this._src.split("/").pop();
         const defaultName = fileName.replace(/\.[^.]+$/, "");
 
-        const ef = game.modules.get("encounter-forge");
-        const efAvailable = ef?.active && !!ef.api;
+        const generator = loreRefBoard_getActiveNpcGenerator();
 
-        if (!efAvailable) {
+        if (!generator) {
             await this._createBlankToken(defaultName);
             return;
         }
@@ -160,14 +159,14 @@ class LoreRefBoardPinImageViewer extends Application {
                 let clicked = false;
                 new Dialog({
                     title: game.i18n.localize("lore-reference-board.ImageViewer.CreateTokenTitle"),
-                    content: `<p style="margin:0 0 14px">${game.i18n.localize("lore-reference-board.ImageViewer.EFPrompt")}</p>`,
+                    content: `<p style="margin:0 0 14px">${game.i18n.format("lore-reference-board.ImageViewer.GeneratorPrompt", { module: generator.label })}</p>`,
                     buttons: {
                         generated: {
-                            label: game.i18n.localize("lore-reference-board.ImageViewer.EFGenerated"),
+                            label: game.i18n.localize("lore-reference-board.ImageViewer.GeneratorGenerated"),
                             callback: () => { clicked = true; resolve("generated"); },
                         },
                         blank: {
-                            label: game.i18n.localize("lore-reference-board.ImageViewer.EFBlank"),
+                            label: game.i18n.localize("lore-reference-board.ImageViewer.GeneratorBlank"),
                             callback: () => { clicked = true; resolve("blank"); },
                         },
                         cancel: {
@@ -183,12 +182,11 @@ class LoreRefBoardPinImageViewer extends Application {
         if (mode === "cancel") return;
 
         if (mode === "generated") {
-            await ef.api.openDialogFor({
+            console.log(`[lore-reference-board] Generating with ${generator.label}`);
+            await generator.adapter(generator.module, {
                 name: defaultName,
                 img: this._src,
                 tokenImg: this._src,
-                lockEnemyCount: true,
-                enemyCount: 1,
             });
         } else {
             await this._createBlankToken(defaultName);

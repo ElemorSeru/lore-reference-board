@@ -370,9 +370,9 @@
       "ActorNameLabel": "Actor Name",
       "CreatedActor": "Created actor \"{name}\". Drag it from the Actors sidebar to place a token.",
       "CreatedScene": "Created scene \"{name}\".",
-      "EFPrompt": "Encounter Forge is active. Would you like to create the actor with <strong>generated</strong> stats or as a <strong>blank</strong> actor?",
-      "EFGenerated": "Generate with Stats",
-      "EFBlank": "Create Blank"
+      "GeneratorPrompt": "Would you like to create the actor with <strong>generated</strong> stats (via {module}) or as a <strong>blank</strong> actor?",
+      "GeneratorGenerated": "Generate with Stats",
+      "GeneratorBlank": "Create Blank"
     },
     "Lore": {
       "WindowTitle": "Image Lore",

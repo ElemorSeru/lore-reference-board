@@ -25,6 +25,7 @@
     "scripts/faction-standing.js",
     "scripts/lrb-app.js",
     "scripts/pin-gallery-app.js",
+    "scripts/npc-generators.js",
     "scripts/pin-apps.js",
     "scripts/import-export.js",
     "scripts/controls.js"
