@@ -2,7 +2,7 @@
   "id": "lore-reference-board",
   "title": "GM Tools: Lore Reference Board",
   "description": "A GM aid for theater-of-the-mind campaigns with maps, pins, and galleries that inspired you.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "compatibility": {
     "minimum": "12",
     "verified": "12"
@@ -19,6 +19,10 @@
     "scripts/storage.js",
     "scripts/utils.js",
     "scripts/journal-helpers.js",
+    "scripts/faction-canvas.js",
+    "scripts/faction-circles.js",
+    "scripts/faction-relations.js",
+    "scripts/faction-standing.js",
     "scripts/lrb-app.js",
     "scripts/pin-gallery-app.js",
     "scripts/pin-apps.js",
@@ -30,7 +34,8 @@
     "styles/pin-gallery.css",
     "styles/pin-image-viewer.css",
     "styles/pin-lore.css",
-    "styles/pin-dialog.css"
+    "styles/pin-dialog.css",
+    "styles/faction-board.css"
   ],
   "esmodules": [],
   "languages": [
@@ -47,7 +52,5 @@
   "url": "https://github.com/ElemorSeru/lore-reference-board",
   "manifest": "https://github.com/ElemorSeru/lore-reference-board/releases/latest/download/module.json",
   "download": "https://github.com/ElemorSeru/lore-reference-board/releases/latest/download/module.zip",
-  "relationships": {
-   
-  }
+  "relationships": {}
 }

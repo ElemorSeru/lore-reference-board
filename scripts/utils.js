@@ -1,4 +1,4 @@
-const escapeHtml = (s) =>
+const loreRefBoard_escapeHtml = (s) =>
     String(s ?? "")
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
@@ -6,12 +6,12 @@ const escapeHtml = (s) =>
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
 
-const isSvgIcon = (icon) => typeof icon === "string" && icon.endsWith(".svg");
+const loreRefBoard_isSvgIcon = (icon) => typeof icon === "string" && icon.endsWith(".svg");
 
-const _svgIconCache = new Map();
+const _loreRefBoard_svgIconCache = new Map();
 
-async function fetchSvgData(url) {
-    if (_svgIconCache.has(url)) return _svgIconCache.get(url);
+async function loreRefBoard_fetchSvgData(url) {
+    if (_loreRefBoard_svgIconCache.has(url)) return _loreRefBoard_svgIconCache.get(url);
     try {
         const resp = await fetch(url);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -26,16 +26,16 @@ async function fetchSvgData(url) {
             el.removeAttribute("fill-opacity");
         });
         const result = { viewBox, inner: svgEl.innerHTML };
-        _svgIconCache.set(url, result);
+        _loreRefBoard_svgIconCache.set(url, result);
         return result;
     } catch (err) {
         console.warn(`[lore-reference-board] Could not load SVG icon "${url}":`, err);
-        _svgIconCache.set(url, null);
+        _loreRefBoard_svgIconCache.set(url, null);
         return null;
     }
 }
 
-function pickImagePath(current = "modules/") {
+function loreRefBoard_pickImagePath(current = "modules/") {
     return new Promise((resolve) => {
         new FilePicker({
             type: "image",
@@ -45,20 +45,20 @@ function pickImagePath(current = "modules/") {
     });
 }
 
-const LRB_IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "webp", "gif", "svg", "bmp", "avif"]);
+const loreRefBoard_IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "webp", "gif", "svg", "bmp", "avif"]);
 
-function _lrbDocTypeForExt(ext) {
+function _loreRefBoard_docTypeForExt(ext) {
     const e = (ext ?? "").toLowerCase();
     if (e === "pdf")               return "pdf";
     if (e === "txt")               return "txt";
     if (e === "md")                return "md";
     if (e === "html" || e === "htm") return "html";
     if (e === "docx")              return "docx";
-    if (LRB_IMAGE_EXTS.has(e))    return "image";
+    if (loreRefBoard_IMAGE_EXTS.has(e))    return "image";
     return null;
 }
 
-function pickDocFilePath(current = "modules/") {
+function loreRefBoard_pickDocFilePath(current = "modules/") {
     return new Promise((resolve) => {
         new FilePicker({
             type: "any",
@@ -70,7 +70,7 @@ function pickDocFilePath(current = "modules/") {
 }
 
 // Open FilePicker for Reference grid file cells,  only PDF, TXT, and Markdown.
-function pickRefFilePath(current = "modules/") {
+function loreRefBoard_pickRefFilePath(current = "modules/") {
     return new Promise((resolve) => {
         new FilePicker({
             type: "any",
@@ -81,13 +81,13 @@ function pickRefFilePath(current = "modules/") {
     });
 }
 
-function _lrbIsUrl(path) {
+function _loreRefBoard_isUrl(path) {
     return /^https?:\/\//i.test(path ?? "");
 }
 
-function normalizeLrbPath(raw) {
+function loreRefBoard_normalizePath(raw) {
     const trimmed = (raw ?? "").trim();
-    if (_lrbIsUrl(trimmed)) return trimmed;     
+    if (_loreRefBoard_isUrl(trimmed)) return trimmed;     
     let p = trimmed.replace(/\\/g, "/");
     p = p.replace(/^\/+/, "");                 
     p = p.replace(/^[Dd]ata\//, "");           
@@ -95,7 +95,7 @@ function normalizeLrbPath(raw) {
 }
 
 
-function attachDialogValidation(anchorId, actionName, requiredIds) {
+function loreRefBoard_attachDialogValidation(anchorId, actionName, requiredIds) {
     let tries = 0;
     const tick = () => {
         const anchor = document.getElementById(anchorId);
@@ -123,19 +123,74 @@ function attachDialogValidation(anchorId, actionName, requiredIds) {
     requestAnimationFrame(tick);
 }
 
-function computeImageRect(containerW, containerH, imgNW, imgNH) {
-    if (!imgNW || !imgNH) return { offsetX: 0, offsetY: 0, displayW: containerW, displayH: containerH };
-    const cr = containerW / containerH;
-    const ir = imgNW / imgNH;
-    if (ir > cr) {
-        const dh = containerW / ir;
-        return { offsetX: 0, offsetY: (containerH - dh) / 2, displayW: containerW, displayH: dh };
-    }
-    const dw = containerH * ir;
-    return { offsetX: (containerW - dw) / 2, offsetY: 0, displayW: dw, displayH: containerH };
+// Faction relationship lines
+const loreRefBoard_LINE_DASH = { solid: "none", dashed: "8 6", dotted: "2 4", "dash-dot": "10 4 2 4" };
+
+function loreRefBoard_lineDashArray(style) {
+    return loreRefBoard_LINE_DASH[style] ?? "none";
 }
 
-function computeImageRect(containerW, containerH, imgNW, imgNH) {
+function loreRefBoard_offsetLineEndpoints(x1, y1, x2, y2, index, total, spacing = 8) {
+    if (total <= 1) return { x1, y1, x2, y2 };
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len;
+    const ny = dx / len;
+    const offset = (index - (total - 1) / 2) * spacing;
+    return { x1: x1 + nx * offset, y1: y1 + ny * offset, x2: x2 + nx * offset, y2: y2 + ny * offset };
+}
+
+function loreRefBoard_parseRatingInput(current, raw) {
+    const trimmed = String(raw ?? "").trim();
+    if (trimmed === "") return current;
+
+    // "=" forces an absolute value. "=-20" sets the rating to -20 instead of subtracting 20 from the current value.
+    if (trimmed.startsWith("=")) {
+        const abs = Number(trimmed.slice(1));
+        return Number.isNaN(abs) ? current : abs;
+    }
+
+    if (/^[+-]/.test(trimmed)) {
+        const delta = Number(trimmed);
+        return Number.isNaN(delta) ? current : current + delta;
+    }
+
+    const abs = Number(trimmed);
+    return Number.isNaN(abs) ? current : abs;
+}
+
+// Entity tokens droppable onto faction circles
+const loreRefBoard_FACTION_DOC_TYPES = new Set(["Actor", "Item", "JournalEntry", "RollTable"]);
+
+function loreRefBoard_getFactionDocIcon(doc) {
+    if (doc?.img) return doc.img;
+    switch (doc?.documentName) {
+        case "JournalEntry": return "icons/svg/book.svg";
+        case "RollTable": return "icons/svg/d20-grey.svg";
+        case "Actor": return "icons/svg/mystery-man.svg";
+        case "Item": return "icons/svg/item-bag.svg";
+        default: return "icons/svg/mystery-man.svg";
+    }
+}
+
+async function loreRefBoard_resolveDroppedFactionEntity(event) {
+    let data;
+    try { data = TextEditor.getDragEventData(event); }
+    catch { return null; }
+
+    if (!data?.type || !loreRefBoard_FACTION_DOC_TYPES.has(data.type)) return null;
+
+    const uuid = data.uuid ?? (data.id ? `${data.type}.${data.id}` : null);
+    if (!uuid) return null;
+
+    const doc = await fromUuid(uuid);
+    if (!doc) return null;
+
+    return { uuid: doc.uuid, type: data.type, name: doc.name, img: loreRefBoard_getFactionDocIcon(doc) };
+}
+
+function loreRefBoard_computeImageRect(containerW, containerH, imgNW, imgNH) {
     if (!imgNW || !imgNH) return { offsetX: 0, offsetY: 0, displayW: containerW, displayH: containerH };
     const cr = containerW / containerH;
     const ir = imgNW / imgNH;

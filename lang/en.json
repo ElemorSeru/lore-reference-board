@@ -9,14 +9,18 @@
       "PlacePin": "Place Pin",
       "TabSettings": "Tab Settings",
       "Maximize": "Maximize",
-      "ResetView": "Reset View"
+      "ResetView": "Reset View",
+      "ReorderTabs": "Reorder tabs"
     },
     "Tab": {
-      "Default": "Default",
       "PinModeOn": "Pin placement mode ON.",
       "PinModeOff": "Pin placement mode OFF.",
       "NameRequired": "Tab name cannot be empty.",
-      "ImageRequired": "Tab name and image path are required."
+      "ImageRequired": "Tab name and image path are required.",
+      "Pinned": "Tab pinned.",
+      "Unpinned": "Tab unpinned.",
+      "EmptyTitle": "No tabs yet",
+      "EmptyInstructions": "Choose a tab type below to create your first tab."
     },
     "Common": {
       "Save": "Save",
@@ -26,7 +30,8 @@
       "Add": "Add",
       "OK": "OK",
       "Browse": "Browse",
-      "Unlink": "Unlink"
+      "Unlink": "Unlink",
+      "Close": "Close"
     },
     "Pin": {
       "DialogTitleNew": "New Pin",
@@ -102,6 +107,8 @@
       "TypeDocumentDesc": "Journal, PDF, or text file",
       "TypeReference": "Reference",
       "TypeReferenceDesc": "Actor, Cards, Item, Journal, Macro, Playlist, Roll Table, or Scene",
+      "TypeFaction": "Relationships",
+      "TypeFactionDesc": "Factions, Relationships, and Influence Rating Map",
       "ReferenceTabTitle": "New Reference Tab",
       "ReferenceNamePlaceholder": "Enter a name for this tab...",
       "ImageTabTitle": "New Image Tab",
@@ -111,6 +118,8 @@
       "ImagePathPlaceholder": "Browse or paste an image path...",
       "DocumentTabTitle": "New Document Tab",
       "DocumentNamePlaceholder": "Enter a name for this tab...",
+      "FactionTabTitle": "New Relationships Tab",
+      "FactionNamePlaceholder": "Enter a name for this tab...",
       "LabelDocPath": "File (optional)",
       "DocPathPlaceholder": "Browse or paste a path...",
       "DocPathHint": "Supports PDF, TXT, and Markdown. Leave blank to drag a Journal or load an HTML or DOCX file after the tab opens.",
@@ -124,6 +133,7 @@
       "LabelImage": "Map Image",
       "ImageWarning": "(!) Changing the image will permanently delete all pins for this tab.",
       "DocumentHint": "To change the linked document, use the Unlink button inside the tab.",
+      "FactionHint": "Use the toolbar inside this tab to add factions, relationships, and view party standing.",
       "BtnDeleteTab": "Delete Tab",
       "DeleteTitle": "Delete Tab",
       "DeleteContent": "<p><strong>Delete \"{name}\"?</strong></p><p>This will permanently remove the tab and ALL of its pins and reference data. This cannot be undone.</p>",
@@ -175,6 +185,87 @@
       "FileCellBadgeTxt": "Text File",
       "FileCellBadgeMd": "Markdown",
       "FileCellLoadFail": "Could not load file."
+    },
+    "Faction": {
+      "Toolbar": {
+        "AddCircle": "Add Faction",
+        "AddRelationship": "Add Relationship",
+        "RelationshipTypes": "Relationship Types",
+        "PartyStanding": "Party Standing",
+        "ZoomIn": "Zoom In",
+        "ZoomOut": "Zoom Out",
+        "ResetView": "Reset View",
+        "StandingTiers": "Standing Tiers"
+      },
+      "Circle": {
+        "DefaultName": "New Faction",
+        "Settings": {
+          "Title": "Faction Settings",
+          "LabelName": "Name",
+          "LabelColor": "Color",
+          "BtnDelete": "Delete Faction",
+          "DeleteTitle": "Delete Faction",
+          "DeleteContent": "Delete the faction \"{name}\" and any relationships connected to it? This cannot be undone.",
+          "NameRequired": "Please enter a name."
+        },
+        "Entity": {
+          "Remove": "Remove",
+          "AlreadyAdded": "That is already linked to this faction.",
+          "OpenError": "Could not find that document.",
+          "MoreTitle": "View all linked entities",
+          "ListTitle": "{name} - Linked Entities",
+          "Open": "Open"
+        }
+      },
+      "Relationship": {
+        "Title": "Relationship",
+        "LabelType": "Type",
+        "BtnDelete": "Delete Relationship",
+        "ModeHint": "Click two factions to connect them. Click the link button again to stop.",
+        "NoTypes": "No relationship types are defined yet. Add one using the Relationship Types button first."
+      },
+      "RelationshipTypes": {
+        "Title": "Relationship Types",
+        "LabelName": "Name",
+        "BtnAddType": "Add Type",
+        "BtnDeleteType": "Remove",
+        "Style": {
+          "Solid": "Solid",
+          "Dashed": "Dashed",
+          "Dotted": "Dotted",
+          "DashDot": "Dash-Dot"
+        }
+      },
+      "StandingPanel": {
+        "Title": "Party Standing",
+        "Empty": "No factions yet. Add a faction to a tab to track its standing.",
+        "Unnamed": "Unnamed Faction",
+        "CollapseAll": "Collapse All",
+        "ExpandAll": "Expand All"
+      },
+      "Standing": {
+        "Hostile": "Hostile",
+        "Unfriendly": "Unfriendly",
+        "Neutral": "Neutral",
+        "Friendly": "Friendly",
+        "Allied": "Allied"
+      },
+      "RatingInputHint": "Type a number to set the rating. Use +N or -N to add or subtract from the current value, or =N to set it exactly (e.g. =-20).",
+      "StandingTiers": {
+        "Title": "Standing Tiers",
+        "LabelName": "Label",
+        "LabelPlaceholder": "Label",
+        "Min": "Min",
+        "Max": "Max",
+        "To": "to",
+        "BtnAddTier": "Add Tier",
+        "BtnDeleteTier": "Remove",
+        "ErrorNone": "Add at least one tier.",
+        "ErrorLabelRequired": "Row {row}: enter a label.",
+        "ErrorRangeRequired": "Row {row}: enter both a minimum and a maximum value.",
+        "ErrorMinGreaterThanMax": "Row {row}: the minimum cannot be greater than the maximum.",
+        "ErrorGap": "Row {row}: ranges must be contiguous, with no gaps or overlaps."
+      }
     },
     "ImportExport": {
       "MenuName": "Import / Export Board Data",
@@ -278,7 +369,10 @@
       "CreateTokenTitle": "Create Token",
       "ActorNameLabel": "Actor Name",
       "CreatedActor": "Created actor \"{name}\". Drag it from the Actors sidebar to place a token.",
-      "CreatedScene": "Created scene \"{name}\"."
+      "CreatedScene": "Created scene \"{name}\".",
+      "EFPrompt": "Encounter Forge is active. Would you like to create the actor with <strong>generated</strong> stats or as a <strong>blank</strong> actor?",
+      "EFGenerated": "Generate with Stats",
+      "EFBlank": "Create Blank"
     },
     "Lore": {
       "WindowTitle": "Image Lore",

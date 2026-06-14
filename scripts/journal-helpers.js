@@ -1,8 +1,8 @@
-function getJournalPages(entry) {
+function loreRefBoard_getJournalPages(entry) {
     return entry.pages.contents.slice().sort((a, b) => a.sort - b.sort);
 }
 
-async function enrichJournalPage(page, entry) {
+async function loreRefBoard_enrichJournalPage(page, entry) {
     if (!page) {
         return '<p style="color:#888;font-style:italic;padding:8px 0">No pages found.</p>';
     }
@@ -12,8 +12,8 @@ async function enrichJournalPage(page, entry) {
         const caption = page.image?.caption ?? "";
         if (!src) return '<p style="color:#888;font-style:italic;padding:8px 0">No image source set.</p>';
         return `<div class="lrt-doc-image-page">
-            <img class="lrt-doc-page-img" src="${escapeHtml(src)}" alt="${escapeHtml(page.name ?? "")}" />
-            ${caption ? `<p class="lrt-doc-page-caption">${escapeHtml(caption)}</p>` : ""}
+            <img class="lrt-doc-page-img" src="${loreRefBoard_escapeHtml(src)}" alt="${loreRefBoard_escapeHtml(page.name ?? "")}" />
+            ${caption ? `<p class="lrt-doc-page-caption">${loreRefBoard_escapeHtml(caption)}</p>` : ""}
         </div>`;
     }
 
@@ -23,7 +23,7 @@ async function enrichJournalPage(page, entry) {
         const icon    = iconMap[page.type] ?? "fa-file";
         return `<div style="text-align:center;padding:24px 12px;color:#888">
             <i class="fas ${icon}" style="font-size:2em;display:block;margin-bottom:10px;color:#555"></i>
-            <span style="font-style:italic">This page is type <strong>${escapeHtml(page.type)}</strong>.</span><br>
+            <span style="font-style:italic">This page is type <strong>${loreRefBoard_escapeHtml(page.type)}</strong>.</span><br>
             <span style="font-size:11px">Open the full journal to view it.</span>
         </div>`;
     }
@@ -38,7 +38,7 @@ async function enrichJournalPage(page, entry) {
     }
 }
 
-async function wirePageNav(contentEl, journalId) {
+async function loreRefBoard_wirePageNav(contentEl, journalId) {
     if (!contentEl || !journalId) return;
 
     let entry = null;
@@ -57,7 +57,7 @@ async function wirePageNav(contentEl, journalId) {
 
     if (!entry) return;
 
-    const pages = getJournalPages(entry);
+    const pages = loreRefBoard_getJournalPages(entry);
     if (pages.length <= 1) return;   
 
     // Build nav bar
@@ -67,7 +67,7 @@ async function wirePageNav(contentEl, journalId) {
         <button class="lrb-pg-prev" title="Previous page" disabled>&#8249;</button>
         <select class="lrb-pg-select">
             ${pages.map((p, i) =>
-                `<option value="${escapeHtml(p.id)}">${i + 1}. ${escapeHtml(p.name)}</option>`
+                `<option value="${loreRefBoard_escapeHtml(p.id)}">${i + 1}. ${loreRefBoard_escapeHtml(p.name)}</option>`
             ).join("")}
         </select>
         <button class="lrb-pg-next" title="Next page">&#8250;</button>
@@ -87,7 +87,7 @@ async function wirePageNav(contentEl, journalId) {
         selectEl.value    = pages[idx].id;
         contentEl.innerHTML =
             "<p style='color:#888;font-style:italic;padding:8px'>Loading…</p>";
-        contentEl.innerHTML = await enrichJournalPage(pages[idx], entry);
+        contentEl.innerHTML = await loreRefBoard_enrichJournalPage(pages[idx], entry);
     };
 
     selectEl.addEventListener("change", ev => {
@@ -106,7 +106,7 @@ async function wirePageNav(contentEl, journalId) {
 }
 
 // Render Rolltable/Results
-function _renderRollTableHtml(doc) {
+function _loreRefBoard_renderRollTableHtml(doc) {
     const results = doc.results?.contents ?? [];
     const sorted  = results.slice().sort((a, b) => (a.range?.[0] ?? 0) - (b.range?.[0] ?? 0));
     const formula = (doc.formula ?? "").trim();
@@ -117,10 +117,10 @@ function _renderRollTableHtml(doc) {
     }
 
     const formulaHtml = formula
-        ? `<div class="lrt-rt-formula"><i class="fas fa-dice-d20"></i> ${escapeHtml(formula)}</div>`
+        ? `<div class="lrt-rt-formula"><i class="fas fa-dice-d20"></i> ${loreRefBoard_escapeHtml(formula)}</div>`
         : "";
     const descHtml = desc
-        ? `<div class="lrt-rt-desc">${escapeHtml(desc)}</div>`
+        ? `<div class="lrt-rt-desc">${loreRefBoard_escapeHtml(desc)}</div>`
         : "";
 
     const rows = sorted.map(r => {
@@ -128,12 +128,12 @@ function _renderRollTableHtml(doc) {
         const rangeMax = r.range?.[1] ?? 0;
         const rangeStr = rangeMin === rangeMax ? `${rangeMin}` : `${rangeMin}–${rangeMax}`;
         const imgHtml  = r.img
-            ? `<img class="lrt-rt-result-img" src="${escapeHtml(r.img)}" alt="" />`
+            ? `<img class="lrt-rt-result-img" src="${loreRefBoard_escapeHtml(r.img)}" alt="" />`
             : "";
         const drawnClass = r.drawn ? " lrt-rt-row--drawn" : "";
         return `<tr class="lrt-rt-row${drawnClass}">
-            <td class="lrt-rt-range">${escapeHtml(rangeStr)}</td>
-            <td class="lrt-rt-text"><span class="lrt-rt-text-inner">${imgHtml}${escapeHtml(r.text ?? "")}</span></td>
+            <td class="lrt-rt-range">${loreRefBoard_escapeHtml(rangeStr)}</td>
+            <td class="lrt-rt-text"><span class="lrt-rt-text-inner">${imgHtml}${loreRefBoard_escapeHtml(r.text ?? "")}</span></td>
         </tr>`;
     }).join("");
 

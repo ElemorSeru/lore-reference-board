@@ -1,10 +1,10 @@
-class PinGalleryApp extends Application {
+class LoreRefBoardPinGalleryApp extends Application {
     constructor({ pin, tabId, boardApp }, options = {}) {
         super(options);
         this._pin = pin;
         this._tabId = tabId;
         this._boardApp = boardApp;
-        this._gallery = PinGalleryApp._cloneGallery(pin);
+        this._gallery = LoreRefBoardPinGalleryApp._cloneGallery(pin);
         this._journalId    = undefined;
         this._updateHookId = null;
     }
@@ -59,9 +59,9 @@ class PinGalleryApp extends Application {
                 journalLinked = true;
                 journalName   = entry.name;
                 // Render the first page (sorted order);
-                const pages    = getJournalPages(entry);
+                const pages    = loreRefBoard_getJournalPages(entry);
                 const firstPage = pages[0] ?? null;
-                journalContent = await enrichJournalPage(firstPage, entry);
+                journalContent = await loreRefBoard_enrichJournalPage(firstPage, entry);
             }
         }
 
@@ -83,9 +83,9 @@ class PinGalleryApp extends Application {
 
         //  Add folder button 
         html.find("#pg-add-folder").on("click", async () => {
-            const name = await PinGalleryApp._promptText(game.i18n.localize("lore-reference-board.Gallery.NewFolderTitle"), game.i18n.localize("lore-reference-board.Gallery.FolderNamePrompt"));
+            const name = await LoreRefBoardPinGalleryApp._promptText(game.i18n.localize("lore-reference-board.Gallery.NewFolderTitle"), game.i18n.localize("lore-reference-board.Gallery.FolderNamePrompt"));
             if (!name) return;
-            const folderPick = await PinGalleryApp._promptFolderPath();
+            const folderPick = await LoreRefBoardPinGalleryApp._promptFolderPath();
 
             const newFolder = {
                 id:     foundry.utils.randomID(),
@@ -130,18 +130,18 @@ class PinGalleryApp extends Application {
             const folder = this._gallery.folders.find(f => f.id === folderId);
             if (!folder) return;
 
-            const result = await PinGalleryApp._promptFolderRename(folder);
+            const result = await LoreRefBoardPinGalleryApp._promptFolderRename(folder);
             if (!result) return;
 
             if (result.action === "delete") {
                 const imgCount = folder.images.length;
                 const confirmed = await Dialog.confirm({
                     title: game.i18n.localize("lore-reference-board.Gallery.DeleteFolder"),
-                    content: `<p>${game.i18n.format("lore-reference-board.Gallery.DeleteFolderContent", { name: escapeHtml(folder.name), count: imgCount })}</p>`,
+                    content: `<p>${game.i18n.format("lore-reference-board.Gallery.DeleteFolderContent", { name: loreRefBoard_escapeHtml(folder.name), count: imgCount })}</p>`,
                 });
                 if (!confirmed) return;
 
-                await clearLoreForImages(folder.images ?? []);
+                await loreRefBoard_clearLoreForImages(folder.images ?? []);
                 this._gallery.folders = this._gallery.folders.filter(f => f.id !== folderId);
                 await this._save();
                 await this.render(true);
@@ -160,7 +160,7 @@ class PinGalleryApp extends Application {
             const folderId = $(ev.currentTarget).closest(".pg-folder-section").data("folderid");
             const folder = this._gallery.folders.find(f => f.id === folderId);
             if (!folder) return;
-            const picked = await PinGalleryApp._pickFolder(folder.path, folder.source);
+            const picked = await LoreRefBoardPinGalleryApp._pickFolder(folder.path, folder.source);
             if (picked === null) return;
             folder.path = picked.path;
             folder.source = picked.source;
@@ -173,7 +173,7 @@ class PinGalleryApp extends Application {
             const folderId = $(ev.currentTarget).closest(".pg-folder-section").data("folderid");
             const folder = this._gallery.folders.find(f => f.id === folderId);
             if (!folder) return;
-            const path = await pickImagePath(folder.path || "modules/");
+            const path = await loreRefBoard_pickImagePath(folder.path || "modules/");
             if (!path) return;
             if (!folder.images.includes(path)) folder.images.push(path);
             await this._save();
@@ -186,7 +186,7 @@ class PinGalleryApp extends Application {
             const folder = this._gallery.folders.find(f => f.id === folderId);
             if (!folder) return;
 
-            const picked = await PinGalleryApp._pickFolder(folder.path, folder.source);
+            const picked = await LoreRefBoardPinGalleryApp._pickFolder(folder.path, folder.source);
             if (!picked) return;
             folder.path = picked.path;
             folder.source = picked.source;
@@ -243,11 +243,11 @@ class PinGalleryApp extends Application {
 
             const ok = await Dialog.confirm({
                 title: game.i18n.localize("lore-reference-board.Gallery.RemoveImage"),
-                content: `<p>${game.i18n.format("lore-reference-board.Gallery.RemoveImageContent", { src: escapeHtml(src) })}</p>`,
+                content: `<p>${game.i18n.format("lore-reference-board.Gallery.RemoveImageContent", { src: loreRefBoard_escapeHtml(src) })}</p>`,
             });
             if (!ok) return;
             folder.images = folder.images.filter(i => i !== src);
-            await clearLoreForImage(src);
+            await loreRefBoard_clearLoreForImage(src);
             await this._save();
             await this.render(true);
         });
@@ -257,7 +257,7 @@ class PinGalleryApp extends Application {
             const src = $(ev.currentTarget).data("src");
             const folderId = $(ev.currentTarget).closest(".pg-folder-section").data("folderid");
             const folder = this._gallery.folders.find(f => f.id === folderId);
-            new PinImageViewer({
+            new LoreRefBoardPinImageViewer({
                 src,
                 folderName: folder?.name ?? this._gallery.name,
                 folderPath: folder?.path ?? "",
@@ -277,7 +277,7 @@ class PinGalleryApp extends Application {
             html.find(".pgj-btn-edit").on("click", () => this._openPinJournalSheet());
             html.find(".pgj-btn-unlink").on("click", () => this._unlinkPinJournal());
             const contentEl = html.find(".pgj-content")[0];
-            wirePageNav(contentEl, this._journalId);
+            loreRefBoard_wirePageNav(contentEl, this._journalId);
         } else if (journalCol) {
             let dragDepth = 0;
             journalCol.addEventListener("dragenter", (ev) => {
@@ -308,7 +308,7 @@ class PinGalleryApp extends Application {
     }
 
     async _save() {
-        const pins = await loadPinsForTab(this._tabId);
+        const pins = await loreRefBoard_loadPinsForTab(this._tabId);
         const idx = pins.findIndex(p => p.id === this._pin.id);
         if (idx === -1) return;
 
@@ -318,7 +318,7 @@ class PinGalleryApp extends Application {
         };
         if (this._gallery.name) pins[idx].title = this._gallery.name;
 
-        await savePinsForTab(this._tabId, pins);
+        await loreRefBoard_savePinsForTab(this._tabId, pins);
         this._pin = pins[idx];
 
         if (this._boardApp) await this._boardApp.renderPins(this._boardApp._htmlRef);
@@ -326,12 +326,12 @@ class PinGalleryApp extends Application {
 
     // Pin journal pane helpers
     async _saveJournal(journalId) {
-        const pins = await loadPinsForTab(this._tabId);
+        const pins = await loreRefBoard_loadPinsForTab(this._tabId);
         const idx  = pins.findIndex(p => p.id === this._pin.id);
         if (idx === -1) return;
         pins[idx].journal = journalId || "";
         this._journalId   = journalId || null;
-        await savePinsForTab(this._tabId, pins);
+        await loreRefBoard_savePinsForTab(this._tabId, pins);
         this._pin = pins[idx];
     }
 
@@ -383,7 +383,7 @@ class PinGalleryApp extends Application {
                         <div style="padding:6px 0">
                             <label style="display:block;margin-bottom:4px;font-weight:bold">${game.i18n.localize("lore-reference-board.Lore.JournalEntryName")}</label>
                             <input id="${inputId}" name="${inputId}" type="text"
-                                   value="${escapeHtml(defaultName)}"
+                                   value="${loreRefBoard_escapeHtml(defaultName)}"
                                    style="width:100%" autofocus />
                         </div>
                     </form>`,
@@ -497,7 +497,7 @@ class PinGalleryApp extends Application {
                 content: `<form>
                     <div style="padding:6px 0">
                         <label style="display:block;margin-bottom:4px;font-weight:bold">${game.i18n.localize("lore-reference-board.Gallery.FolderNameLabel")}</label>
-                        <input id="${inputId}" name="${inputId}" type="text" value="${escapeHtml(folder.name)}"
+                        <input id="${inputId}" name="${inputId}" type="text" value="${loreRefBoard_escapeHtml(folder.name)}"
                                style="width:100%" autofocus />
                     </div>
                 </form>`,
@@ -526,7 +526,7 @@ class PinGalleryApp extends Application {
             }, { width: 380, classes: ["app", "window-app", "dialog", "lore-rb-dialog"] }).render(true);
         });
 
-        attachDialogValidation(inputId, "save", [inputId]);
+        loreRefBoard_attachDialogValidation(inputId, "save", [inputId]);
 
         let result;
         try { result = await waitPromise; } catch { return null; }
@@ -551,7 +551,7 @@ class PinGalleryApp extends Application {
                             <span style="font-weight:normal;color:#999;font-size:11px">${game.i18n.localize("lore-reference-board.Gallery.FolderPathOptional")}</span>
                         </label>
                         <div style="display:flex;gap:6px;align-items:center">
-                            <input id="${inputId}" type="text" value="${escapeHtml(defaultPath)}"
+                            <input id="${inputId}" type="text" value="${loreRefBoard_escapeHtml(defaultPath)}"
                                    style="flex:1;min-width:0;box-sizing:border-box"
                                    placeholder="${game.i18n.localize("lore-reference-board.Gallery.FolderPathPlaceholder")}" />
                             <button type="button" id="${browseBtnId}"
@@ -594,7 +594,7 @@ class PinGalleryApp extends Application {
             if (!btn) { if (++tries < 60) requestAnimationFrame(tick); return; }
             btn.addEventListener("click", async () => {
                 const pathInput = document.getElementById(inputId);
-                const picked = await PinGalleryApp._pickFolder(
+                const picked = await LoreRefBoardPinGalleryApp._pickFolder(
                     pathInput?.value ?? "", currentSource
                 );
                 if (picked) {
@@ -620,8 +620,8 @@ class PinGalleryApp extends Application {
             new Dialog({
                 title,
                 content: `<form><div style="padding:6px 0">
-                    <label style="display:block;margin-bottom:4px;font-weight:bold">${escapeHtml(label)}</label>
-                    <input id="${inputId}" type="text" value="${escapeHtml(defaultVal)}" style="width:100%" autofocus />
+                    <label style="display:block;margin-bottom:4px;font-weight:bold">${loreRefBoard_escapeHtml(label)}</label>
+                    <input id="${inputId}" type="text" value="${loreRefBoard_escapeHtml(defaultVal)}" style="width:100%" autofocus />
                 </div></form>`,
                 buttons: {
                     ok: {
@@ -641,7 +641,7 @@ class PinGalleryApp extends Application {
             }, { width: 380, classes: ["app", "window-app", "dialog", "lore-rb-dialog"] }).render(true);
         });
 
-        if (required) attachDialogValidation(inputId, "ok", [inputId]);
+        if (required) loreRefBoard_attachDialogValidation(inputId, "ok", [inputId]);
 
         let result;
         try { result = await waitPromise; } catch { return null; }

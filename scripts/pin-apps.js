@@ -1,4 +1,4 @@
-class PinImageViewer extends Application {
+class LoreRefBoardPinImageViewer extends Application {
 
     constructor({ src, folderName, folderPath, pinId, tabId }, options = {}) {
         options.id = options.id ?? `lore-image-viewer-${foundry.utils.randomID()}`;
@@ -95,7 +95,7 @@ class PinImageViewer extends Application {
 
     // Actions
     _openLore() {
-        new PinLoreApp({
+        new LoreRefBoardPinLoreApp({
             src: this._src,
             imageName: this._src.split("/").pop().replace(/\.[^.]+$/, ""),
             pinId: this._pinId,
@@ -133,10 +133,10 @@ class PinImageViewer extends Application {
         const fileName = this._src.split("/").pop();
         ChatMessage.create({
             content: `<figure style="margin:0;text-align:center">
-                <img src="${this._src}" alt="${escapeHtml(fileName)}"
+                <img src="${this._src}" alt="${loreRefBoard_escapeHtml(fileName)}"
                      style="max-width:100%;border-radius:4px" />
                 <figcaption style="font-size:11px;color:#aaa;margin-top:4px">
-                    ${escapeHtml(fileName)}
+                    ${loreRefBoard_escapeHtml(fileName)}
                 </figcaption>
             </figure>`,
         });
@@ -145,8 +145,58 @@ class PinImageViewer extends Application {
     async _createToken() {
         const fileName = this._src.split("/").pop();
         const defaultName = fileName.replace(/\.[^.]+$/, "");
-        const uid = foundry.utils.randomID();
 
+        const ef = game.modules.get("encounter-forge");
+        const efAvailable = ef?.active && !!ef.api;
+
+        if (!efAvailable) {
+            await this._createBlankToken(defaultName);
+            return;
+        }
+
+        let mode;
+        try {
+            mode = await new Promise((resolve, reject) => {
+                let clicked = false;
+                new Dialog({
+                    title: game.i18n.localize("lore-reference-board.ImageViewer.CreateTokenTitle"),
+                    content: `<p style="margin:0 0 14px">${game.i18n.localize("lore-reference-board.ImageViewer.EFPrompt")}</p>`,
+                    buttons: {
+                        generated: {
+                            label: game.i18n.localize("lore-reference-board.ImageViewer.EFGenerated"),
+                            callback: () => { clicked = true; resolve("generated"); },
+                        },
+                        blank: {
+                            label: game.i18n.localize("lore-reference-board.ImageViewer.EFBlank"),
+                            callback: () => { clicked = true; resolve("blank"); },
+                        },
+                        cancel: {
+                            label: game.i18n.localize("lore-reference-board.Common.Cancel"),
+                            callback: () => { clicked = true; resolve("cancel"); },
+                        },
+                    },
+                    default: "generated",
+                    close: () => { if (!clicked) reject(new Error("closed")); },
+                }, { classes: ["app", "window-app", "dialog", "lore-rb-dialog"], width: 480 }).render(true);
+            });
+        } catch { return; }
+        if (mode === "cancel") return;
+
+        if (mode === "generated") {
+            await ef.api.openDialogFor({
+                name: defaultName,
+                img: this._src,
+                tokenImg: this._src,
+                lockEnemyCount: true,
+                enemyCount: 1,
+            });
+        } else {
+            await this._createBlankToken(defaultName);
+        }
+    }
+
+    async _createBlankToken(defaultName) {
+        const uid = foundry.utils.randomID();
         let result;
         try {
             result = await new Promise((resolve, reject) => {
@@ -157,7 +207,7 @@ class PinImageViewer extends Application {
                         <div style="padding:6px 0">
                             <label style="display:block;margin-bottom:4px;font-weight:bold">${game.i18n.localize("lore-reference-board.ImageViewer.ActorNameLabel")}</label>
                             <input id="piv-actor-${uid}" type="text"
-                                   value="${escapeHtml(defaultName)}" style="width:100%" autofocus />
+                                   value="${loreRefBoard_escapeHtml(defaultName)}" style="width:100%" autofocus />
                         </div>
                     </form>`,
                     buttons: {
@@ -175,13 +225,12 @@ class PinImageViewer extends Application {
                     },
                     default: "ok",
                     close: () => { if (!clicked) reject(new Error("closed")); },
-                }).render(true);
+                }, { classes: ["app", "window-app", "dialog", "lore-rb-dialog"] }).render(true);
             });
         } catch { return; }
         if (result === "cancel" || !result) return;
 
         const name = result.trim() || defaultName;
-
         const types = game.documentTypes?.Actor ?? [];
         const type = types.includes("npc") ? "npc"
                    : types.includes("character") ? "character"
@@ -224,7 +273,7 @@ class PinImageViewer extends Application {
 
 
 // Pin's Lore
-class PinLoreApp extends Application {
+class LoreRefBoardPinLoreApp extends Application {
 
     constructor({ src, imageName, pinId, tabId }, options = {}) {
         options.id = options.id ?? `lore-pin-lore-${foundry.utils.randomID()}`;
@@ -250,7 +299,7 @@ class PinLoreApp extends Application {
 
     async getData(_options = {}) {
         if (this._journalId === undefined) {
-            const map = getImageJournalMap();
+            const map = loreRefBoard_getImageJournalMap();
             this._journalId = (this._pinId ? map[this._pinId]?.[this._src] : null) ?? null;
         }
 
@@ -269,9 +318,9 @@ class PinLoreApp extends Application {
             return { linked: false };
         }
 
-        const pages         = getJournalPages(entry);
+        const pages         = loreRefBoard_getJournalPages(entry);
         const firstPage     = pages[0] ?? null;
-        const enrichedContent = await enrichJournalPage(firstPage, entry);
+        const enrichedContent = await loreRefBoard_enrichJournalPage(firstPage, entry);
 
         return {
             linked: true,
@@ -289,7 +338,7 @@ class PinLoreApp extends Application {
             html.find(".plr-btn-unlink").on("click", () => this._unlink());
             // Inject page nav above the content div for multi-page journals
             const contentEl = html.find(".plr-content")[0];
-            wirePageNav(contentEl, this._journalId);
+            loreRefBoard_wirePageNav(contentEl, this._journalId);
         } else {
             // Unlinked state
             const appEl = this.element[0];
@@ -324,15 +373,15 @@ class PinLoreApp extends Application {
     async _persistLink() {
         if (this._pinId) {
             if (this._journalId) {
-                await saveImageJournalLink(this._pinId, this._src, this._journalId);
+                await loreRefBoard_saveImageJournalLink(this._pinId, this._src, this._journalId);
             } else {
-                await clearImageJournalLink(this._pinId, this._src);
+                await loreRefBoard_clearImageJournalLink(this._pinId, this._src);
             }
         } else {
             if (this._journalId) {
-                await saveLoreForImage(this._src, this._journalId);
+                await loreRefBoard_saveLoreForImage(this._src, this._journalId);
             } else {
-                await clearLoreForImage(this._src);
+                await loreRefBoard_clearLoreForImage(this._src);
             }
         }
     }
@@ -411,7 +460,7 @@ class PinLoreApp extends Application {
                         <div style="padding:6px 0">
                             <label style="display:block;margin-bottom:4px;font-weight:bold">${game.i18n.localize("lore-reference-board.Lore.JournalEntryName")}</label>
                             <input id="${inputId}" name="${inputId}" type="text"
-                                   value="${escapeHtml(defaultName)}"
+                                   value="${loreRefBoard_escapeHtml(defaultName)}"
                                    style="width:100%" autofocus />
                         </div>
                     </form>`,

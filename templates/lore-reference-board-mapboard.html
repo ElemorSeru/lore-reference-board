@@ -3,10 +3,14 @@
     <div class="lr-topbar">
         <div class="lr-tabs">
             {{#each tabs}}
-            <button class="lr-tab {{#if (eq this.id ../activeTab)}}active{{/if}}"
+            {{#if this.isDivider}}
+            <div class="lr-tab-group-divider"></div>
+            {{else}}
+            <button class="lr-tab lr-tab--type-{{this.type}} {{#if (eq this.id ../activeTab)}}active{{/if}} {{#if this.pinned}}lr-tab--pinned{{/if}}"
                     data-tabid="{{this.id}}">
-                {{this.name}}
+                <i class="fas fa-thumbtack lr-tab-pin-icon"></i>{{this.name}}
             </button>
+            {{/if}}
             {{/each}}
         </div>
 
@@ -14,34 +18,110 @@
             <button id="lr-new-tab" class="lr-action-btn" title="{{localize 'lore-reference-board.Toolbar.AddTab'}}">
                 <i class="fas fa-plus"></i>
             </button>
+            <button id="lr-reorder-tabs" class="lr-action-btn" title="{{localize 'lore-reference-board.Toolbar.ReorderTabs'}}" {{#if noTabs}}disabled{{/if}}>
+                <i class="fas fa-arrows-up-down-left-right"></i>
+            </button>
+            <button id="lr-tab-settings" class="lr-action-btn" title="{{localize 'lore-reference-board.Toolbar.TabSettings'}}" {{#if noTabs}}disabled{{/if}}>
+                <i class="fas fa-pen-to-square"></i>
+            </button>
             <div class="lr-actions-divider"></div>
-            <button id="lr-toggle-pin" class="lr-action-btn" title="{{localize 'lore-reference-board.Toolbar.PlacePin'}}">
-                <i class="fas fa-map-pin"></i>
-            </button>
-            <button id="lr-tab-settings" class="lr-action-btn" title="{{localize 'lore-reference-board.Toolbar.TabSettings'}}">
-                <img src="modules/lore-reference-board/assets/ui-icons/gear.png" class="lr-action-img" alt="">
-            </button>
             <button id="lr-maximize" class="lr-action-btn" title="{{localize 'lore-reference-board.Toolbar.Maximize'}}">
                 <i class="fas fa-expand"></i>
-            </button>
-            <button id="lr-reset-view" class="lr-action-btn" title="{{localize 'lore-reference-board.Toolbar.ResetView'}}">
-                <img src="modules/lore-reference-board/assets/ui-icons/arrow-rotate-left.png" class="lr-action-img" alt="">
             </button>
         </div>
     </div>
 
     <!-- Map canvas / Document pane / Reference pane -->
     <div class="lr-map-viewport">
+        {{#if noTabs}}
+        <div class="lrt-empty-state">
+            <p class="lrt-empty-title">{{localize 'lore-reference-board.Tab.EmptyTitle'}}</p>
+            <p class="lrt-empty-instructions">{{localize 'lore-reference-board.Tab.EmptyInstructions'}}</p>
+            <div id="lr-empty-type-picker"></div>
+        </div>
+        {{else}}
         {{#if isReferenceTab}}
         <div id="lr-ref-pane" class="lrt-ref-pane"></div>
         {{else}}
         {{#if isDocumentTab}}
         <div id="lr-doc-pane" class="lrt-doc-pane"></div>
         {{else}}
+        {{#if isFactionTab}}
+        <div class="lrt-faction-toolbar">
+            <button id="lrt-faction-add-circle" class="lr-action-btn" title="{{localize 'lore-reference-board.Faction.Toolbar.AddCircle'}}">
+                <i class="fas fa-circle-plus"></i>
+            </button>
+            <button id="lrt-faction-add-relationship" class="lr-action-btn" title="{{localize 'lore-reference-board.Faction.Toolbar.AddRelationship'}}">
+                <i class="fas fa-link"></i>
+            </button>
+            <button id="lrt-faction-rel-types" class="lr-action-btn" title="{{localize 'lore-reference-board.Faction.Toolbar.RelationshipTypes'}}">
+                <i class="fas fa-palette"></i>
+            </button>
+            <button id="lrt-faction-standing-tiers" class="lr-action-btn" title="{{localize 'lore-reference-board.Faction.Toolbar.StandingTiers'}}">
+                <i class="fas fa-sliders"></i>
+            </button>
+            <button id="lrt-faction-party-standing" class="lr-action-btn" title="{{localize 'lore-reference-board.Faction.Toolbar.PartyStanding'}}">
+                <i class="fas fa-handshake"></i>
+            </button>
+        </div>
+        <div class="lrt-faction-canvas-viewport">
+            <div id="lrt-faction-canvas-wrap">
+                <div id="lrt-faction-canvas">
+                    <svg id="lrt-faction-lines" class="lrt-faction-lines-layer"></svg>
+                </div>
+            </div>
+            <div class="lrt-faction-zoom-bar">
+                <button type="button" id="lrt-faction-zoom-out" class="lr-action-btn" title="{{localize 'lore-reference-board.Faction.Toolbar.ZoomOut'}}">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <input type="range" id="lrt-faction-zoom-slider" class="lrt-faction-zoom-slider" min="10" max="500" step="5" value="100" />
+                <button type="button" id="lrt-faction-zoom-in" class="lr-action-btn" title="{{localize 'lore-reference-board.Faction.Toolbar.ZoomIn'}}">
+                    <i class="fas fa-plus"></i>
+                </button>
+                <div id="lrt-faction-zoom-label" class="lrt-faction-zoom-label">100%</div>
+                <button type="button" id="lrt-faction-reset-view" class="lr-action-btn" title="{{localize 'lore-reference-board.Faction.Toolbar.ResetView'}}">
+                    <i class="fas fa-rotate-left"></i>
+                </button>
+            </div>
+            <div id="lrt-faction-standing-panel" class="lrt-faction-standing-panel">
+                <div class="lrt-faction-standing-panel-header">
+                    <div class="lrt-faction-standing-panel-title">{{localize 'lore-reference-board.Faction.StandingPanel.Title'}}</div>
+                    <div class="lrt-faction-standing-panel-header-actions">
+                        <button type="button" id="lrt-faction-standing-collapse-all" class="lrt-faction-standing-panel-close" title="{{localize 'lore-reference-board.Faction.StandingPanel.CollapseAll'}}">
+                            <i class="fas fa-angles-down"></i>
+                        </button>
+                        <button type="button" id="lrt-faction-standing-panel-close" class="lrt-faction-standing-panel-close" title="{{localize 'lore-reference-board.Common.Close'}}">
+                            <i class="fas fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="lrt-faction-standing-panel-body" class="lrt-faction-standing-panel-body"></div>
+            </div>
+        </div>
+        {{else}}
+        <div class="lrt-map-toolbar">
+            <button id="lr-toggle-pin" class="lr-action-btn" title="{{localize 'lore-reference-board.Toolbar.PlacePin'}}">
+                <i class="fas fa-map-pin"></i>
+            </button>
+        </div>
         <div id="lr-map-wrap">
             <div id="lr-map-image"></div>
-
         </div>
+        <div class="lrt-map-zoom-bar">
+            <button type="button" id="lr-zoom-out" class="lr-action-btn" title="{{localize 'lore-reference-board.Faction.Toolbar.ZoomOut'}}">
+                <i class="fas fa-minus"></i>
+            </button>
+            <input type="range" id="lr-zoom-slider" class="lrt-map-zoom-slider" min="50" max="500" step="5" value="100" />
+            <button type="button" id="lr-zoom-in" class="lr-action-btn" title="{{localize 'lore-reference-board.Faction.Toolbar.ZoomIn'}}">
+                <i class="fas fa-plus"></i>
+            </button>
+            <div id="lr-zoom-label" class="lrt-map-zoom-label">100%</div>
+            <button type="button" id="lr-reset-view" class="lr-action-btn" title="{{localize 'lore-reference-board.Toolbar.ResetView'}}">
+                <i class="fas fa-rotate-left"></i>
+            </button>
+        </div>
+        {{/if}}
+        {{/if}}
         {{/if}}
         {{/if}}
     </div>

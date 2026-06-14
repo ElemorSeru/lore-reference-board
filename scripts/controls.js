@@ -3,7 +3,7 @@ Hooks.on("renderSettingsConfig", (_app, html) => {
 
     const L = key => game.i18n.localize(`lore-reference-board.ImportExport.${key}`);
 
-    const maxTabRowsInput = html.find(`[name="${MODULE_SCOPE}.maxTabRows"]`);
+    const maxTabRowsInput = html.find(`[name="${loreRefBoard_MODULE_SCOPE}.maxTabRows"]`);
     if (!maxTabRowsInput.length) return;
     const maxTabRowsRow = maxTabRowsInput.closest(".form-group");
     if (!maxTabRowsRow.length) return;
@@ -27,12 +27,12 @@ Hooks.on("renderSettingsConfig", (_app, html) => {
 
     $row.find(".lrb-ie-export-btn").on("click", (ev) => {
         ev.preventDefault();
-        _lrbExport();
+        _loreRefBoard_export();
     });
 
     $row.find(".lrb-ie-import-btn").on("click", (ev) => {
         ev.preventDefault();
-        _lrbImport();
+        _loreRefBoard_import();
     });
 
     const $resetRow = $(`
@@ -51,7 +51,7 @@ Hooks.on("renderSettingsConfig", (_app, html) => {
     $resetRow.find(".lrb-reset-pos-btn").on("click", async (ev) => {
         ev.preventDefault();
         try {
-            await game.settings.set(MODULE_SCOPE, "windowPos", {});
+            await game.settings.set(loreRefBoard_MODULE_SCOPE, "windowPos", {});
             const board = game.loreReferenceBoardAppInstance;
             if (board?.rendered) {
                 board._skipPosSave = true;
@@ -66,14 +66,14 @@ Hooks.on("renderSettingsConfig", (_app, html) => {
 });
 
 
-function _toggleLoreReferenceBoard() {
+function _loreRefBoard_toggleBoard() {
     const inst = game.loreReferenceBoardAppInstance;
     if (inst && inst.rendered) {
         inst.close();
         game.loreReferenceBoardAppInstance = null;
         return;
     }
-    game.loreReferenceBoardAppInstance = new LoreReferenceBoardApp();
+    game.loreReferenceBoardAppInstance = new LoreRefBoardApp();
     game.loreReferenceBoardAppInstance.render(true);
 }
 
@@ -81,10 +81,10 @@ Hooks.on("renderSceneControls", (app, html) => {
     const allowed = !!game?.user?.isGM || game?.user?.role === CONST.USER_ROLES.ASSISTANT;
     if (!allowed) return;
 
-    if (html.find(`li[data-control="${MODULE_SCOPE}"]`).length) return;
+    if (html.find(`li[data-control="${loreRefBoard_MODULE_SCOPE}"]`).length) return;
 
     const li = $(`<li class="scene-control"
-                      data-control="${MODULE_SCOPE}"
+                      data-control="${loreRefBoard_MODULE_SCOPE}"
                       title="Lore Reference Board">
                     <i class="fas fa-theater-masks"></i>
                   </li>`);
@@ -92,7 +92,7 @@ Hooks.on("renderSceneControls", (app, html) => {
     li.on("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
-        _toggleLoreReferenceBoard();
+        _loreRefBoard_toggleBoard();
     });
 
     const mainList = html.find(".main-controls");

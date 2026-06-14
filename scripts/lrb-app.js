@@ -1,4 +1,12 @@
-class LoreReferenceBoardApp extends Application {
+function _loreRefBoard_syncMapZoomBar(html, scale) {
+    const pct = Math.round((scale ?? 1) * 100);
+    const slider = html.find("#lr-zoom-slider")[0];
+    const label = html.find("#lr-zoom-label")[0];
+    if (slider) slider.value = pct;
+    if (label) label.textContent = `${pct}%`;
+}
+
+class LoreRefBoardApp extends Application {
     constructor(options = {}) {
         super(options);
         this.placingPin = false;
@@ -7,10 +15,13 @@ class LoreReferenceBoardApp extends Application {
         this._mapResizeObs = null;
         this._htmlRef = null;
         this._maximized = false;
+        this._preMaximizePos = null;
+        this._maximizeResizeTimeout = null;
         this.activeTab = null;
         this._imgNaturalW = 0;
         this._imgNaturalH = 0;
         this._skipPosSave = false;
+        this._positionRestored = false;
 
         this._pinDrag = {
             active: false,
@@ -21,6 +32,38 @@ class LoreReferenceBoardApp extends Application {
             offsetXPx: 0,
             offsetYPx: 0,
         };
+
+        this.reorderMode = false;
+        this._dragTabId = null;
+
+        this._onWindowResize = () => this._scheduleMaximizeRecalc();
+        window.addEventListener("resize", this._onWindowResize);
+
+        this._collapseSidebarHookId = Hooks.on("collapseSidebar", () => this._scheduleMaximizeRecalc());
+    }
+
+    _computeMaximizeRect() {
+        const sidebar = document.getElementById("sidebar");
+        const sidebarWidth = sidebar?.getBoundingClientRect().width ?? 0;
+
+        const width = window.innerWidth - sidebarWidth;
+        const height = window.innerHeight;
+        if (width < 100 || height < 100) return null;
+        return { left: 0, top: 0, width, height };
+    }
+
+    _applyMaximizedPosition() {
+        const rect = this._computeMaximizeRect();
+        if (rect) this.setPosition(rect);
+    }
+
+    _scheduleMaximizeRecalc() {
+        if (!this._maximized) return;
+        if (this._maximizeResizeTimeout) clearTimeout(this._maximizeResizeTimeout);
+        this._maximizeResizeTimeout = setTimeout(() => {
+            this._maximizeResizeTimeout = null;
+            if (this._maximized) this._applyMaximizedPosition();
+        }, 200);
     }
 
     static get defaultOptions() {
@@ -36,43 +79,71 @@ class LoreReferenceBoardApp extends Application {
     get title() { return game.i18n.localize("lore-reference-board.App.Title"); }
 
     async getData(options = {}) {
-        const tabs = await loadTabs();
+        const tabs = await loreRefBoard_loadTabs();
+
+        for (const t of tabs) {
+            if (t.pinned === undefined) t.pinned = false;
+            if (!t.type) t.type = "image";
+        }
 
         if (!tabs.length) {
-            const def = { id: "default", name: game.i18n.localize("lore-reference-board.Tab.Default"), img: "" };
-            await saveTabs([def]);
-            tabs.push(def);
+            this.activeTab = null;
+            this._cachedActiveTabImg = "";
+            this._cachedCurrentTab = null;
+            this.placingPin = false;
+            this.reorderMode = false;
+
+            return {
+                tabs: [],
+                activeTab: null,
+                noTabs: true,
+                isImageTab: false,
+                isDocumentTab: false,
+                isReferenceTab: false,
+                isFactionTab: false,
+            };
         }
 
         if (!this.activeTab) this.activeTab = tabs[0].id;
         if (!tabs.find((t) => t.id === this.activeTab)) this.activeTab = tabs[0].id;
 
-        // Cache the active tab's image
         const currentTab = tabs.find(t => t.id === this.activeTab) ?? null;
         this._cachedActiveTabImg = currentTab?.img ?? "";
         this._cachedCurrentTab   = currentTab;
 
+        const pinnedTabs = tabs.filter(t => t.pinned);
+        const unpinnedTabs = tabs.filter(t => !t.pinned);
+        const displayTabs = (pinnedTabs.length && unpinnedTabs.length)
+            ? [...pinnedTabs, { isDivider: true }, ...unpinnedTabs]
+            : [...pinnedTabs, ...unpinnedTabs];
+
+        const isImageTab = currentTab?.type === "image";
+        if (!isImageTab) this.placingPin = false;
+
         return {
-            tabs,
+            tabs: displayTabs,
             activeTab: this.activeTab,
-            isDocumentTab:  currentTab?.type === "document",
+            noTabs: false,
+            isImageTab,
+            isDocumentTab: currentTab?.type === "document",
             isReferenceTab: currentTab?.type === "reference",
+            isFactionTab: currentTab?.type === "faction",
         };
     }
 
     async _pinDialog({ pin, isNew }) {
         const L = key => game.i18n.localize(`lore-reference-board.Pin.Icons.${key}`);
         const faIcons = [
-            { value: "fas fa-location-dot",      label: L("LocationDot") },
-            { value: "fas fa-dragon",             label: L("Dragon") },
-            { value: "fas fa-book",               label: L("Book") },
-            { value: "fas fa-shield-alt",         label: L("Shield") },
-            { value: "fas fa-scroll",             label: L("Scroll") },
-            { value: "fas fa-treasure-chest",     label: L("TreasureChest") },
-            { value: "fas fa-map-pin",            label: L("MapPin") },
-            { value: "fas fa-skull",              label: L("Skull") },
-            { value: "fas fa-dungeon",            label: L("Dungeon") },
-            { value: "fas fa-tower-observation",  label: L("TowerObservation") },
+            { value: "fas fa-location-dot", label: L("LocationDot") },
+            { value: "fas fa-dragon", label: L("Dragon") },
+            { value: "fas fa-book", label: L("Book") },
+            { value: "fas fa-shield-alt", label: L("Shield") },
+            { value: "fas fa-scroll", label: L("Scroll") },
+            { value: "fas fa-treasure-chest", label: L("TreasureChest") },
+            { value: "fas fa-map-pin", label: L("MapPin") },
+            { value: "fas fa-skull", label: L("Skull") },
+            { value: "fas fa-dungeon", label: L("Dungeon") },
+            { value: "fas fa-tower-observation", label: L("TowerObservation") },
         ];
         const svgIcons = [
             "anchor", "angel", "aura", "cancel", "card-hand", "castle", "cave",
@@ -96,17 +167,17 @@ class LoreReferenceBoardApp extends Application {
 
         let pinJournalId = current.journal || null;
 
-        const uid           = foundry.utils.randomID();
-        const idColor       = `lr-pin-color-${uid}`;
-        const idIcon        = `lr-pin-icon-${uid}`;
-        const idPreview     = `lr-pin-preview-${uid}`;
-        const idUnlinked    = `lr-pin-ju-${uid}`;
-        const idLinked      = `lr-pin-jl-${uid}`;
-        const idJTitle      = `lr-pin-jt-${uid}`;
-        const idJContent    = `lr-pin-jc-${uid}`;
-        const idBtnCreate   = `lr-pin-bc-${uid}`;
-        const idBtnEdit     = `lr-pin-be-${uid}`;
-        const idBtnUnlink   = `lr-pin-bu-${uid}`;
+        const uid = foundry.utils.randomID();
+        const idColor = `lr-pin-color-${uid}`;
+        const idIcon = `lr-pin-icon-${uid}`;
+        const idPreview = `lr-pin-preview-${uid}`;
+        const idUnlinked = `lr-pin-ju-${uid}`;
+        const idLinked = `lr-pin-jl-${uid}`;
+        const idJTitle = `lr-pin-jt-${uid}`;
+        const idJContent = `lr-pin-jc-${uid}`;
+        const idBtnCreate = `lr-pin-bc-${uid}`;
+        const idBtnEdit = `lr-pin-be-${uid}`;
+        const idBtnUnlink = `lr-pin-bu-${uid}`;
 
         const content = `
       <form>
@@ -122,13 +193,13 @@ class LoreReferenceBoardApp extends Application {
             <div class="pd-row">
               <div class="pd-field pd-field-flex">
                 <label>Title</label>
-                <input type="text" name="pTitle" value="${escapeHtml(current.title)}"
+                <input type="text" name="pTitle" value="${loreRefBoard_escapeHtml(current.title)}"
                        style="width:100%;box-sizing:border-box" />
               </div>
               <div class="pd-field pd-field-color">
                 <label>Color</label>
                 <input id="${idColor}" type="color" name="pColor"
-                       value="${escapeHtml(current.color)}" />
+                       value="${loreRefBoard_escapeHtml(current.color)}" />
               </div>
             </div>
 
@@ -136,7 +207,7 @@ class LoreReferenceBoardApp extends Application {
               <label>Icon</label>
               <select id="${idIcon}" name="pIcon" style="width:100%;box-sizing:border-box">
                 ${[...faIcons, ...svgIcons].map(ic =>
-                    `<option value="${escapeHtml(ic.value)}"${ic.value === current.icon ? " selected" : ""}>${escapeHtml(ic.label)}</option>`
+                    `<option value="${loreRefBoard_escapeHtml(ic.value)}"${ic.value === current.icon ? " selected" : ""}>${loreRefBoard_escapeHtml(ic.label)}</option>`
                 ).join("")}
               </select>
             </div>
@@ -144,7 +215,7 @@ class LoreReferenceBoardApp extends Application {
             <div class="pd-field">
               <label>Description</label>
               <textarea name="pDesc" rows="5"
-                        style="width:100%;box-sizing:border-box;resize:vertical">${escapeHtml(current.description)}</textarea>
+                        style="width:100%;box-sizing:border-box;resize:vertical">${loreRefBoard_escapeHtml(current.description)}</textarea>
             </div>
 
           </div><!-- /pd-left -->
@@ -237,15 +308,15 @@ class LoreReferenceBoardApp extends Application {
             const colorInput = document.getElementById(idColor);
             if (!colorInput) return false;  // not rendered yet
 
-            const iconSelect   = document.getElementById(idIcon);
-            const preview      = document.getElementById(idPreview);
-            const unlinkedEl   = document.getElementById(idUnlinked);
-            const linkedEl     = document.getElementById(idLinked);
+            const iconSelect = document.getElementById(idIcon);
+            const preview = document.getElementById(idPreview);
+            const unlinkedEl = document.getElementById(idUnlinked);
+            const linkedEl = document.getElementById(idLinked);
             const journalTitle = document.getElementById(idJTitle);
-            const journalCont  = document.getElementById(idJContent);
-            const btnCreate    = document.getElementById(idBtnCreate);
-            const btnEdit      = document.getElementById(idBtnEdit);
-            const btnUnlink    = document.getElementById(idBtnUnlink);
+            const journalCont = document.getElementById(idJContent);
+            const btnCreate = document.getElementById(idBtnCreate);
+            const btnEdit = document.getElementById(idBtnEdit);
+            const btnUnlink = document.getElementById(idBtnUnlink);
             if (!iconSelect || !preview || !unlinkedEl || !linkedEl) return false;
 
             const pdLeft   = preview.closest(".pd-left");
@@ -277,7 +348,7 @@ class LoreReferenceBoardApp extends Application {
             const updatePreview = () => {
                 const iconVal  = iconSelect.value;
                 const colorVal = colorInput.value;
-                if (isSvgIcon(iconVal)) {
+                if (loreRefBoard_isSvgIcon(iconVal)) {
                     preview.style.color = "";
                     preview.innerHTML = `<span class="pd-preview-svg-mask" style="background-color:${colorVal};-webkit-mask-image:url('${iconVal}');mask-image:url('${iconVal}')"></span>`;
                 } else {
@@ -304,11 +375,11 @@ class LoreReferenceBoardApp extends Application {
 
                 if (entry) {
                     // Render first page
-                    const pages     = getJournalPages(entry);
+                    const pages     = loreRefBoard_getJournalPages(entry);
                     const firstPage = pages[0] ?? null;
-                    journalCont.innerHTML = await enrichJournalPage(firstPage, entry);
+                    journalCont.innerHTML = await loreRefBoard_enrichJournalPage(firstPage, entry);
 
-                    await wirePageNav(journalCont, journalId);
+                    await loreRefBoard_wirePageNav(journalCont, journalId);
                 } else {
                     journalCont.innerHTML =
                         '<em style="color:#666;font-size:12px">Journal entry not found.</em>';
@@ -385,7 +456,7 @@ class LoreReferenceBoardApp extends Application {
                                         ${game.i18n.localize("lore-reference-board.Lore.JournalEntryName")}
                                     </label>
                                     <input id="${nameInputId}" name="${nameInputId}" type="text"
-                                           value="${escapeHtml(defaultName)}"
+                                           value="${loreRefBoard_escapeHtml(defaultName)}"
                                            style="width:100%" autofocus />
                                 </div>
                             </form>`,
@@ -454,7 +525,7 @@ class LoreReferenceBoardApp extends Application {
         requestAnimationFrame(tick);
 
         // Disable Save until Title has a value.
-        attachDialogValidation(idColor, "save", ["pTitle"]);
+        loreRefBoard_attachDialogValidation(idColor, "save", ["pTitle"]);
 
         try {
             return await waitPromise;
@@ -466,44 +537,55 @@ class LoreReferenceBoardApp extends Application {
 
     // Add Tab & Settings
 
-    async _addTabDialog() {
-        const type = await this._addTabTypeDialog();
+    async _addTabDialog(presetType = null) {
+        const type = presetType ?? await this._addTabTypeDialog();
         if (type === "cancel") return "cancel";
-        if (type === "image")     return await this._addImageTabDialog();
-        if (type === "document")  return await this._addDocumentTabDialog();
+        if (type === "image") return await this._addImageTabDialog();
+        if (type === "document") return await this._addDocumentTabDialog();
         if (type === "reference") return await this._addReferenceTabDialog();
+        if (type === "faction") return await this._addFactionTabDialog();
         return "cancel";
     }
 
-    // 3 Options Picker
+    // Shared markup for the 4 tab-type cards, used by the new-tab dialog and the empty-board view
+    _typeButtonsHtml(idPrefix) {
+        return `
+          <div class="lrt-type-buttons">
+            <button type="button" id="${idPrefix}-img" class="lrt-type-btn">
+              <i class="fas fa-image lrt-type-icon"></i>
+              <span class="lrt-type-label">${game.i18n.localize("lore-reference-board.AddTab.TypeImage")}</span>
+              <em class="lrt-type-desc">${game.i18n.localize("lore-reference-board.AddTab.TypeImageDesc")}</em>
+            </button>
+            <button type="button" id="${idPrefix}-doc" class="lrt-type-btn">
+              <i class="fas fa-book-open lrt-type-icon"></i>
+              <span class="lrt-type-label">${game.i18n.localize("lore-reference-board.AddTab.TypeDocument")}</span>
+              <em class="lrt-type-desc">${game.i18n.localize("lore-reference-board.AddTab.TypeDocumentDesc")}</em>
+            </button>
+            <button type="button" id="${idPrefix}-ref" class="lrt-type-btn">
+              <i class="fas fa-link lrt-type-icon"></i>
+              <span class="lrt-type-label">${game.i18n.localize("lore-reference-board.AddTab.TypeReference")}</span>
+              <em class="lrt-type-desc">${game.i18n.localize("lore-reference-board.AddTab.TypeReferenceDesc")}</em>
+            </button>
+            <button type="button" id="${idPrefix}-fac" class="lrt-type-btn">
+              <i class="fas fa-people-arrows lrt-type-icon"></i>
+              <span class="lrt-type-label">${game.i18n.localize("lore-reference-board.AddTab.TypeFaction")}</span>
+              <em class="lrt-type-desc">${game.i18n.localize("lore-reference-board.AddTab.TypeFactionDesc")}</em>
+            </button>
+          </div>
+        `;
+    }
+
+    // 4 Options Picker
     async _addTabTypeDialog() {
-        const uid      = foundry.utils.randomID();
-        const imgBtnId = `lrt-type-img-${uid}`;
-        const docBtnId = `lrt-type-doc-${uid}`;
-        const refBtnId = `lrt-type-ref-${uid}`;
+        const uid = foundry.utils.randomID();
+        const idPrefix = `lrt-type-${uid}`;
         let selectedType = "cancel";
         let dialogRef    = null;
 
         const content = `
           <div class="lrt-type-picker">
             <p class="lrt-type-prompt">${game.i18n.localize("lore-reference-board.AddTab.ChooseType")}</p>
-            <div class="lrt-type-buttons">
-              <button type="button" id="${imgBtnId}" class="lrt-type-btn">
-                <i class="fas fa-image lrt-type-icon"></i>
-                <span class="lrt-type-label">${game.i18n.localize("lore-reference-board.AddTab.TypeImage")}</span>
-                <em class="lrt-type-desc">${game.i18n.localize("lore-reference-board.AddTab.TypeImageDesc")}</em>
-              </button>
-              <button type="button" id="${docBtnId}" class="lrt-type-btn">
-                <i class="fas fa-book-open lrt-type-icon"></i>
-                <span class="lrt-type-label">${game.i18n.localize("lore-reference-board.AddTab.TypeDocument")}</span>
-                <em class="lrt-type-desc">${game.i18n.localize("lore-reference-board.AddTab.TypeDocumentDesc")}</em>
-              </button>
-              <button type="button" id="${refBtnId}" class="lrt-type-btn">
-                <i class="fas fa-link lrt-type-icon"></i>
-                <span class="lrt-type-label">${game.i18n.localize("lore-reference-board.AddTab.TypeReference")}</span>
-                <em class="lrt-type-desc">${game.i18n.localize("lore-reference-board.AddTab.TypeReferenceDesc")}</em>
-              </button>
-            </div>
+            ${this._typeButtonsHtml(idPrefix)}
           </div>
         `;
 
@@ -526,19 +608,65 @@ class LoreReferenceBoardApp extends Application {
 
         let tries = 0;
         const attach = () => {
-            const imgBtn = document.getElementById(imgBtnId);
-            const docBtn = document.getElementById(docBtnId);
-            const refBtn = document.getElementById(refBtnId);
-            if (!imgBtn || !docBtn || !refBtn) return false;
+            const imgBtn = document.getElementById(`${idPrefix}-img`);
+            const docBtn = document.getElementById(`${idPrefix}-doc`);
+            const refBtn = document.getElementById(`${idPrefix}-ref`);
+            const facBtn = document.getElementById(`${idPrefix}-fac`);
+            if (!imgBtn || !docBtn || !refBtn || !facBtn) return false;
             imgBtn.addEventListener("click", () => { selectedType = "image";     dialogRef?.close(); });
             docBtn.addEventListener("click", () => { selectedType = "document";  dialogRef?.close(); });
             refBtn.addEventListener("click", () => { selectedType = "reference"; dialogRef?.close(); });
+            facBtn.addEventListener("click", () => { selectedType = "faction";   dialogRef?.close(); });
             return true;
         };
         const tick = () => { if (!attach() && ++tries < 60) requestAnimationFrame(tick); };
         requestAnimationFrame(tick);
 
         return await waitPromise;
+    }
+
+    async _finishAddTab(res) {
+        const name = (res.name ?? "").trim();
+        if (!name) {
+            ui.notifications.warn(game.i18n.localize("lore-reference-board.Tab.NameRequired"));
+            return false;
+        }
+
+        const all = await loreRefBoard_loadTabs();
+        const id  = foundry.utils.randomID();
+
+        if (res.type === "document") {
+            let docType = null;
+            let docRef  = null;
+            if (res.docPath) {
+                const cleanPath = loreRefBoard_normalizePath(res.docPath);
+                if (_loreRefBoard_isUrl(cleanPath)) {
+                    docType = "url";
+                    docRef  = cleanPath;
+                } else {
+                    const detectedType = _loreRefBoard_docTypeForExt(cleanPath.split(".").pop());
+                    if (detectedType) { docType = detectedType; docRef = cleanPath; }
+                }
+            }
+            all.push({ id, name, type: "document", docType, docRef, pinned: false });
+        } else if (res.type === "reference") {
+            all.push({ id, name, type: "reference", docUuid: null, docType: null, pinned: false });
+        } else if (res.type === "faction") {
+            all.push({ id, name, type: "faction", pinned: false });
+        } else {
+            // image tab
+            const img = (res.img ?? "").trim();
+            if (!img) {
+                ui.notifications.warn(game.i18n.localize("lore-reference-board.Tab.ImageRequired"));
+                return false;
+            }
+            all.push({ id, name, type: "image", img, pinned: false });
+        }
+
+        await loreRefBoard_saveTabs(all);
+        this.activeTab = id;
+        await this.render(true);
+        return true;
     }
 
     // Image tab creation dialog
@@ -613,7 +741,7 @@ class LoreReferenceBoardApp extends Application {
             if (!btn) return false;
             btn.addEventListener("click", async () => {
                 const imgInput = btn.closest("form")?.elements?.tabImg;
-                const picked = await pickImagePath(imgInput?.value || "modules/");
+                const picked = await loreRefBoard_pickImagePath(imgInput?.value || "modules/");
                 if (picked && imgInput) {
                     imgInput.value = picked;
                     imgInput.dispatchEvent(new Event("input"));
@@ -626,7 +754,7 @@ class LoreReferenceBoardApp extends Application {
         requestAnimationFrame(tick);
 
         // Both name and image path required
-        attachDialogValidation(nameInputId, "add", ["tabName", "tabImg"]);
+        loreRefBoard_attachDialogValidation(nameInputId, "add", ["tabName", "tabImg"]);
 
         let result;
         try { result = await waitPromise; } catch { return "cancel"; }
@@ -708,7 +836,7 @@ class LoreReferenceBoardApp extends Application {
             if (!btn) return false;
             btn.addEventListener("click", async () => {
                 const pathInput = document.getElementById(pathInputId);
-                const picked = await pickDocFilePath(pathInput?.value || "modules/");
+                const picked = await loreRefBoard_pickDocFilePath(pathInput?.value || "modules/");
                 if (picked && pathInput) {
                     pathInput.value = picked;
                     pathInput.dispatchEvent(new Event("input"));
@@ -720,7 +848,7 @@ class LoreReferenceBoardApp extends Application {
         const tick = () => { if (!attachBrowse() && ++tries < 60) requestAnimationFrame(tick); };
         requestAnimationFrame(tick);
 
-        attachDialogValidation(nameInputId, "add", ["tabName"]);
+        loreRefBoard_attachDialogValidation(nameInputId, "add", ["tabName"]);
 
         let result;
         try { result = await waitPromise; } catch { return "cancel"; }
@@ -776,7 +904,7 @@ class LoreReferenceBoardApp extends Application {
             }, { width: 420, classes: ["app", "window-app", "dialog", "lore-rb-dialog"] }).render(true);
         });
 
-        attachDialogValidation(nameInputId, "add", ["tabName"]);
+        loreRefBoard_attachDialogValidation(nameInputId, "add", ["tabName"]);
 
         let result;
         try { result = await waitPromise; } catch { return "cancel"; }
@@ -785,9 +913,65 @@ class LoreReferenceBoardApp extends Application {
         return "cancel";
     }
 
+    async _addFactionTabDialog() {
+        const uid         = foundry.utils.randomID();
+        const nameInputId = `aft-name-${uid}`;
+
+        const content = `
+      <form>
+        <div style="display:flex;flex-direction:column;gap:12px;padding:6px 0">
+          <div>
+            <label style="display:block;margin-bottom:4px;font-weight:bold">
+              ${game.i18n.localize("lore-reference-board.AddTab.LabelName")}
+            </label>
+            <input type="text" id="${nameInputId}" name="tabName" value=""
+                   placeholder="${game.i18n.localize("lore-reference-board.AddTab.FactionNamePlaceholder")}"
+                   style="width:100%" autofocus />
+          </div>
+          <p style="margin:0;font-size:11px;color:#888">
+            ${game.i18n.localize("lore-reference-board.AddTab.TypeFactionDesc")}
+          </p>
+        </div>
+      </form>
+    `;
+
+        const waitPromise = new Promise((resolve, reject) => {
+            let clicked = false;
+            new Dialog({
+                title: game.i18n.localize("lore-reference-board.AddTab.FactionTabTitle"),
+                content,
+                buttons: {
+                    add: {
+                        label: game.i18n.localize("lore-reference-board.Common.Add"),
+                        callback: (html) => {
+                            clicked = true;
+                            const form = html[0].querySelector("form")?.elements;
+                            resolve({ action: "add", name: (form?.tabName?.value ?? "").trim() });
+                        },
+                    },
+                    cancel: {
+                        label: game.i18n.localize("lore-reference-board.Common.Cancel"),
+                        callback: () => { clicked = true; resolve("cancel"); },
+                    },
+                },
+                default: "add",
+                close: () => { if (!clicked) reject(new Error("Dialog closed")); },
+            }, { width: 420, classes: ["app", "window-app", "dialog", "lore-rb-dialog"] }).render(true);
+        });
+
+        loreRefBoard_attachDialogValidation(nameInputId, "add", ["tabName"]);
+
+        let result;
+        try { result = await waitPromise; } catch { return "cancel"; }
+        if (result === "cancel" || result?.action === "cancel") return "cancel";
+        if (result?.action === "add") return { type: "faction", name: result.name };
+        return "cancel";
+    }
+
     async _tabSettingsDialog(tab) {
         if (tab.type === "document")  return await this._documentTabSettingsDialog(tab);
         if (tab.type === "reference") return await this._referenceTabSettingsDialog(tab);
+        if (tab.type === "faction")   return await this._factionTabSettingsDialog(tab);
 
         let name = tab?.name ?? "";
         let img = tab?.img ?? "";
@@ -800,12 +984,12 @@ class LoreReferenceBoardApp extends Application {
         <div style="display:flex;flex-direction:column;gap:10px;padding:6px 0">
           <div>
             <label style="display:block;margin-bottom:4px;font-weight:bold">${game.i18n.localize("lore-reference-board.TabSettings.LabelName")}</label>
-            <input type="text" name="tsName" value="${escapeHtml(name)}" style="width:100%" autofocus />
+            <input type="text" name="tsName" value="${loreRefBoard_escapeHtml(name)}" style="width:100%" autofocus />
           </div>
           <div>
             <label style="display:block;margin-bottom:4px;font-weight:bold">${game.i18n.localize("lore-reference-board.TabSettings.LabelImage")}</label>
             <div style="display:flex;gap:6px;align-items:center">
-              <input type="text" name="tsImg" value="${escapeHtml(img)}" style="flex:1;min-width:0;box-sizing:border-box" />
+              <input type="text" name="tsImg" value="${loreRefBoard_escapeHtml(img)}" style="flex:1;min-width:0;box-sizing:border-box" />
               <button type="button" id="${browseBtnId}"
                 style="width:auto;padding:4px 10px;background:#3a3a3a;border:1px solid #555;border-radius:4px;
                        color:#ccc;cursor:pointer;white-space:nowrap;flex-shrink:0;font-size:12px;display:inline-flex;align-items:center">
@@ -858,7 +1042,7 @@ class LoreReferenceBoardApp extends Application {
             if (!btn) return false;
             btn.addEventListener("click", async () => {
                 const imgInput = btn.closest("form")?.elements?.tsImg;
-                const picked = await pickImagePath(imgInput?.value || "modules/");
+                const picked = await loreRefBoard_pickImagePath(imgInput?.value || "modules/");
                 if (picked && imgInput) {
                     imgInput.value = picked;
                     imgInput.dispatchEvent(new Event("input"));
@@ -873,7 +1057,7 @@ class LoreReferenceBoardApp extends Application {
         };
         requestAnimationFrame(tick);
 
-        attachDialogValidation(browseBtnId, "save", ["tsName"]);
+        loreRefBoard_attachDialogValidation(browseBtnId, "save", ["tsName"]);
 
         let result;
         try { result = await waitPromise; } catch { return "cancel"; }
@@ -897,7 +1081,7 @@ class LoreReferenceBoardApp extends Application {
               ${game.i18n.localize("lore-reference-board.TabSettings.LabelName")}
             </label>
             <input type="text" id="${nameInputId}" name="dtsName"
-                   value="${escapeHtml(tab?.name ?? "")}" style="width:100%" autofocus />
+                   value="${loreRefBoard_escapeHtml(tab?.name ?? "")}" style="width:100%" autofocus />
           </div>
           <p style="margin:4px 0 0;font-size:11px;color:#aaa">
             ${game.i18n.localize("lore-reference-board.TabSettings.DocumentHint")}
@@ -934,7 +1118,67 @@ class LoreReferenceBoardApp extends Application {
             }, { width: 440, classes: ["app", "window-app", "dialog", "lore-rb-dialog"] }).render(true);
         });
 
-        attachDialogValidation(nameInputId, "save", ["dtsName"]);
+        loreRefBoard_attachDialogValidation(nameInputId, "save", ["dtsName"]);
+
+        let result;
+        try { result = await waitPromise; } catch { return "cancel"; }
+        if (result === "cancel" || result?.action === "cancel") return "cancel";
+        if (result?.action === "delete") return { action: "delete" };
+        if (result?.action === "save")   return { name: result.name };
+        return "cancel";
+    }
+
+    // Settings dialog for faction type tabs
+    async _factionTabSettingsDialog(tab) {
+        const uid         = foundry.utils.randomID();
+        const nameInputId = `fts-name-${uid}`;
+
+        const content = `
+      <form>
+        <div style="display:flex;flex-direction:column;gap:10px;padding:6px 0">
+          <div>
+            <label style="display:block;margin-bottom:4px;font-weight:bold">
+              ${game.i18n.localize("lore-reference-board.TabSettings.LabelName")}
+            </label>
+            <input type="text" id="${nameInputId}" name="ftsName"
+                   value="${loreRefBoard_escapeHtml(tab?.name ?? "")}" style="width:100%" autofocus />
+          </div>
+          <p style="margin:4px 0 0;font-size:11px;color:#aaa">
+            ${game.i18n.localize("lore-reference-board.TabSettings.FactionHint")}
+          </p>
+        </div>
+      </form>
+    `;
+
+        const waitPromise = new Promise((resolve, reject) => {
+            let clicked = false;
+            new Dialog({
+                title: game.i18n.localize("lore-reference-board.TabSettings.Title"),
+                content,
+                buttons: {
+                    save: {
+                        label: game.i18n.localize("lore-reference-board.Common.Save"),
+                        callback: (html) => {
+                            clicked = true;
+                            const form = html[0].querySelector("form")?.elements;
+                            resolve({ action: "save", name: (form?.ftsName?.value ?? "").trim() });
+                        },
+                    },
+                    delete: {
+                        label: game.i18n.localize("lore-reference-board.TabSettings.BtnDeleteTab"),
+                        callback: () => { clicked = true; resolve({ action: "delete" }); },
+                    },
+                    cancel: {
+                        label: game.i18n.localize("lore-reference-board.Common.Cancel"),
+                        callback: () => { clicked = true; resolve("cancel"); },
+                    },
+                },
+                default: "save",
+                close: () => { if (!clicked) reject(new Error("Dialog closed")); },
+            }, { width: 440, classes: ["app", "window-app", "dialog", "lore-rb-dialog"] }).render(true);
+        });
+
+        loreRefBoard_attachDialogValidation(nameInputId, "save", ["ftsName"]);
 
         let result;
         try { result = await waitPromise; } catch { return "cancel"; }
@@ -957,7 +1201,7 @@ class LoreReferenceBoardApp extends Application {
               ${game.i18n.localize("lore-reference-board.TabSettings.LabelName")}
             </label>
             <input type="text" id="${nameInputId}" name="rtsName"
-                   value="${escapeHtml(tab?.name ?? "")}" style="width:100%" autofocus />
+                   value="${loreRefBoard_escapeHtml(tab?.name ?? "")}" style="width:100%" autofocus />
           </div>
           <p style="margin:4px 0 0;font-size:11px;color:#aaa">
             ${game.i18n.localize("lore-reference-board.AddTab.TypeReferenceDesc")}
@@ -994,7 +1238,7 @@ class LoreReferenceBoardApp extends Application {
             }, { width: 440, classes: ["app", "window-app", "dialog", "lore-rb-dialog"] }).render(true);
         });
 
-        attachDialogValidation(nameInputId, "save", ["rtsName"]);
+        loreRefBoard_attachDialogValidation(nameInputId, "save", ["rtsName"]);
 
         let result;
         try { result = await waitPromise; } catch { return "cancel"; }
@@ -1004,25 +1248,96 @@ class LoreReferenceBoardApp extends Application {
         return "cancel";
     }
 
+    _applyReorderMode(html) {
+        const tabs = html.find(".lr-tab[data-tabid]");
+        const strip = html.find(".lr-tabs");
+        if (this.reorderMode) {
+            tabs.attr("draggable", "true");
+            strip.addClass("lr-tabs--reorder");
+        } else {
+            tabs.removeAttr("draggable");
+            strip.removeClass("lr-tabs--reorder");
+        }
+    }
+
+    _bindTabDragReorder(html) {
+        const self = this;
+
+        html.find(".lr-tab[data-tabid]").on("dragstart", function (ev) {
+            if (!self.reorderMode) { ev.preventDefault(); return; }
+            self._dragTabId = this.dataset.tabid;
+            ev.originalEvent.dataTransfer.effectAllowed = "move";
+        });
+
+        html.find(".lr-tab[data-tabid]").on("dragover", function (ev) {
+            if (!self.reorderMode || !self._dragTabId) return;
+            const targetId = this.dataset.tabid;
+            if (!targetId || targetId === self._dragTabId) return;
+            ev.preventDefault();
+            ev.originalEvent.dataTransfer.dropEffect = "move";
+            const rect = this.getBoundingClientRect();
+            html.find(".lr-tab--drop-before, .lr-tab--drop-after")
+                .removeClass("lr-tab--drop-before lr-tab--drop-after");
+            if (ev.originalEvent.clientX < rect.left + rect.width / 2) {
+                $(this).addClass("lr-tab--drop-before");
+            } else {
+                $(this).addClass("lr-tab--drop-after");
+            }
+        });
+
+        html.find(".lr-tab[data-tabid]").on("dragleave", function () {
+            $(this).removeClass("lr-tab--drop-before lr-tab--drop-after");
+        });
+
+        html.find(".lr-tab[data-tabid]").on("drop", async function (ev) {
+            ev.preventDefault();
+            if (!self.reorderMode || !self._dragTabId) return;
+            const targetId = this.dataset.tabid;
+            $(this).removeClass("lr-tab--drop-before lr-tab--drop-after");
+            if (!targetId || targetId === self._dragTabId) return;
+            const rect = this.getBoundingClientRect();
+            const insertBefore = ev.originalEvent.clientX < rect.left + rect.width / 2;
+            const allTabs = await loreRefBoard_loadTabs();
+            const dragged = allTabs.find(t => t.id === self._dragTabId);
+            const target = allTabs.find(t => t.id === targetId);
+            if (!dragged || !target || !!dragged.pinned !== !!target.pinned) return;
+            const without = allTabs.filter(t => t.id !== self._dragTabId);
+            const targetIdx = without.findIndex(t => t.id === targetId);
+            without.splice(insertBefore ? targetIdx : targetIdx + 1, 0, dragged);
+            self._dragTabId = null;
+            await loreRefBoard_saveTabs(without);
+            await self.render(true);
+        });
+
+        html.find(".lr-tab[data-tabid]").on("dragend", function () {
+            self._dragTabId = null;
+            html.find(".lr-tab--drop-before, .lr-tab--drop-after")
+                .removeClass("lr-tab--drop-before lr-tab--drop-after");
+        });
+    }
+
     activateListeners(html) {
         super.activateListeners(html);
         this._htmlRef = html;
 
-        const savedPos = _getSetting("windowPos", {});
-        if (savedPos?.width && savedPos?.height) {
-            const maxLeft = Math.max(0, window.innerWidth  - 200);
-            const maxTop  = Math.max(0, window.innerHeight - 100);
-            this.setPosition({
-                left:   Math.min(Math.max(0, savedPos.left   ?? 0), maxLeft),
-                top:    Math.min(Math.max(0, savedPos.top    ?? 0), maxTop),
-                width:  Math.min(Math.max(400, savedPos.width),  window.innerWidth),
-                height: Math.min(Math.max(300, savedPos.height), window.innerHeight),
-            });
+        if (!this._positionRestored) {
+            this._positionRestored = true;
+            const savedPos = _loreRefBoard_getSetting("windowPos", {});
+            if (savedPos?.width && savedPos?.height) {
+                const maxLeft = Math.max(0, window.innerWidth  - 200);
+                const maxTop  = Math.max(0, window.innerHeight - 100);
+                this.setPosition({
+                    left:   Math.min(Math.max(0, savedPos.left   ?? 0), maxLeft),
+                    top:    Math.min(Math.max(0, savedPos.top    ?? 0), maxTop),
+                    width:  Math.min(Math.max(400, savedPos.width),  window.innerWidth),
+                    height: Math.min(Math.max(300, savedPos.height), window.innerHeight),
+                });
+            }
         }
 
         // Apply maxTabRows setting to the tab strip.
         const maxRows = (() => {
-            try { return game.settings.get(MODULE_SCOPE, "maxTabRows") ?? 4; } catch { return 4; }
+            try { return game.settings.get(loreRefBoard_MODULE_SCOPE, "maxTabRows") ?? 4; } catch { return 4; }
         })();
         const tabsEl = html.find(".lr-tabs")[0];
         if (tabsEl) {
@@ -1043,47 +1358,65 @@ class LoreReferenceBoardApp extends Application {
             await this.render(true);
         });
 
+        html.find(".lr-tab-pin-icon").off("click").on("click", async (ev) => {
+            ev.stopPropagation();
+            const tabId = $(ev.currentTarget).closest(".lr-tab[data-tabid]").data("tabid");
+            if (!tabId) return;
+            const allTabs = await loreRefBoard_loadTabs();
+            const tab = allTabs.find(t => t.id === tabId);
+            if (!tab) return;
+            tab.pinned = !tab.pinned;
+            if (tab.pinned) {
+                const others = allTabs.filter(t => t.id !== tabId);
+                const lastPinnedIdx = others.reduce((acc, t, i) => (t.pinned ? i : acc), -1);
+                others.splice(lastPinnedIdx + 1, 0, tab);
+                await loreRefBoard_saveTabs(others);
+            } else {
+                const others = allTabs.filter(t => t.id !== tabId);
+                others.push(tab);
+                await loreRefBoard_saveTabs(others);
+            }
+            await this.render(true);
+        });
+
+        this._bindTabDragReorder(html);
+
         // New tab
         html.find("#lr-new-tab").off("click").on("click", async () => {
             const res = await this._addTabDialog();
             if (!res || res === "cancel") return;
-
-            const name = (res.name ?? "").trim();
-            if (!name) return ui.notifications.warn(game.i18n.localize("lore-reference-board.Tab.NameRequired"));
-
-            const all = await loadTabs();
-            const id  = foundry.utils.randomID();
-
-            if (res.type === "document") {
-                let docType = null;
-                let docRef  = null;
-                if (res.docPath) {
-                    const cleanPath = normalizeLrbPath(res.docPath);
-                    if (_lrbIsUrl(cleanPath)) {
-                        docType = "url";
-                        docRef  = cleanPath;
-                    } else {
-                        const detectedType = _lrbDocTypeForExt(cleanPath.split(".").pop());
-                        if (detectedType) { docType = detectedType; docRef = cleanPath; }
-                    }
-                }
-                all.push({ id, name, type: "document", docType, docRef });
-            } else if (res.type === "reference") {
-                // Reference tab,  no document linked yet
-                all.push({ id, name, type: "reference", docUuid: null, docType: null });
-            } else {
-                // image tab
-                const img = (res.img ?? "").trim();
-                if (!img) return ui.notifications.warn(game.i18n.localize("lore-reference-board.Tab.ImageRequired"));
-                all.push({ id, name, type: "image", img });
-            }
-
-            await saveTabs(all);
-            this.activeTab = id;
-            await this.render(true);
+            await this._finishAddTab(res);
         });
 
+        // Empty-board tab type picker
+        const emptyPicker = html.find("#lr-empty-type-picker");
+        if (emptyPicker.length) {
+            const uid = foundry.utils.randomID();
+            const idPrefix = `lrt-empty-type-${uid}`;
+            emptyPicker.html(this._typeButtonsHtml(idPrefix));
+
+            const bindType = (suffix, type) => {
+                emptyPicker.find(`#${idPrefix}-${suffix}`).off("click").on("click", async () => {
+                    const res = await this._addTabDialog(type);
+                    if (!res || res === "cancel") return;
+                    await this._finishAddTab(res);
+                });
+            };
+            bindType("img", "image");
+            bindType("doc", "document");
+            bindType("ref", "reference");
+            bindType("fac", "faction");
+        }
+
         // Toolbar
+        html.find("#lr-reorder-tabs").off("click").on("click", (ev) => {
+            this.reorderMode = !this.reorderMode;
+            $(ev.currentTarget).toggleClass("active", this.reorderMode);
+            this._applyReorderMode(html);
+        });
+        html.find("#lr-reorder-tabs").toggleClass("active", this.reorderMode);
+        if (this.reorderMode) this._applyReorderMode(html);
+
         html.find("#lr-toggle-pin").off("click").on("click", (ev) => {
             this.placingPin = !this.placingPin;
             $(ev.currentTarget).toggleClass("active", this.placingPin);
@@ -1094,8 +1427,18 @@ class LoreReferenceBoardApp extends Application {
         html.find("#lr-maximize").off("click").on("click", (ev) => {
             this._maximized = !this._maximized;
             $(ev.currentTarget).toggleClass("active", this._maximized);
-            // v12: this.element is already jQuery
-            this.element.toggleClass("lr-maximized", this._maximized);
+            if (this._maximized) {
+                this._preMaximizePos = {
+                    left: this.position.left,
+                    top: this.position.top,
+                    width: this.position.width,
+                    height: this.position.height,
+                };
+                this._applyMaximizedPosition();
+            } else if (this._preMaximizePos) {
+                this.setPosition(this._preMaximizePos);
+                this._preMaximizePos = null;
+            }
         });
         html.find("#lr-maximize").toggleClass("active", !!this._maximized);
 
@@ -1103,9 +1446,22 @@ class LoreReferenceBoardApp extends Application {
             if (this._panzoom) this._panzoom.reset();
         });
 
+        html.find("#lr-zoom-in").off("click").on("click", () => {
+            if (this._panzoom) this._panzoom.zoomIn({ step: 0.1 });
+        });
+        html.find("#lr-zoom-out").off("click").on("click", () => {
+            if (this._panzoom) this._panzoom.zoomOut({ step: 0.1 });
+        });
+        html.find("#lr-zoom-slider").off("input").on("input", (ev) => {
+            if (!this._panzoom) return;
+            const scale = Number(ev.currentTarget.value) / 100;
+            this._panzoom.zoom(scale, { animate: false });
+            _loreRefBoard_syncMapZoomBar(html, scale);
+        });
+
         // Tab settings
         html.find("#lr-tab-settings").off("click").on("click", async () => {
-            const allTabs = await loadTabs();
+            const allTabs = await loreRefBoard_loadTabs();
             const tab = allTabs.find((t) => t.id === this.activeTab);
             if (!tab) return;
 
@@ -1116,21 +1472,25 @@ class LoreReferenceBoardApp extends Application {
             if (res?.action === "delete") {
                 const confirmed = await Dialog.confirm({
                     title: game.i18n.localize("lore-reference-board.TabSettings.DeleteTitle"),
-                    content: `<p>${game.i18n.format("lore-reference-board.TabSettings.DeleteContent", { name: escapeHtml(tab.name) })}</p>`,
+                    content: `<p>${game.i18n.format("lore-reference-board.TabSettings.DeleteContent", { name: loreRefBoard_escapeHtml(tab.name) })}</p>`,
                 });
                 if (!confirmed) return;
 
-                const tabPins = await loadPinsForTab(this.activeTab);
-                await clearLoreForImages(tabPins.flatMap(p => collectPinImages(p)));
+                const tabPins = await loreRefBoard_loadPinsForTab(this.activeTab);
+                await loreRefBoard_clearLoreForImages(tabPins.flatMap(p => loreRefBoard_collectPinImages(p)));
                 if (tabPins.length) {
-                    const journalMap = getImageJournalMap();
+                    const journalMap = loreRefBoard_getImageJournalMap();
                     const updatedMap = { ...journalMap };
                     for (const p of tabPins) delete updatedMap[p.id];
-                    await game.settings.set(MODULE_SCOPE, "imageJournals", updatedMap);
+                    await game.settings.set(loreRefBoard_MODULE_SCOPE, "imageJournals", updatedMap);
                 }
-                await deletePinsForTab(this.activeTab);
-                const remaining = (await loadTabs()).filter(t => t.id !== this.activeTab);
-                await saveTabs(remaining);
+                await loreRefBoard_deletePinsForTab(this.activeTab);
+                if (tab.type === "faction") {
+                    await loreRefBoard_deleteFactionDataForTab(this.activeTab);
+                    await loreRefBoard_removeFactionStandingCollapsed(this.activeTab);
+                }
+                const remaining = (await loreRefBoard_loadTabs()).filter(t => t.id !== this.activeTab);
+                await loreRefBoard_saveTabs(remaining);
 
                 this.activeTab = remaining[0]?.id ?? null;
                 await this.render(true);
@@ -1148,17 +1508,17 @@ class LoreReferenceBoardApp extends Application {
                     content: `<p>${game.i18n.localize("lore-reference-board.TabSettings.ReplaceMapContent")}</p>`,
                 });
                 if (!confirmed) return;
-                const oldPins = await loadPinsForTab(this.activeTab);
-                await clearLoreForImages(oldPins.flatMap(p => collectPinImages(p)));
-                await deletePinsForTab(this.activeTab);
+                const oldPins = await loreRefBoard_loadPinsForTab(this.activeTab);
+                await loreRefBoard_clearLoreForImages(oldPins.flatMap(p => loreRefBoard_collectPinImages(p)));
+                await loreRefBoard_deletePinsForTab(this.activeTab);
             }
 
-            const latest = await loadTabs();
+            const latest = await loreRefBoard_loadTabs();
             const idx = latest.findIndex((t) => t.id === this.activeTab);
             if (idx !== -1) {
                 latest[idx].name = newName;
                 if (imageChanged) latest[idx].img = newImg;
-                await saveTabs(latest);
+                await loreRefBoard_saveTabs(latest);
             }
             await this.render(true);
         });
@@ -1174,6 +1534,12 @@ class LoreReferenceBoardApp extends Application {
         if (currentTab?.type === "reference") {
             this._setupReferenceTab(html, currentTab).catch(err =>
                 console.error("[lore-reference-board] _setupReferenceTab failed", err)
+            );
+            return;
+        }
+        if (currentTab?.type === "faction") {
+            loreRefBoard_setupFactionTab(this, html, currentTab).catch(err =>
+                console.error("[lore-reference-board] loreRefBoard_setupFactionTab failed", err)
             );
             return;
         }
@@ -1220,7 +1586,9 @@ class LoreReferenceBoardApp extends Application {
                 $(this._mapWrapEl).find(".lr-pin").css(
                     "transform", `translate(-50%, -100%) scale(${1 / zoom})`
                 );
+                _loreRefBoard_syncMapZoomBar(html, zoom);
             });
+            _loreRefBoard_syncMapZoomBar(html, this._panzoom.getScale());
         }
 
         // Clear handlers
@@ -1234,7 +1602,7 @@ class LoreReferenceBoardApp extends Application {
             const r  = mapWrap.getBoundingClientRect();
             const xLayout = (clientX - r.left) / r.width  * mapWrap.offsetWidth;
             const yLayout = (clientY - r.top)  / r.height * mapWrap.offsetHeight;
-            const ir = computeImageRect(mapWrap.offsetWidth, mapWrap.offsetHeight, this._imgNaturalW, this._imgNaturalH);
+            const ir = loreRefBoard_computeImageRect(mapWrap.offsetWidth, mapWrap.offsetHeight, this._imgNaturalW, this._imgNaturalH);
             return {
                 xPct: clamp(((xLayout - ir.offsetX) / ir.displayW) * 100, 0, 100),
                 yPct: clamp(((yLayout - ir.offsetY) / ir.displayH) * 100, 0, 100),
@@ -1246,10 +1614,10 @@ class LoreReferenceBoardApp extends Application {
             if (this.placingPin) return;
             ev.stopPropagation();
             const pinId = $(ev.currentTarget).data("pinid");
-            const pins = await loadPinsForTab(this.activeTab);
+            const pins = await loreRefBoard_loadPinsForTab(this.activeTab);
             const pin = pins.find(p => p.id === pinId);
             if (!pin) return;
-            new PinGalleryApp({ pin, tabId: this.activeTab, boardApp: this }).render(true);
+            new LoreRefBoardPinGalleryApp({ pin, tabId: this.activeTab, boardApp: this }).render(true);
         });
 
         // Add pin - placement ON, click on empty map space
@@ -1262,9 +1630,9 @@ class LoreReferenceBoardApp extends Application {
             if (!res || res === "cancel") return;
             if (res?.action !== "save") return;
 
-            const pins = await loadPinsForTab(this.activeTab);
+            const pins = await loreRefBoard_loadPinsForTab(this.activeTab);
             pins.push({ id: foundry.utils.randomID(), xPct, yPct, coordV: 1, ...res.data });
-            await savePinsForTab(this.activeTab, pins);
+            await loreRefBoard_savePinsForTab(this.activeTab, pins);
             await this.renderPins(this._htmlRef);
         });
 
@@ -1333,14 +1701,14 @@ class LoreReferenceBoardApp extends Application {
                 const r = mapWrap.getBoundingClientRect();
                 const xPx = clamp((ev2.clientX - r.left) / r.width  * mapWrap.offsetWidth  + this._pinDrag.offsetXPx, 0, mapWrap.offsetWidth);
                 const yPx = clamp((ev2.clientY - r.top)  / r.height * mapWrap.offsetHeight + this._pinDrag.offsetYPx, 0, mapWrap.offsetHeight);
-                const ir  = computeImageRect(mapWrap.offsetWidth, mapWrap.offsetHeight, this._imgNaturalW, this._imgNaturalH);
+                const ir  = loreRefBoard_computeImageRect(mapWrap.offsetWidth, mapWrap.offsetHeight, this._imgNaturalW, this._imgNaturalH);
                 const xPct = clamp(((xPx - ir.offsetX) / ir.displayW) * 100, 0, 100);
                 const yPct = clamp(((yPx - ir.offsetY) / ir.displayH) * 100, 0, 100);
 
                 this._pinDrag.active = false;
                 this._pinDrag.pinId = null;
 
-                const pins = await loadPinsForTab(this.activeTab);
+                const pins = await loreRefBoard_loadPinsForTab(this.activeTab);
                 const idx = pins.findIndex((p) => p.id === pinId);
                 if (idx === -1) return;
 
@@ -1348,7 +1716,7 @@ class LoreReferenceBoardApp extends Application {
                     pins[idx].xPct   = xPct;
                     pins[idx].yPct   = yPct;
                     pins[idx].coordV = 1;
-                    await savePinsForTab(this.activeTab, pins);
+                    await loreRefBoard_savePinsForTab(this.activeTab, pins);
                     await this.renderPins(this._htmlRef);
                     return;
                 }
@@ -1364,17 +1732,17 @@ class LoreReferenceBoardApp extends Application {
                     });
                     if (!ok) return;
 
-                    await clearLoreForImages(collectPinImages(pin));
-                    await clearAllImageJournalLinksForPin(pin.id);
+                    await loreRefBoard_clearLoreForImages(loreRefBoard_collectPinImages(pin));
+                    await loreRefBoard_clearAllImageJournalLinksForPin(pin.id);
                     pins.splice(idx, 1);
-                    await savePinsForTab(this.activeTab, pins);
+                    await loreRefBoard_savePinsForTab(this.activeTab, pins);
                     await this.renderPins(this._htmlRef);
                     return;
                 }
 
                 if (res?.action === "save") {
                     pins[idx] = { ...pins[idx], ...res.data };
-                    await savePinsForTab(this.activeTab, pins);
+                    await loreRefBoard_savePinsForTab(this.activeTab, pins);
                     await this.renderPins(this._htmlRef);
                 }
             };
@@ -1397,11 +1765,11 @@ class LoreReferenceBoardApp extends Application {
             });
             if (!ok) return;
 
-            const pins = await loadPinsForTab(this.activeTab);
+            const pins = await loreRefBoard_loadPinsForTab(this.activeTab);
             const pinToDelete = pins.find(p => p.id === pinId);
-            if (pinToDelete) await clearLoreForImages(collectPinImages(pinToDelete));
-            if (pinToDelete) await clearAllImageJournalLinksForPin(pinToDelete.id);
-            await savePinsForTab(this.activeTab, pins.filter((p) => p.id !== pinId));
+            if (pinToDelete) await loreRefBoard_clearLoreForImages(loreRefBoard_collectPinImages(pinToDelete));
+            if (pinToDelete) await loreRefBoard_clearAllImageJournalLinksForPin(pinToDelete.id);
+            await loreRefBoard_savePinsForTab(this.activeTab, pins.filter((p) => p.id !== pinId));
             await this.renderPins(this._htmlRef);
         });
 
@@ -1448,12 +1816,12 @@ class LoreReferenceBoardApp extends Application {
         const docRef  = tab.docRef  ?? null;
 
         const saveDocToTab = async (newDocType, newDocRef) => {
-            const all = await loadTabs();
+            const all = await loreRefBoard_loadTabs();
             const idx = all.findIndex(t => t.id === tabId);
             if (idx === -1) return;
             all[idx].docType = newDocType;
             all[idx].docRef  = newDocRef;
-            await saveTabs(all);
+            await loreRefBoard_saveTabs(all);
         };
 
         // STATE 1: Unlinked
@@ -1543,7 +1911,7 @@ class LoreReferenceBoardApp extends Application {
                                         ${game.i18n.localize("lore-reference-board.Lore.JournalEntryName")}
                                     </label>
                                     <input id="${nameInputId}" name="${nameInputId}" type="text"
-                                           value="${escapeHtml(defaultName)}"
+                                           value="${loreRefBoard_escapeHtml(defaultName)}"
                                            style="width:100%" autofocus />
                                 </div>
                             </form>`,
@@ -1584,9 +1952,9 @@ class LoreReferenceBoardApp extends Application {
 
             // File browse button
             pane.querySelector(`#lrt-doc-browse-${tabId}`)?.addEventListener("click", async () => {
-                const picked = await pickDocFilePath();
+                const picked = await loreRefBoard_pickDocFilePath();
                 if (!picked) return;
-                const newType = _lrbDocTypeForExt(picked.split(".").pop());
+                const newType = _loreRefBoard_docTypeForExt(picked.split(".").pop());
                 if (newType) {
                     await saveDocToTab(newType, picked);
                     await this.render(true);
@@ -1598,9 +1966,9 @@ class LoreReferenceBoardApp extends Application {
             // Manual path input, handles all types including HTML, DOCX, and URLs.
             const loadPath = async () => {
                 const input = pane.querySelector(`#lrt-doc-path-${tabId}`);
-                const rawPath = normalizeLrbPath(input?.value ?? "");
+                const rawPath = loreRefBoard_normalizePath(input?.value ?? "");
                 if (!rawPath) return;
-                const newType = _lrbIsUrl(rawPath) ? "url" : _lrbDocTypeForExt(rawPath.split(".").pop());
+                const newType = _loreRefBoard_isUrl(rawPath) ? "url" : _loreRefBoard_docTypeForExt(rawPath.split(".").pop());
                 if (newType) {
                     await saveDocToTab(newType, rawPath);
                     await this.render(true);
@@ -1639,24 +2007,24 @@ class LoreReferenceBoardApp extends Application {
             }
 
             // Render first page, type sorted
-            const pages     = getJournalPages(entry);
+            const pages     = loreRefBoard_getJournalPages(entry);
             const firstPage = pages[0] ?? null;
             let enriched;
-            try { enriched = await enrichJournalPage(firstPage, entry); }
+            try { enriched = await loreRefBoard_enrichJournalPage(firstPage, entry); }
             catch { enriched = '<p style="color:#888;font-style:italic">Could not render page.</p>'; }
 
             const pageNavHtml = pages.length > 1 ? `
               <div class="lrt-doc-page-nav">
                 <i class="fas fa-book-open" style="color:#888;font-size:11px;flex-shrink:0"></i>
                 <select class="lrt-doc-page-sel" id="lrt-doc-psel-${tabId}">
-                  ${pages.map((p, i) => `<option value="${i}">${escapeHtml(p.name || `Page ${i + 1}`)}</option>`).join("")}
+                  ${pages.map((p, i) => `<option value="${i}">${loreRefBoard_escapeHtml(p.name || `Page ${i + 1}`)}</option>`).join("")}
                 </select>
               </div>` : "";
 
             pane.innerHTML = `
               <div class="lrt-doc-linked-bar">
                 <i class="fas fa-book lrt-doc-linked-icon"></i>
-                <span class="lrt-doc-linked-title">${escapeHtml(entry.name)}</span>
+                <span class="lrt-doc-linked-title">${loreRefBoard_escapeHtml(entry.name)}</span>
                 <button type="button" class="lrt-doc-btn lrt-doc-btn--edit" id="lrt-doc-edit-${tabId}">
                   <i class="fas fa-edit"></i> ${game.i18n.localize("lore-reference-board.DocumentTab.Edit")}
                 </button>
@@ -1678,7 +2046,7 @@ class LoreReferenceBoardApp extends Application {
                 currentPageIndex = parseInt(ev.target.value) || 0;
                 const page = pages[currentPageIndex];
                 let enriched2;
-                try { enriched2 = await enrichJournalPage(page, entry); }
+                try { enriched2 = await loreRefBoard_enrichJournalPage(page, entry); }
                 catch { enriched2 = '<p style="color:#888;font-style:italic">Could not render page.</p>'; }
                 const contentEl = pane.querySelector(`#lrt-doc-content-${tabId}`);
                 if (contentEl) contentEl.innerHTML = enriched2;
@@ -1689,7 +2057,7 @@ class LoreReferenceBoardApp extends Application {
                 if (updatedPage.parent?.id !== docRef) return;
                 if (updatedPage.id !== pages[currentPageIndex]?.id) return;
                 let enriched3;
-                try { enriched3 = await enrichJournalPage(updatedPage, entry); }
+                try { enriched3 = await loreRefBoard_enrichJournalPage(updatedPage, entry); }
                 catch { enriched3 = '<p style="color:#888;font-style:italic">Could not render page.</p>'; }
                 const contentEl = pane.querySelector(`#lrt-doc-content-${tabId}`);
                 if (contentEl) contentEl.innerHTML = enriched3;
@@ -1724,7 +2092,7 @@ class LoreReferenceBoardApp extends Application {
             pane.innerHTML = `
               <div class="lrt-doc-file-bar">
                 <i class="fas fa-file-pdf lrt-doc-file-icon"></i>
-                <span class="lrt-doc-file-name">${escapeHtml(docRef.split("/").pop())}</span>
+                <span class="lrt-doc-file-name">${loreRefBoard_escapeHtml(docRef.split("/").pop())}</span>
                 <button type="button" class="lrt-doc-btn lrt-doc-btn--unlink" id="lrt-doc-change-${tabId}">
                   <i class="fas fa-folder-open"></i> ${game.i18n.localize("lore-reference-board.DocumentTab.Change")}
                 </button>
@@ -1733,7 +2101,7 @@ class LoreReferenceBoardApp extends Application {
                 </button>
               </div>
               <div class="lrt-doc-pdf-wrapper">
-                <iframe class="lrt-doc-pdf-frame" src="${blobUrl}" title="${escapeHtml(docRef.split("/").pop())}"></iframe>
+                <iframe class="lrt-doc-pdf-frame" src="${blobUrl}" title="${loreRefBoard_escapeHtml(docRef.split("/").pop())}"></iframe>
               </div>`;
 
             // Revoke the blob URL when the board re-renders
@@ -1742,9 +2110,9 @@ class LoreReferenceBoardApp extends Application {
             });
 
             pane.querySelector(`#lrt-doc-change-${tabId}`)?.addEventListener("click", async () => {
-                const picked = await pickDocFilePath(docRef);
+                const picked = await loreRefBoard_pickDocFilePath(docRef);
                 if (!picked) return;
-                const newType = _lrbDocTypeForExt(picked.split(".").pop());
+                const newType = _loreRefBoard_docTypeForExt(picked.split(".").pop());
                 if (newType) { await saveDocToTab(newType, picked); await this.render(true); }
                 else ui.notifications.warn(game.i18n.localize("lore-reference-board.DocumentTab.UnsupportedFile"));
             });
@@ -1770,7 +2138,7 @@ class LoreReferenceBoardApp extends Application {
             pane.innerHTML = `
               <div class="lrt-doc-file-bar">
                 <i class="fas fa-file-alt lrt-doc-file-icon"></i>
-                <span class="lrt-doc-file-name">${escapeHtml(docRef.split("/").pop())}</span>
+                <span class="lrt-doc-file-name">${loreRefBoard_escapeHtml(docRef.split("/").pop())}</span>
                 <button type="button" class="lrt-doc-btn lrt-doc-btn--unlink" id="lrt-doc-change-${tabId}">
                   <i class="fas fa-folder-open"></i> ${game.i18n.localize("lore-reference-board.DocumentTab.Change")}
                 </button>
@@ -1779,13 +2147,13 @@ class LoreReferenceBoardApp extends Application {
                 </button>
               </div>
               <div class="lrt-doc-txt-wrapper">
-                <pre class="lrt-doc-txt-content">${escapeHtml(fileContent)}</pre>
+                <pre class="lrt-doc-txt-content">${loreRefBoard_escapeHtml(fileContent)}</pre>
               </div>`;
 
             pane.querySelector(`#lrt-doc-change-${tabId}`)?.addEventListener("click", async () => {
-                const picked = await pickDocFilePath(docRef);
+                const picked = await loreRefBoard_pickDocFilePath(docRef);
                 if (!picked) return;
-                const newType = _lrbDocTypeForExt(picked.split(".").pop());
+                const newType = _loreRefBoard_docTypeForExt(picked.split(".").pop());
                 if (newType) { await saveDocToTab(newType, picked); await this.render(true); }
                 else ui.notifications.warn(game.i18n.localize("lore-reference-board.DocumentTab.UnsupportedFile"));
             });
@@ -1800,7 +2168,7 @@ class LoreReferenceBoardApp extends Application {
             pane.innerHTML = `
               <div class="lrt-doc-file-bar">
                 <i class="fas fa-image lrt-doc-file-icon"></i>
-                <span class="lrt-doc-file-name">${escapeHtml(docRef.split("/").pop())}</span>
+                <span class="lrt-doc-file-name">${loreRefBoard_escapeHtml(docRef.split("/").pop())}</span>
                 <button type="button" class="lrt-doc-btn lrt-doc-btn--unlink" id="lrt-doc-change-${tabId}">
                   <i class="fas fa-folder-open"></i> ${game.i18n.localize("lore-reference-board.DocumentTab.Change")}
                 </button>
@@ -1809,13 +2177,13 @@ class LoreReferenceBoardApp extends Application {
                 </button>
               </div>
               <div class="lrt-doc-image-wrapper">
-                <img class="lrt-doc-standalone-img" src="${escapeHtml(docRef)}" alt="${escapeHtml(docRef.split("/").pop())}" />
+                <img class="lrt-doc-standalone-img" src="${loreRefBoard_escapeHtml(docRef)}" alt="${loreRefBoard_escapeHtml(docRef.split("/").pop())}" />
               </div>`;
 
             pane.querySelector(`#lrt-doc-change-${tabId}`)?.addEventListener("click", async () => {
-                const picked = await pickDocFilePath(docRef);
+                const picked = await loreRefBoard_pickDocFilePath(docRef);
                 if (!picked) return;
-                const newType = _lrbDocTypeForExt(picked.split(".").pop());
+                const newType = _loreRefBoard_docTypeForExt(picked.split(".").pop());
                 if (newType) { await saveDocToTab(newType, picked); await this.render(true); }
                 else ui.notifications.warn(game.i18n.localize("lore-reference-board.DocumentTab.UnsupportedFile"));
             });
@@ -1847,13 +2215,13 @@ class LoreReferenceBoardApp extends Application {
             }
 
             let htmlContent;
-            try { htmlContent = window.marked?.parse(mdText) ?? `<pre>${escapeHtml(mdText)}</pre>`; }
-            catch { htmlContent = `<pre>${escapeHtml(mdText)}</pre>`; }
+            try { htmlContent = window.marked?.parse(mdText) ?? `<pre>${loreRefBoard_escapeHtml(mdText)}</pre>`; }
+            catch { htmlContent = `<pre>${loreRefBoard_escapeHtml(mdText)}</pre>`; }
 
             pane.innerHTML = `
               <div class="lrt-doc-file-bar">
                 <i class="fas fa-file-lines lrt-doc-file-icon"></i>
-                <span class="lrt-doc-file-name">${escapeHtml(docRef.split("/").pop())}</span>
+                <span class="lrt-doc-file-name">${loreRefBoard_escapeHtml(docRef.split("/").pop())}</span>
                 <button type="button" class="lrt-doc-btn lrt-doc-btn--unlink" id="lrt-doc-change-${tabId}">
                   <i class="fas fa-folder-open"></i> ${game.i18n.localize("lore-reference-board.DocumentTab.Change")}
                 </button>
@@ -1864,9 +2232,9 @@ class LoreReferenceBoardApp extends Application {
               <div class="lrt-doc-journal-content lrt-doc-md-content">${htmlContent}</div>`;
 
             pane.querySelector(`#lrt-doc-change-${tabId}`)?.addEventListener("click", async () => {
-                const picked = await pickDocFilePath(docRef);
+                const picked = await loreRefBoard_pickDocFilePath(docRef);
                 if (!picked) return;
-                const newType = _lrbDocTypeForExt(picked.split(".").pop());
+                const newType = _loreRefBoard_docTypeForExt(picked.split(".").pop());
                 if (newType) { await saveDocToTab(newType, picked); await this.render(true); }
                 else ui.notifications.warn(game.i18n.localize("lore-reference-board.DocumentTab.UnsupportedFile"));
             });
@@ -1902,7 +2270,7 @@ class LoreReferenceBoardApp extends Application {
             pane.innerHTML = `
               <div class="lrt-doc-file-bar">
                 <i class="fas fa-code lrt-doc-file-icon"></i>
-                <span class="lrt-doc-file-name">${escapeHtml(docRef.split("/").pop())}</span>
+                <span class="lrt-doc-file-name">${loreRefBoard_escapeHtml(docRef.split("/").pop())}</span>
                 <button type="button" class="lrt-doc-btn lrt-doc-btn--unlink" id="lrt-doc-change-${tabId}">
                   <i class="fas fa-folder-open"></i> ${game.i18n.localize("lore-reference-board.DocumentTab.Change")}
                 </button>
@@ -1911,15 +2279,15 @@ class LoreReferenceBoardApp extends Application {
                 </button>
               </div>
               <div class="lrt-doc-pdf-wrapper">
-                <iframe class="lrt-doc-pdf-frame" src="${blobUrl}" title="${escapeHtml(docRef.split("/").pop())}"></iframe>
+                <iframe class="lrt-doc-pdf-frame" src="${blobUrl}" title="${loreRefBoard_escapeHtml(docRef.split("/").pop())}"></iframe>
               </div>`;
 
             Hooks.once("renderLoreReferenceBoardApp", () => { if (blobUrl) URL.revokeObjectURL(blobUrl); });
 
             pane.querySelector(`#lrt-doc-change-${tabId}`)?.addEventListener("click", async () => {
-                const picked = await pickDocFilePath(docRef);
+                const picked = await loreRefBoard_pickDocFilePath(docRef);
                 if (!picked) return;
-                const newType = _lrbDocTypeForExt(picked.split(".").pop());
+                const newType = _loreRefBoard_docTypeForExt(picked.split(".").pop());
                 if (newType) { if (blobUrl) URL.revokeObjectURL(blobUrl); await saveDocToTab(newType, picked); await this.render(true); }
                 else ui.notifications.warn(game.i18n.localize("lore-reference-board.DocumentTab.UnsupportedFile"));
             });
@@ -1944,7 +2312,7 @@ class LoreReferenceBoardApp extends Application {
                 const msg = err?.message ?? game.i18n.localize("lore-reference-board.DocumentTab.LoadFail");
                 pane.innerHTML = `<div class="lrt-doc-not-found">
                     <i class="fas fa-exclamation-triangle lrt-doc-warn-icon"></i>
-                    <p>${escapeHtml(msg)}</p>
+                    <p>${loreRefBoard_escapeHtml(msg)}</p>
                     <button type="button" class="lrt-doc-btn lrt-doc-btn--unlink" id="lrt-doc-remove-${tabId}">
                       <i class="fas fa-times"></i> ${game.i18n.localize("lore-reference-board.DocumentTab.Remove")}
                     </button>
@@ -1958,7 +2326,7 @@ class LoreReferenceBoardApp extends Application {
             pane.innerHTML = `
               <div class="lrt-doc-file-bar">
                 <i class="fas fa-file-word lrt-doc-file-icon"></i>
-                <span class="lrt-doc-file-name">${escapeHtml(docRef.split("/").pop())}</span>
+                <span class="lrt-doc-file-name">${loreRefBoard_escapeHtml(docRef.split("/").pop())}</span>
                 <button type="button" class="lrt-doc-btn lrt-doc-btn--unlink" id="lrt-doc-change-${tabId}">
                   <i class="fas fa-folder-open"></i> ${game.i18n.localize("lore-reference-board.DocumentTab.Change")}
                 </button>
@@ -1969,9 +2337,9 @@ class LoreReferenceBoardApp extends Application {
               <div class="lrt-doc-journal-content lrt-doc-docx-content">${htmlContent}</div>`;
 
             pane.querySelector(`#lrt-doc-change-${tabId}`)?.addEventListener("click", async () => {
-                const picked = await pickDocFilePath(docRef);
+                const picked = await loreRefBoard_pickDocFilePath(docRef);
                 if (!picked) return;
-                const newType = _lrbDocTypeForExt(picked.split(".").pop());
+                const newType = _loreRefBoard_docTypeForExt(picked.split(".").pop());
                 if (newType) { await saveDocToTab(newType, picked); await this.render(true); }
                 else ui.notifications.warn(game.i18n.localize("lore-reference-board.DocumentTab.UnsupportedFile"));
             });
@@ -1987,7 +2355,7 @@ class LoreReferenceBoardApp extends Application {
             pane.innerHTML = `
               <div class="lrt-doc-file-bar">
                 <i class="fas fa-globe lrt-doc-file-icon"></i>
-                <span class="lrt-doc-url-label" title="${escapeHtml(docRef)}">${escapeHtml(shortUrl)}</span>
+                <span class="lrt-doc-url-label" title="${loreRefBoard_escapeHtml(docRef)}">${loreRefBoard_escapeHtml(shortUrl)}</span>
                 <button type="button" class="lrt-doc-btn lrt-doc-btn--open-url" id="lrt-doc-openurl-${tabId}">
                   <i class="fas fa-external-link-alt"></i>
                   ${game.i18n.localize("lore-reference-board.DocumentTab.BtnOpenInBrowser")}
@@ -1996,8 +2364,8 @@ class LoreReferenceBoardApp extends Application {
                   <i class="fas fa-times"></i> ${game.i18n.localize("lore-reference-board.DocumentTab.Remove")}
                 </button>
               </div>
-              <iframe class="lrt-doc-url-frame" src="${escapeHtml(docRef)}"
-                      title="${escapeHtml(docRef)}"></iframe>`;
+              <iframe class="lrt-doc-url-frame" src="${loreRefBoard_escapeHtml(docRef)}"
+                      title="${loreRefBoard_escapeHtml(docRef)}"></iframe>`;
 
             pane.querySelector(`#lrt-doc-openurl-${tabId}`)?.addEventListener("click", () => {
                 window.open(docRef, "_blank");
@@ -2012,14 +2380,14 @@ class LoreReferenceBoardApp extends Application {
 
     // Reference Tab Render
     static REF_DOC_CFG = {
-        Actor:        { icon: "fa-person",     badgeKey: "TypeBadgeActor",     imgFn: d => d.img,                        buttons: ["open"] },
-        Cards:        { icon: "fa-layer-group",badgeKey: "TypeBadgeCards",     imgFn: d => d.img,                        buttons: ["open", "shuffle", "deal"] },
-        Item:         { icon: "fa-suitcase",   badgeKey: "TypeBadgeItem",      imgFn: d => d.img,                        buttons: ["open"] },
+        Actor: { icon: "fa-person", badgeKey: "TypeBadgeActor", imgFn: d => d.img,                        buttons: ["open"] },
+        Cards: { icon: "fa-layer-group",badgeKey: "TypeBadgeCards", imgFn: d => d.img,                        buttons: ["open", "shuffle", "deal"] },
+        Item: { icon: "fa-suitcase", badgeKey: "TypeBadgeItem", imgFn: d => d.img,                        buttons: ["open"] },
         JournalEntry: { icon: "fa-book-open",  badgeKey: "TypeBadgeJournal",   imgFn: d => null,                         buttons: ["open"] },
-        Macro:        { icon: "fa-code",       badgeKey: "TypeBadgeMacro",     imgFn: d => d.img,                        buttons: ["open", "execute"] },
-        Playlist:     { icon: "fa-music",      badgeKey: "TypeBadgePlaylist",  imgFn: d => null,                         buttons: ["open"] },
-        RollTable:    { icon: "fa-table-list", badgeKey: "TypeBadgeRollTable", imgFn: d => d.img,                        buttons: ["open", "roll"] },
-        Scene:        { icon: "fa-map",        badgeKey: "TypeBadgeScene",     imgFn: d => d.thumb ?? d.background?.src, buttons: ["open", "activate"] },
+        Macro: { icon: "fa-code", badgeKey: "TypeBadgeMacro", imgFn: d => d.img,                        buttons: ["open", "execute"] },
+        Playlist: { icon: "fa-music", badgeKey: "TypeBadgePlaylist",  imgFn: d => null,                         buttons: ["open"] },
+        RollTable: { icon: "fa-table-list", badgeKey: "TypeBadgeRollTable", imgFn: d => d.img,                        buttons: ["open", "roll"] },
+        Scene: { icon: "fa-map", badgeKey: "TypeBadgeScene", imgFn: d => d.thumb ?? d.background?.src, buttons: ["open", "activate"] },
     };
 
     static REF_ACCEPTED_TYPES = new Set(["Actor", "Cards", "Item", "JournalEntry", "JournalEntryPage", "Macro", "Playlist", "RollTable", "Scene"]);
@@ -2040,13 +2408,13 @@ class LoreReferenceBoardApp extends Application {
                 row: 1, col: 1, rowSpan: 1, colSpan: 1,
                 docUuid: tab.docUuid, docType: tab.docType,
             }];
-            const all = await loadTabs();
+            const all = await loreRefBoard_loadTabs();
             const idx = all.findIndex(t => t.id === tabId);
             if (idx !== -1) {
                 all[idx].cells = cells;
                 delete all[idx].docUuid;
                 delete all[idx].docType;
-                await saveTabs(all);
+                await loreRefBoard_saveTabs(all);
             }
         }
 
@@ -2100,14 +2468,14 @@ class LoreReferenceBoardApp extends Application {
                 return `
                 <div class="lrt-ref-cell lrt-ref-cell--inline-content" style="${gs}" data-cell-id="${cell.id}">
                   <div class="lrt-ref-cell-header">
-                    <span class="lrt-ref-type-badge lrt-ref-badge--${escapeHtml(typeKey)}">${escapeHtml(badgeLabel)}</span>
-                    <span class="lrt-ref-cell-hdr-name" title="${escapeHtml(fileName)}">${escapeHtml(fileName)}</span>
+                    <span class="lrt-ref-type-badge lrt-ref-badge--${loreRefBoard_escapeHtml(typeKey)}">${loreRefBoard_escapeHtml(badgeLabel)}</span>
+                    <span class="lrt-ref-cell-hdr-name" title="${loreRefBoard_escapeHtml(fileName)}">${loreRefBoard_escapeHtml(fileName)}</span>
                     <div class="lrt-ref-cell-hdr-btns"></div>
                     <button type="button" class="lrt-ref-cell-edit-btn" data-cell-id="${cell.id}" title="${LG("EditCellTitle")}">
                       <i class="fas fa-pencil-alt"></i>
                     </button>
                   </div>
-                  <div class="lrt-ref-cell-content lrt-ref-cell-content--file" data-cell-id="${cell.id}" data-file-type="${escapeHtml(fType)}">
+                  <div class="lrt-ref-cell-content lrt-ref-cell-content--file" data-cell-id="${cell.id}" data-file-type="${loreRefBoard_escapeHtml(fType)}">
                     <p style="color:#555;font-style:italic;font-size:11px;padding:4px 0">Loading…</p>
                   </div>
                 </div>`;
@@ -2128,7 +2496,7 @@ class LoreReferenceBoardApp extends Application {
                 </div>`;
             }
 
-            const cfg     = LoreReferenceBoardApp.REF_DOC_CFG[cell.docType] ??
+            const cfg     = LoreRefBoardApp.REF_DOC_CFG[cell.docType] ??
                 { icon: "fa-link", badgeKey: "TypeBadgeActor", imgFn: () => null, buttons: ["open"] };
             const badge   = L(cfg.badgeKey);
             const typeKey = cell.docType ?? "unknown";
@@ -2146,8 +2514,8 @@ class LoreReferenceBoardApp extends Application {
                 return `
                 <div class="lrt-ref-cell lrt-ref-cell--inline-content" style="${gs}" data-cell-id="${cell.id}">
                   <div class="lrt-ref-cell-header">
-                    <span class="lrt-ref-type-badge lrt-ref-badge--${typeKey}">${escapeHtml(badge)}</span>
-                    <span class="lrt-ref-cell-hdr-name" title="${escapeHtml(doc.name ?? "")}">${escapeHtml(doc.name ?? "")}</span>
+                    <span class="lrt-ref-type-badge lrt-ref-badge--${typeKey}">${loreRefBoard_escapeHtml(badge)}</span>
+                    <span class="lrt-ref-cell-hdr-name" title="${loreRefBoard_escapeHtml(doc.name ?? "")}">${loreRefBoard_escapeHtml(doc.name ?? "")}</span>
                     <div class="lrt-ref-cell-hdr-btns">${hdrBtnsHtml}</div>
                     <button type="button" class="lrt-ref-cell-edit-btn" data-cell-id="${cell.id}" title="${LG("EditCellTitle")}">
                       <i class="fas fa-pencil-alt"></i>
@@ -2178,15 +2546,15 @@ class LoreReferenceBoardApp extends Application {
             return `
             <div class="lrt-ref-cell" style="${gs}" data-cell-id="${cell.id}">
               <div class="lrt-ref-cell-header">
-                <span class="lrt-ref-type-badge lrt-ref-badge--${typeKey}">${escapeHtml(badge)}</span>
+                <span class="lrt-ref-type-badge lrt-ref-badge--${typeKey}">${loreRefBoard_escapeHtml(badge)}</span>
                 <button type="button" class="lrt-ref-cell-edit-btn" data-cell-id="${cell.id}" title="${LG("EditCellTitle")}">
                   <i class="fas fa-pencil-alt"></i>
                 </button>
               </div>
               <div class="lrt-ref-cell-body">
-                ${showImg ? `<div class="lrt-ref-cell-img-wrap"><img class="lrt-ref-cell-img" src="${escapeHtml(imgSrc)}" alt="${escapeHtml(doc.name ?? "")}" /></div>` : ""}
+                ${showImg ? `<div class="lrt-ref-cell-img-wrap"><img class="lrt-ref-cell-img" src="${loreRefBoard_escapeHtml(imgSrc)}" alt="${loreRefBoard_escapeHtml(doc.name ?? "")}" /></div>` : ""}
                 <div class="lrt-ref-cell-info">
-                  <div class="lrt-ref-cell-name">${escapeHtml(doc.name ?? "")}</div>
+                  <div class="lrt-ref-cell-name">${loreRefBoard_escapeHtml(doc.name ?? "")}</div>
                   <div class="lrt-ref-cell-actions">${btnHtml}</div>
                 </div>
               </div>
@@ -2220,18 +2588,18 @@ class LoreReferenceBoardApp extends Application {
                         if (fType === "pdf") {
                             const blob   = await resp.blob();
                             const blobUrl = URL.createObjectURL(blob);
-                            contentEl.innerHTML = `<iframe class="lrt-ref-cell-iframe" src="${blobUrl}" title="${escapeHtml(fPath.split("/").pop())}"></iframe>`;
+                            contentEl.innerHTML = `<iframe class="lrt-ref-cell-iframe" src="${blobUrl}" title="${loreRefBoard_escapeHtml(fPath.split("/").pop())}"></iframe>`;
                             Hooks.once("renderLoreReferenceBoardApp", () => URL.revokeObjectURL(blobUrl));
                         } else if (fType === "md") {
                             const mdText = await resp.text();
                             let html;
-                            try   { html = window.marked?.parse(mdText) ?? `<pre>${escapeHtml(mdText)}</pre>`; }
-                            catch { html = `<pre>${escapeHtml(mdText)}</pre>`; }
+                            try   { html = window.marked?.parse(mdText) ?? `<pre>${loreRefBoard_escapeHtml(mdText)}</pre>`; }
+                            catch { html = `<pre>${loreRefBoard_escapeHtml(mdText)}</pre>`; }
                             contentEl.innerHTML = html;
                         } else {
                             // txt (and any other unrecognised type)
                             const text = await resp.text();
-                            contentEl.innerHTML = `<pre class="lrt-doc-txt-content">${escapeHtml(text)}</pre>`;
+                            contentEl.innerHTML = `<pre class="lrt-doc-txt-content">${loreRefBoard_escapeHtml(text)}</pre>`;
                         }
                     } catch {
                         contentEl.innerHTML = `<p class="lrt-ref-cell-load-fail">${LG("FileCellLoadFail")}</p>`;
@@ -2247,17 +2615,17 @@ class LoreReferenceBoardApp extends Application {
 
             if (cell.docType === "JournalEntry") {
                 (async () => {
-                    const pages     = getJournalPages(doc);
+                    const pages     = loreRefBoard_getJournalPages(doc);
                     const firstPage = pages[0] ?? null;
-                    contentEl.innerHTML = await enrichJournalPage(firstPage, doc);
+                    contentEl.innerHTML = await loreRefBoard_enrichJournalPage(firstPage, doc);
                     // Inject page-nav bar above the content area if the journal has multiple pages.
                     // Pass doc.uuid so compendium journals (e.g. Compendium.pf2e.journals.JournalEntry.xxx)
                     // are resolved correctly,  game.journal.get() only finds world entries.
-                    await wirePageNav(contentEl, doc.uuid);
+                    await loreRefBoard_wirePageNav(contentEl, doc.uuid);
                 })().catch(err =>
                     console.error("[lore-reference-board] Journal cell render error:", err));
             } else if (cell.docType === "RollTable") {
-                contentEl.innerHTML = _renderRollTableHtml(doc);
+                contentEl.innerHTML = _loreRefBoard_renderRollTableHtml(doc);
             }
         }
 
@@ -2298,7 +2666,7 @@ class LoreReferenceBoardApp extends Application {
                 await doc.draw?.();
                 // Refresh the table display to reflect newly drawn entries
                 const contentEl = pane.querySelector(`.lrt-ref-cell-content[data-cell-id="${btn.dataset.cellId}"]`);
-                if (contentEl) contentEl.innerHTML = _renderRollTableHtml(doc);
+                if (contentEl) contentEl.innerHTML = _loreRefBoard_renderRollTableHtml(doc);
             });
         });
 
@@ -2460,7 +2828,7 @@ class LoreReferenceBoardApp extends Application {
         const LG = key => game.i18n.localize(`lore-reference-board.ReferenceGrid.${key}`);
 
         // Load current cells to show occupancy in the picker
-        const allTabsInit = await loadTabs();
+        const allTabsInit = await loreRefBoard_loadTabs();
         const tabIdxInit  = allTabsInit.findIndex(t => t.id === tabId);
         const initCells   = tabIdxInit !== -1 ? (allTabsInit[tabIdxInit].cells ?? []) : [];
 
@@ -2531,18 +2899,18 @@ class LoreReferenceBoardApp extends Application {
                         let data;
                         try { data = JSON.parse(ev.dataTransfer.getData("text/plain")); }
                         catch { ui.notifications.warn(L("DropReadFail")); return; }
-                        if (!LoreReferenceBoardApp.REF_ACCEPTED_TYPES.has(data.type)) { ui.notifications.warn(L("DropWarn")); return; }
+                        if (!LoreRefBoardApp.REF_ACCEPTED_TYPES.has(data.type)) { ui.notifications.warn(L("DropWarn")); return; }
                         let doc; try { doc = await fromUuid(data.uuid ?? ""); } catch { doc = null; }
                         if (!doc) { ui.notifications.warn(L("DropWarn")); return; }
                         const rd = doc.documentName === "JournalEntryPage" ? doc.parent : doc;
                         const rt = rd?.documentName ?? null;
-                        if (!rt || !LoreReferenceBoardApp.REF_DOC_CFG[rt]) { ui.notifications.warn(L("DropWarn")); return; }
+                        if (!rt || !LoreRefBoardApp.REF_DOC_CFG[rt]) { ui.notifications.warn(L("DropWarn")); return; }
                         pendingUuid = rd.uuid; pendingType = rt;
                         // Clear any pending file when a doc is linked
                         pendingFilePath = null; pendingFileType = null;
                         const fpathElDrop = root.querySelector(`#lrt-rcd-fpath-${uid}`);
                         if (fpathElDrop) fpathElDrop.value = "";
-                        const cfg = LoreReferenceBoardApp.REF_DOC_CFG[rt];
+                        const cfg = LoreRefBoardApp.REF_DOC_CFG[rt];
                         dz.classList.add("lrt-ref-dz--linked");
                         root.querySelector(`#lrt-rcd-icon-${uid}`).className = `fas ${cfg.icon} lrt-ref-dz-icon lrt-ref-dz-icon--linked`;
                         root.querySelector(`#lrt-rcd-name-${uid}`).textContent = rd.name ?? "";
@@ -2569,13 +2937,13 @@ class LoreReferenceBoardApp extends Application {
                     };
 
                     fpathEl?.addEventListener("change", () => {
-                        const path = normalizeLrbPath(fpathEl.value);
+                        const path = loreRefBoard_normalizePath(fpathEl.value);
                         if (path) applyFilePath(path);
                         else { pendingFilePath = null; pendingFileType = null; }
                     });
                     fbrowseEl?.addEventListener("click", async () => {
-                        const picked = await pickRefFilePath(fpathEl?.value || "modules/");
-                        if (picked) applyFilePath(normalizeLrbPath(picked));
+                        const picked = await loreRefBoard_pickRefFilePath(fpathEl?.value || "modules/");
+                        if (picked) applyFilePath(loreRefBoard_normalizePath(picked));
                     });
                 },
             }, { width: 400, classes: ["app","window-app","dialog","lore-rb-dialog"] }).render(true);
@@ -2587,7 +2955,7 @@ class LoreReferenceBoardApp extends Application {
         if (!span) { ui.notifications.warn(LG("SpanNotSelected")); return; }
 
         const { row, col, rowSpan, colSpan } = span;
-        const allTabs = await loadTabs();
+        const allTabs = await loreRefBoard_loadTabs();
         const idx     = allTabs.findIndex(t => t.id === tabId);
         if (idx === -1) return;
         const cells   = allTabs[idx].cells ?? [];
@@ -2599,7 +2967,7 @@ class LoreReferenceBoardApp extends Application {
             ? { id: foundry.utils.randomID(), row, col, rowSpan, colSpan, docType: "file", filePath: pendingFilePath, fileType: pendingFileType }
             : { id: foundry.utils.randomID(), row, col, rowSpan, colSpan, docUuid: pendingUuid, docType: pendingType };
         allTabs[idx].cells = [...cells, newCell];
-        await saveTabs(allTabs);
+        await loreRefBoard_saveTabs(allTabs);
         await this.render(true);
     }
 
@@ -2611,7 +2979,7 @@ class LoreReferenceBoardApp extends Application {
         const LG = key => game.i18n.localize(`lore-reference-board.ReferenceGrid.${key}`);
 
         // Load fresh data
-        const allTabs = await loadTabs();
+        const allTabs = await loreRefBoard_loadTabs();
         const tabIdx  = allTabs.findIndex(t => t.id === tabId);
         if (tabIdx === -1) return;
         const cells = allTabs[tabIdx].cells ?? [];
@@ -2636,21 +3004,21 @@ class LoreReferenceBoardApp extends Application {
 
         // Initial drop-zone display
         const initLinked = !!currentDoc && !isFileCell;
-        const initCfg    = LoreReferenceBoardApp.REF_DOC_CFG[cell.docType] ?? { icon: "fa-link", badgeKey: "TypeBadgeActor" };
+        const initCfg    = LoreRefBoardApp.REF_DOC_CFG[cell.docType] ?? { icon: "fa-link", badgeKey: "TypeBadgeActor" };
 
         const content = `
           <div class="lrt-ref-cell-dialog">
             <div class="lrt-ref-cell-dz${initLinked ? " lrt-ref-dz--linked" : ""}" id="lrt-rcd-dz-${uid}">
               <i class="fas ${initCfg.icon} lrt-ref-dz-icon${initLinked ? " lrt-ref-dz-icon--linked" : ""}" id="lrt-rcd-icon-${uid}"></i>
-              <p class="lrt-ref-dz-primary" id="lrt-rcd-name-${uid}">${initLinked ? escapeHtml(currentDoc.name ?? "") : LG("DropToLink")}</p>
-              <p class="lrt-ref-dz-sub"    id="lrt-rcd-sub-${uid}">${initLinked ? escapeHtml(L(initCfg.badgeKey)) : L("DropSubtext")}</p>
+              <p class="lrt-ref-dz-primary" id="lrt-rcd-name-${uid}">${initLinked ? loreRefBoard_escapeHtml(currentDoc.name ?? "") : LG("DropToLink")}</p>
+              <p class="lrt-ref-dz-sub"    id="lrt-rcd-sub-${uid}">${initLinked ? loreRefBoard_escapeHtml(L(initCfg.badgeKey)) : L("DropSubtext")}</p>
             </div>
             <div class="lrt-ref-file-section">
               <div class="lrt-ref-file-divider">${LG("FileCellDivider")}</div>
               <p class="lrt-ref-file-instruct">${LG("FileCellInstruct")}</p>
               <div class="lrt-ref-file-row">
                 <input type="text" class="lrt-ref-file-path" id="lrt-rcd-fpath-${uid}"
-                       value="${escapeHtml(pendingFilePath ?? "")}"
+                       value="${loreRefBoard_escapeHtml(pendingFilePath ?? "")}"
                        placeholder="${LG("FileCellPathPlaceholder")}" />
                 <button type="button" class="lrt-ref-file-browse-btn" id="lrt-rcd-fbrowse-${uid}">
                   <i class="fas fa-folder-open"></i> ${LG("FileCellBrowse")}
@@ -2696,18 +3064,18 @@ class LoreReferenceBoardApp extends Application {
                         let data;
                         try { data = JSON.parse(ev.dataTransfer.getData("text/plain")); }
                         catch { ui.notifications.warn(L("DropReadFail")); return; }
-                        if (!LoreReferenceBoardApp.REF_ACCEPTED_TYPES.has(data.type)) { ui.notifications.warn(L("DropWarn")); return; }
+                        if (!LoreRefBoardApp.REF_ACCEPTED_TYPES.has(data.type)) { ui.notifications.warn(L("DropWarn")); return; }
                         let doc; try { doc = await fromUuid(data.uuid ?? ""); } catch { doc = null; }
                         if (!doc) { ui.notifications.warn(L("DropWarn")); return; }
                         const rd = doc.documentName === "JournalEntryPage" ? doc.parent : doc;
                         const rt = rd?.documentName ?? null;
-                        if (!rt || !LoreReferenceBoardApp.REF_DOC_CFG[rt]) { ui.notifications.warn(L("DropWarn")); return; }
+                        if (!rt || !LoreRefBoardApp.REF_DOC_CFG[rt]) { ui.notifications.warn(L("DropWarn")); return; }
                         pendingUuid = rd.uuid; pendingType = rt;
                         // Clear file when a doc is linked
                         pendingFilePath = null; pendingFileType = null;
                         const fpathElDrop = root.querySelector(`#lrt-rcd-fpath-${uid}`);
                         if (fpathElDrop) fpathElDrop.value = "";
-                        const cfg = LoreReferenceBoardApp.REF_DOC_CFG[rt];
+                        const cfg = LoreRefBoardApp.REF_DOC_CFG[rt];
                         dz.classList.add("lrt-ref-dz--linked");
                         root.querySelector(`#lrt-rcd-icon-${uid}`).className = `fas ${cfg.icon} lrt-ref-dz-icon lrt-ref-dz-icon--linked`;
                         root.querySelector(`#lrt-rcd-name-${uid}`).textContent = rd.name ?? "";
@@ -2734,13 +3102,13 @@ class LoreReferenceBoardApp extends Application {
                     };
 
                     fpathEl?.addEventListener("change", () => {
-                        const path = normalizeLrbPath(fpathEl.value);
+                        const path = loreRefBoard_normalizePath(fpathEl.value);
                         if (path) applyFilePath(path);
                         else { pendingFilePath = null; pendingFileType = null; }
                     });
                     fbrowseEl?.addEventListener("click", async () => {
-                        const picked = await pickRefFilePath(fpathEl?.value || "modules/");
-                        if (picked) applyFilePath(normalizeLrbPath(picked));
+                        const picked = await loreRefBoard_pickRefFilePath(fpathEl?.value || "modules/");
+                        if (picked) applyFilePath(loreRefBoard_normalizePath(picked));
                     });
                 },
             }, { width: 400, classes: ["app","window-app","dialog","lore-rb-dialog"] }).render(true);
@@ -2750,7 +3118,7 @@ class LoreReferenceBoardApp extends Application {
 
         if (result === "delete") {
             allTabs[tabIdx].cells = cells.filter(c => c.id !== cellId);
-            await saveTabs(allTabs);
+            await loreRefBoard_saveTabs(allTabs);
             await this.render(true);
             return;
         }
@@ -2767,7 +3135,7 @@ class LoreReferenceBoardApp extends Application {
                 ? { id: cell.id, row, col, rowSpan, colSpan, docType: "file", filePath: pendingFilePath, fileType: pendingFileType }
                 : { id: cell.id, row, col, rowSpan, colSpan, docUuid: pendingUuid, docType: pendingType };
             allTabs[tabIdx].cells = cells.map(c => c.id === cellId ? updatedCell : c);
-            await saveTabs(allTabs);
+            await loreRefBoard_saveTabs(allTabs);
             await this.render(true);
         }
     }
@@ -2791,7 +3159,7 @@ class LoreReferenceBoardApp extends Application {
               <div>
                 <label style="display:block;margin-bottom:4px;font-weight:bold">${L("DealHandLabel")}</label>
                 <select name="targetHand" style="width:100%;color-scheme:dark">
-                  ${hands.map(h => `<option value="${escapeHtml(h.id)}">${escapeHtml(h.name)}</option>`).join("")}
+                  ${hands.map(h => `<option value="${loreRefBoard_escapeHtml(h.id)}">${loreRefBoard_escapeHtml(h.name)}</option>`).join("")}
                 </select>
               </div>
               <div>
@@ -2869,13 +3237,13 @@ class LoreReferenceBoardApp extends Application {
         });
 
         if (pin.icon) {
-            if (isSvgIcon(pin.icon)) {
+            if (loreRefBoard_isSvgIcon(pin.icon)) {
                 const OLD_SVG_PREFIX = "modules/lore-reference-board/assets/ui-icons/";
                 const iconUrl = pin.icon.startsWith(OLD_SVG_PREFIX)
                     ? `icons/svg/${pin.icon.slice(OLD_SVG_PREFIX.length)}`
                     : pin.icon;
 
-                const svgData = await fetchSvgData(iconUrl);
+                const svgData = await loreRefBoard_fetchSvgData(iconUrl);
                 if (svgData) {
                     $el.html(`<span class="lr-pin-svg-wrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="${svgData.viewBox}" class="lr-pin-svg-icon">${svgData.inner}</svg></span>`);
                 }
@@ -2894,9 +3262,9 @@ class LoreReferenceBoardApp extends Application {
         const mapWrapEl  = html.find("#lr-map-wrap")[0];
         const containerW = mapWrapEl?.offsetWidth  ?? 0;
         const containerH = mapWrapEl?.offsetHeight ?? 0;
-        const imgRect    = computeImageRect(containerW, containerH, this._imgNaturalW, this._imgNaturalH);
+        const imgRect    = loreRefBoard_computeImageRect(containerW, containerH, this._imgNaturalW, this._imgNaturalH);
 
-        const pins = await loadPinsForTab(this.activeTab);
+        const pins = await loreRefBoard_loadPinsForTab(this.activeTab);
 
         let migrated = false;
         for (const pin of pins) {
@@ -2909,7 +3277,7 @@ class LoreReferenceBoardApp extends Application {
                 migrated   = true;
             }
         }
-        if (migrated) await savePinsForTab(this.activeTab, pins);
+        if (migrated) await loreRefBoard_savePinsForTab(this.activeTab, pins);
 
         let pinLayer = html.find("#lr-pin-layer");
         if (!pinLayer.length) {
@@ -2935,7 +3303,7 @@ class LoreReferenceBoardApp extends Application {
         const pos = this.position;
         if (pos?.width && pos?.height) {
             try {
-                await game.settings.set(MODULE_SCOPE, "windowPos", {
+                await game.settings.set(loreRefBoard_MODULE_SCOPE, "windowPos", {
                     left:   pos.left,
                     top:    pos.top,
                     width:  pos.width,

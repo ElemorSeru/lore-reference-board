@@ -23,17 +23,46 @@ if (typeof window.mammoth === "undefined") {
     document.head.appendChild(_mm);
 }
 
-const MODULE_SCOPE = "lore-reference-board";
+const loreRefBoard_MODULE_SCOPE = "lore-reference-board";
+
+// Default relationship types
+const loreRefBoard_DEFAULT_RELATIONSHIP_TYPES = [
+    { id: "ally", label: "Allies", lineStyle: "solid", color: "#5fb86a" },
+    { id: "rival", label: "Rivals", lineStyle: "dashed", color: "#d9534f" },
+    { id: "trade-partners", label: "Trade Partners", lineStyle: "solid", color: "#e8b339" },
+    { id: "vassal-liege", label: "Vassal / Liege", lineStyle: "dash-dot", color: "#7a6a9e" },
+    { id: "blood-feud", label: "Blood Feud", lineStyle: "dashed", color: "#a4133c" },
+    { id: "truce-ceasefire", label: "Truce / Ceasefire", lineStyle: "dotted", color: "#f4a261" },
+    { id: "mentor-student", label: "Mentor & Student", lineStyle: "solid", color: "#4a90d9" },
+    { id: "spy-network", label: "Spy Network", lineStyle: "dotted", color: "#6c5ce7" },
+    { id: "debtor", label: "Debtor", lineStyle: "dash-dot", color: "#b8860b" },
+    { id: "old-allies", label: "Old Allies (Estranged)", lineStyle: "dotted", color: "#9aa6b2" },
+    { id: "bound-by-oath", label: "Bound by Oath", lineStyle: "solid", color: "#2f92fd" },
+    { id: "unknown", label: "Unknown", lineStyle: "dashed", color: "#c0c0c0" },
+];
+
+// 5-tier defaults
+const loreRefBoard_DEFAULT_STANDING_TIERS = [
+    { id: "hostile", label: "Hostile", min: null, max: -41 },
+    { id: "unfriendly", label: "Unfriendly", min: -40, max: -21 },
+    { id: "neutral", label: "Neutral", min: -20, max: 20 },
+    { id: "friendly", label: "Friendly", min: 21, max: 40 },
+    { id: "allied", label: "Allied", min: 41, max: null },
+];
 
 Hooks.once("init", () => {
-    game.settings.register(MODULE_SCOPE, "tabs",       { name: "Lore Board Tabs",        scope: "world", config: false, type: Object, default: [] });
-    game.settings.register(MODULE_SCOPE, "pins",       { name: "Lore Board Pins",        scope: "world", config: false, type: Object, default: {} });
-    game.settings.register(MODULE_SCOPE, "image-lore", { name: "Lore Board Image Links", scope: "world", config: false, type: Object, default: {} });
-    game.settings.register(MODULE_SCOPE, "imageJournals", { name: "Image Journal Links", scope: "world", config: false, type: Object, default: {} });
-    game.settings.register(MODULE_SCOPE, "tabViews",   { name: "Tab Views (legacy)",     scope: "world", config: false, type: Object, default: {} });
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "tabs",       { name: "Lore Board Tabs",        scope: "world", config: false, type: Object, default: [] });
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "pins",       { name: "Lore Board Pins",        scope: "world", config: false, type: Object, default: {} });
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "image-lore", { name: "Lore Board Image Links", scope: "world", config: false, type: Object, default: {} });
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "imageJournals", { name: "Image Journal Links", scope: "world", config: false, type: Object, default: {} });
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "tabViews",   { name: "Tab Views (legacy)",     scope: "world", config: false, type: Object, default: {} });
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "factionBoardData", { name: "Faction Board Data", scope: "world", config: false, type: Object, default: {} });
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "relationshipTypes", { name: "Relationship Types", scope: "world", config: false, type: Object, default: loreRefBoard_DEFAULT_RELATIONSHIP_TYPES });
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "factionStandingTiers", { name: "Faction Standing Tiers", scope: "world", config: false, type: Object, default: loreRefBoard_DEFAULT_STANDING_TIERS });
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "factionStandingCollapsed", { name: "Faction Standing Collapsed", scope: "client", config: false, type: Object, default: {} });
 
     // Maximum number of tab rows before the tab bar starts scrolling.
-    game.settings.register(MODULE_SCOPE, "maxTabRows", {
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "maxTabRows", {
         name: game.i18n.localize("lore-reference-board.Settings.MaxTabRows.Name"),
         hint: game.i18n.localize("lore-reference-board.Settings.MaxTabRows.Hint"),
         scope:   "client",
@@ -44,12 +73,13 @@ Hooks.once("init", () => {
     });
 
 
-    game.settings.register(MODULE_SCOPE, "windowPos", {
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "windowPos", {
         scope:   "client",
         config:  false,
         type:    Object,
         default: {},
     });
+
     if (typeof Handlebars !== "undefined" && !Handlebars.helpers?.eq) {
         Handlebars.registerHelper("eq", (a, b) => a === b);
     }

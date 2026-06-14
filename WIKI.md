@@ -6,6 +6,7 @@ This guide covers how to use every part of the Lore Reference Board. If somethin
 
 - [Opening the Board](#opening-the-board)
 - [Managing Tabs](#managing-tabs)
+  - [Tab Colors](#tab-colors)
 - [Image Tabs](#image-tabs)
   - [Adding Pins](#adding-pins)
   - [Pin Icons](#pin-icons)
@@ -21,6 +22,15 @@ This guide covers how to use every part of the Lore Reference Board. If somethin
   - [Cell Types and What They Do](#cell-types-and-what-they-do)
   - [Editing or Deleting a Cell](#editing-or-deleting-a-cell)
   - [File Cells (PDF, TXT, Markdown)](#file-cells-pdf-txt-markdown)
+- [Faction Tabs](#faction-tabs)
+  - [Adding and Arranging Factions](#adding-and-arranging-factions)
+  - [Faction Settings](#faction-settings)
+  - [Tracking Standing](#tracking-standing)
+  - [Linking Entities to a Faction](#linking-entities-to-a-faction)
+  - [Relationships](#relationships)
+  - [Relationship Types](#relationship-types)
+  - [Standing Tiers](#standing-tiers)
+  - [Party Standing Panel](#party-standing-panel)
 - [Settings](#settings)
   - [Max Tab Rows](#max-tab-rows)
   - [Import and Export](#import-and-export)
@@ -47,6 +57,7 @@ Click the `+` button at the far right of the tab bar. A dialog will appear askin
 - **Image Tab** - For maps/images you want to place pins on and use that functionlity
 - **Document Tab** - For a single full-pane document or file
 - **Reference Tab** - For a grid-based dashboard of documents/game objects (Journals, Actors, Roll Tables, Macros, etc.)
+- **Faction Tab** *(New in v1.2)* - For a relationship map of factions, NPCs, and how they stand with each other and the party
 
 After selecting a type, a second dialog will ask for a name (and an image path, if you selected the Image Tab type, and if you want to load a specific folder to start. You can always do this later). The name field must be filled before the Add button becomes active.
 
@@ -54,8 +65,28 @@ After selecting a type, a second dialog will ask for a name (and an image path, 
 
 Click the settings/gear button that appears on the right side of the main window. Your current active tab settings will open the tab settings dialog. From there you can rename the tab or delete it. Deleting a tab also removes all associated pins or cell data, so be careful.
 
-**Reordering tabs (not implemented)**
-This feature is not implemented yet, but in the future, I plan to put something in to reorder the tabs.
+**Pinning a tab** *(New in v1.2)*
+
+Hover over a tab to reveal a thumbtack icon, then click it to pin the tab. Pinned tabs move to the front of the tab bar and are separated from the rest by a small divider, keeping your most-used tabs in place no matter how many others you add. Click the thumbtack again to unpin.
+
+**Reordering tabs** *(New in v1.2)*
+
+Click the reorder button (four-arrow icon) in the toolbar to enter reorder mode. While active, drag any tab and drop it before or after another to change its position. Pinned and unpinned tabs are reordered separately so you can't drag a tab across the divider between the two groups. Click the reorder button again to exit reorder mode.
+
+---
+
+### Tab Colors *(New in v1.2)*
+
+Each tab is tinted by its type so you can tell what kind of tab it is at a glance:
+
+| Type | Color |
+|---|---|
+| Image | Blue |
+| Document | Coral |
+| Reference | Purple |
+| Faction | Amber |
+
+The tint gets stronger depending on the tab's state. A faint tint for a normal tab, a slightly stronger tint once it's pinned, and the strongest tint (plus the blue underline) when it's the active tab.
 
 ---
 
@@ -67,7 +98,8 @@ An Image tab shows a single image that you can pan and zoom. It is designed for 
 
 - Scroll the mouse wheel to zoom in and out while your cursor is within the module window/image area
 - Click and drag on the image (not on a pin) to pan
-- Use the Reset button in the toolbar to return to the default view/zoom level
+- A zoom bar at the bottom of the tab shows a slider, the current zoom percentage, and a reset view button *(New in v1.2)*
+- Use the Reset button to return to the default view/zoom level
 
 **Replacing the image**
 
@@ -136,7 +168,7 @@ Right-click any thumbnail in the gallery to remove it from the folder. The file 
 
 **Clicking an image**
 
-Left clicking a thumbnail opens a larger preview of the image in a dialog. From there you have options to add specific lore for that token, copy the file path to clipboard, create the image as a Foundry token, or create a new scene using the image.
+Left clicking a thumbnail opens a larger preview of the image in a dialog. From there you have options to add specific lore for that token, copy the file path to clipboard, create a new scene using the image, or create the image as a Foundry token. If the Encounter Forge module is active, creating a token will first ask whether to create a blank actor or generate a full NPC with stats via Gm Tools: Encounter Forge. The generator opens pre-loaded with this image as the portrait and token art. *(New in v1.2)*
 
 ---
 
@@ -307,6 +339,120 @@ The Edit Cell window is the same as the Add Cell dialog with two differences:
 **To resize:** Use the span picker to draw a new rectangle. The cell being edited is shown as free in the picker so you can expand or shrink it freely. If the new size would overlap another cell, the selection turns red and Save will warn you.
 
 **To delete:** Click the Delete button. The cell is removed from the grid and the space it occupied becomes available again.
+
+---
+
+## Faction Tabs *(New in v1.2)*
+
+A Faction tab is a pannable, zoomable canvas for mapping out factions, NPCs, and how they relate to each other and the party. Factions appear as colored circles that you can freely arrange.
+
+Use the toolbar buttons across the top of the tab to add factions and relationships, configure relationship types and standing tiers, and open the party standing panel. A zoom slider, zoom percentage readout, and reset view button sit at the bottom of the canvas, the same as on Image tabs.
+
+---
+
+### Adding and Arranging Factions
+
+Click the **Add Faction** button (circle with a plus) in the toolbar to drop a new faction circle onto the canvas.
+
+- **Move** a faction by clicking and dragging it anywhere on the canvas
+- **Resize** a faction by dragging the small arrow handle at its corner (seen when you mouse over the circle)
+- Relationship lines connected to a faction follow it automatically as you move or resize it
+
+---
+
+### Faction Settings
+
+Click the settings (gear) button on a faction circle to open its settings dialog. From here you can change:
+
+- **Name** - the label shown on the circle
+- **Color** - the circle's color, picked from a color picker
+
+You can also delete the faction from this dialog. Deleting a faction also removes any relationships connected to it and cannot be undone.
+
+---
+
+### Tracking Standing
+
+Each faction circle has a rating box with `-` and `+` buttons for nudging its standing rating up or down by 1.
+
+You can also type directly into the rating box:
+
+- A plain number (e.g. `15`) sets the rating to that value
+- `+N` or `-N` (e.g. `+10`, `-5`) adds or subtracts from the current rating
+- `=N` (e.g. `=-20`) sets the rating exactly, useful if you want to type a negative number that would otherwise be read as an adjustment
+
+The rating is used to determine which [Standing Tier](#standing-tiers) the faction currently falls into.
+
+---
+
+### Linking Entities to a Faction
+
+Drag any Actor, Item, Journal Entry, or other supported Foundry document from a sidebar (or compendium) and drop it onto a faction circle to link it as a member of that faction.
+
+- Linked entities appear as small portrait tokens inside the circle
+- Click a token to open that document's sheet
+- Click the small remove (trashcan) button on a token to unlink it from the faction (the document itself is not deleted)
+- If there are more entities than fit in the circle, an overflow button appears. Click it to see the full list and open any of them
+
+---
+
+### Relationships
+
+Click **Add Relationship** (link chain) in the toolbar to enter relationship mode (the button is highlighted while active). Then:
+
+1. Click a faction to select it as the first end of the relationship
+2. Click a second, different faction to connect to
+3. A dialog opens asking you to pick the relationship type, choose one and confirm
+
+A line is drawn between the two factions, styled and colored according to the relationship type you picked. Click the button again to exit relationship mode.
+
+**Editing or deleting a relationship**
+
+Click an existing relationship line to reopen the relationship dialog. From there you can change its type or delete the relationship entirely.
+
+Relationship lines currently connect exactly two factions each. There is no support yet for a single line representing a relationship between more than two factions.
+
+---
+
+### Relationship Types
+
+Click the **Relationship Types** button (palette icon) to manage the list of relationship types available when connecting factions. Each type has:
+
+- A **name**
+- A **line style** - Solid, Dashed, Dotted, or Dash-Dot
+- A **color**
+
+You can add new types, edit existing ones, or remove types you don't need. The module ships with a default set of types: Allies, Rivals, Trade Partners, Vassal/Liege, Blood Feud, Truce/Ceasefire, Mentor & Student, and Spy Network.
+
+If no relationship types exist, you'll be prompted to add one before you can create a relationship.
+
+---
+
+### Standing Tiers
+
+Click the **Standing Tiers** button (sliders icon) to configure the rating ranges used to label faction standing (e.g. "Hostile" or "Allied").
+
+Each tier has a label and a minimum/maximum rating range. The default tiers are:
+
+| Tier | Range |
+|---|---|
+| Hostile | -41 and below |
+| Unfriendly | -40 to -21 |
+| Neutral | -20 to 20 |
+| Friendly | 21 to 40 |
+| Allied | 41 and above |
+
+You can add or remove tiers and edit the labels and ranges. Ranges must be contiguous, no gaps and no overlaps, and every tier needs both a label and a min/max value, or the dialog will show an error explaining what to fix.
+
+---
+
+### Party Standing Panel
+
+Click **Party Standing** (handshake icon) to open a side panel listing every faction on all faction tabs along with its current standing tier label (based on its rating and the configured [Standing Tiers](#standing-tiers)).
+
+- Double-click a tab's name listed above the factions of that tab within this side panel to collapse or expand its details
+- Use **Collapse All** / **Expand All** in the panel header to manage everything at once
+- Click the X in the panel header to close it
 
 ---
 

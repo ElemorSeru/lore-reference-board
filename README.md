@@ -2,6 +2,7 @@
 
 [![Patreon](https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white)](https://patreon.com/Elemor)
 [![Foundry Version](https://img.shields.io/badge/Foundry-v12-informational?style=for-the-badge)](https://foundryvtt.com)
+[![Module Version](https://img.shields.io/badge/Version-1.2.0-success?style=for-the-badge)](https://github.com/ElemorSeru/lore-reference-board/releases/latest)
 <img alt="GitHub Downloads (all assets, latest release)" src="https://img.shields.io/github/downloads/ElemorSeru/lore-reference-board/latest/total">
 
 A system agnostic Foundry VTT module built for GMs who want an organized reference board that stored all your information as well as image references of your favorite art. Keep your maps, image references,, documents, and world documents organized and accessible in one window that stays consistent no matter which scene or scenario you're running.
@@ -20,7 +21,11 @@ All data is stored world-scoped (not tied to any scene) so the board is always w
 
 ## Tab Types
 
-The board supports three types of tabs. You can have as many tabs as you need and mix types freely.
+The board supports four types of tabs. You can have as many tabs as you need and mix types freely.
+
+Tabs can also be pinned to keep them grouped at the start of the tab bar (separated by a divider from the rest), and reordered via drag-and-drop using the reorder toggle in the toolbar. *(New in v1.2)*
+
+Each tab is also color-coded by type (blue for Image, coral for Document, purple for Reference, amber for Faction), so you can tell at a glance what kind of tab you're looking at. *(New in v1.2)*
 
 ### Image Tabs
 <img width="1788" height="1194" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/ImageTabWPins.png" />
@@ -30,7 +35,9 @@ A full-view image viewer (mostly for maps of any kind, but can be any image you 
 - Linked to any journal entry in your world or compendiums journals
 - A pin gallery with image folders imported from your data directory so you can see all your references quickly
 
-Clicking a pin opens a preview dialog to help you describe things. If a journal is linked, it renders the journal content on this screen with multi-page navigation. The preview window also allows you to add additional Journals/Lore to the image, copy the image location to clipboard to be used elsewhere, create this image as a token, and/or create it as a scene.  
+Clicking a pin opens a preview dialog to help you describe things. If a journal is linked, it renders the journal content on this screen with multi-page navigation. The preview window also allows you to add additional Journals/Lore to the image, copy the image location to clipboard to be used elsewhere, create this image as a token, and/or create it as a scene.
+
+If the GM Tools: Encounter Forge module is active, creating a token offers a choice between a blank actor or a fully generated NPC (via Encounter Forge's generator, pre-loaded with the image as portrait/token). *(New in v1.2)*  
 <img width="1678" height="1044" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinGallery.png" />
 
 <img width="480" height="809" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinImagePreview.png" />
@@ -75,6 +82,23 @@ Each cell has a small pencil button in the header that opens the edit dialog. Yo
 #### Cell Placement Picker
 
 When you add or edit a cell, a visual grid picker shows the current layout and lets you draw a rectangle for where the cell should go. Click once to set the start corner, hover to preview the selection, click again to confirm. Occupied cells are shown with a striped overlay and cannot be selected. Invalid overlapping selections turn red. You can also (while editing) change the dimensions of existing cells with the pencil icon in the header.
+
+### Faction Tabs *(New in v1.2)*
+
+A freeform relationship map for tracking factions, NPCs, and how they all feel about each other and the party. Each faction is a draggable, resizable circle on a pannable/zoomable canvas.
+
+- Add factions with the **Add Faction** (plus) button. Each gets a name, a color, and a party standing rating
+- Drag a faction to reposition it, or hover over the circle to see a double arrow symbol and drag it from this corner handle to resize it
+- Adjust a faction's rating with the +/- buttons, or type directly into the rating box. You can enter a plain number, or use `+N` / `-N` to adjust the current value, or `=N` to set it exactly
+- Drag any Actor, Item, Journal Entry, or other Foundry document onto a faction circle to link it as a member/entity. Linked entities show as small portrait tokens you can click to open their sheet; an overflow button appears if there are too many to fit
+- Use **Add Relationship** (link icon) to enter link mode, then click two factions to draw a relationship line between them and choose its type
+- Click an existing relationship line to change its type or click the line while link mode is toggled off to edit/delete it
+- **Relationship Types** (palette icon) lets you add, edit, or remove the line styles (solid, dashed, dotted, dash-dot) and colors used for relationships. The module ships with a default set (Allies, Rivals, Trade Partners, Vassal/Liege, Blood Feud, Truce/Ceasefire, Mentor & Student, Spy Network)
+- **Standing Tiers** (sliders icon) lets you configure the rating ranges and labels used to describe a faction's standing (defaults: Hostile, Unfriendly, Neutral, Friendly, Allied)
+- **Party Standing** (handshake icon) opens a side panel listing every faction on all faction tabs with its current standing label, collapsible faction tab label or all at once button
+- A zoom slider and reset view button are available for the canvas, same as Image tabs
+
+Relationship lines currently connect exactly two factions each. There's no support yet for one line representing a group of factions.
 
 ---
 
