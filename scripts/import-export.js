@@ -1,3 +1,5 @@
+var { DialogV2 } = foundry.applications.api;
+
 async function _loreRefBoard_export() {
     // Flush any pending debounced pin write so the export captures the latest data.
     await _loreRefBoard_flushPins();
@@ -15,9 +17,9 @@ async function _loreRefBoard_export() {
         factionStandingTiers: _loreRefBoard_getSetting("factionStandingTiers", loreRefBoard_DEFAULT_STANDING_TIERS),
     };
 
-    const filename  = `lore-reference-board-${new Date().toISOString().slice(0, 10)}.json`;
+    const filename = `lore-reference-board-${new Date().toISOString().slice(0, 10)}.json`;
     const worldPath = `worlds/${game.world.id}`;
-    const file      = new File([JSON.stringify(payload, null, 2)], filename, { type: "application/json" });
+    const file = new File([JSON.stringify(payload, null, 2)], filename, { type: "application/json" });
 
     try {
         await FilePicker.upload("data", worldPath, file, { notify: false });
@@ -54,10 +56,10 @@ async function _loreRefBoard_import() {
 // Opens an OS file picker and parses the chosen JSON
 function _loreRefBoard_pickAndParseFile() {
     return new Promise((resolve) => {
-        const input  = document.createElement("input");
-        input.type   = "file";
+        const input = document.createElement("input");
+        input.type = "file";
         input.accept = ".json,application/json";
-        let settled  = false;
+        let settled = false;
 
         const done = (value) => {
             if (settled) return;
@@ -95,67 +97,50 @@ function _loreRefBoard_pickAndParseFile() {
 
 function _loreRefBoard_askImportMode() {
     const L = key => game.i18n.localize(`lore-reference-board.ImportExport.${key}`);
-    return new Promise((resolve) => {
-        let clicked = false;
-        new Dialog({
-            title:   L("ImportModeTitle"),
-            content: L("ImportModeHint"),
-            buttons: {
-                addTo: {
-                    label:    L("BtnAddTo"),
-                    callback: () => { clicked = true; resolve("merge"); },
-                },
-                replace: {
-                    label:    L("BtnReplace"),
-                    callback: () => { clicked = true; resolve("replace"); },
-                },
-                cancel: {
-                    label:    game.i18n.localize("lore-reference-board.Common.Cancel"),
-                    callback: () => { clicked = true; resolve(null); },
-                },
-            },
-            default: "addTo",
-            close:   () => { if (!clicked) resolve(null); },
-        }, { width: 480 }).render(true);
-    });
+    return DialogV2.wait({
+        window: { title: L("ImportModeTitle") },
+        classes: ["lore-rb-dialog"],
+        position: { width: 480 },
+        content: L("ImportModeHint"),
+        buttons: [
+            { action: "merge", label: L("BtnAddTo"), default: true, callback: () => "merge" },
+            { action: "replace", label: L("BtnReplace"), callback: () => "replace" },
+            { action: "cancel", label: game.i18n.localize("lore-reference-board.Common.Cancel") },
+        ],
+        rejectClose: false,
+    }).then(r => r ?? null);
 }
 
 //Replace All,  overwrites all 
 async function _loreRefBoard_applyReplace(d) {
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "tabs",          d.tabs          ?? []);
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "pins",          d.pins          ?? {});
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "image-lore",    d["image-lore"] ?? {});
+    await game.settings.set(loreRefBoard_MODULE_SCOPE, "tabs", d.tabs ?? []);
+    await game.settings.set(loreRefBoard_MODULE_SCOPE, "pins", d.pins ?? {});
+    await game.settings.set(loreRefBoard_MODULE_SCOPE, "image-lore", d["image-lore"] ?? {});
     await game.settings.set(loreRefBoard_MODULE_SCOPE, "imageJournals", d.imageJournals ?? {});
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "factionBoardData",     d.factionBoardData ?? {});
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "relationshipTypes",    Array.isArray(d.relationshipTypes) ? d.relationshipTypes : loreRefBoard_DEFAULT_RELATIONSHIP_TYPES);
+    await game.settings.set(loreRefBoard_MODULE_SCOPE, "factionBoardData", d.factionBoardData ?? {});
+    await game.settings.set(loreRefBoard_MODULE_SCOPE, "relationshipTypes", Array.isArray(d.relationshipTypes) ? d.relationshipTypes : loreRefBoard_DEFAULT_RELATIONSHIP_TYPES);
     await game.settings.set(loreRefBoard_MODULE_SCOPE, "factionStandingTiers", Array.isArray(d.factionStandingTiers) ? d.factionStandingTiers : loreRefBoard_DEFAULT_STANDING_TIERS);
     _loreRefBoard_invalidatePinsCache();
     _loreRefBoard_invalidateFactionDataCache();
 }
 
-//
-// Add to Existing,  appends imported tabs without touching existing ones.
-// All tab and pin IDs are regenerated to avoid collisions between worlds.
-// imageJournals links are remapped to the new pin IDs.
-// image-lore entries are merged; existing entries take precedence.
-
 async function _loreRefBoard_applyMerge(d) {
     // Flush any pending debounced pin write before reading for merge.
     await _loreRefBoard_flushPins();
-    const existingTabs     = await loreRefBoard_loadTabs();
-    const existingPins     = _loreRefBoard_getSetting("pins",          {});
-    const existingLore     = _loreRefBoard_getSetting("image-lore",    {});
+    const existingTabs = await loreRefBoard_loadTabs();
+    const existingPins = _loreRefBoard_getSetting("pins", {});
+    const existingLore = _loreRefBoard_getSetting("image-lore", {});
     const existingJournals = _loreRefBoard_getSetting("imageJournals", {});
 
-    const importedTabs     = Array.isArray(d.tabs) ? d.tabs : [];
-    const importedPins     = d.pins          ?? {};
+    const importedTabs = Array.isArray(d.tabs) ? d.tabs : [];
+    const importedPins = d.pins          ?? {};
     const importedJournals = d.imageJournals ?? {};
 
-    const newTabs     = [...existingTabs];
-    const newPins     = { ...existingPins };
+    const newTabs = [...existingTabs];
+    const newPins = { ...existingPins };
     const newJournals = { ...existingJournals };
-    const pinIdMap    = {};
-    const tabIdMap    = {};
+    const pinIdMap = {};
+    const tabIdMap = {};
 
     for (const tab of importedTabs) {
         const oldTabId = tab.id;
@@ -166,7 +151,7 @@ async function _loreRefBoard_applyMerge(d) {
         // Remap every pin under this tab to a fresh ID.
         const tabPins = Array.isArray(importedPins[oldTabId]) ? importedPins[oldTabId] : [];
         newPins[newTabId] = tabPins.map(pin => {
-            const newPinId   = foundry.utils.randomID();
+            const newPinId = foundry.utils.randomID();
             pinIdMap[pin.id] = newPinId;
             return { ...pin, id: newPinId };
         });
@@ -202,11 +187,11 @@ async function _loreRefBoard_applyMerge(d) {
     for (const t of (Array.isArray(existingTypes) ? existingTypes : [])) { if (t?.id) typeMap.set(t.id, t); }
     const newTypes = Array.from(typeMap.values());
 
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "tabs",          newTabs);
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "pins",          newPins);
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "image-lore",    newLore);
+    await game.settings.set(loreRefBoard_MODULE_SCOPE, "tabs", newTabs);
+    await game.settings.set(loreRefBoard_MODULE_SCOPE, "pins", newPins);
+    await game.settings.set(loreRefBoard_MODULE_SCOPE, "image-lore", newLore);
     await game.settings.set(loreRefBoard_MODULE_SCOPE, "imageJournals", newJournals);
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "factionBoardData",  newFactionData);
+    await game.settings.set(loreRefBoard_MODULE_SCOPE, "factionBoardData", newFactionData);
     await game.settings.set(loreRefBoard_MODULE_SCOPE, "relationshipTypes", newTypes);
     _loreRefBoard_invalidatePinsCache();
     _loreRefBoard_invalidateFactionDataCache();

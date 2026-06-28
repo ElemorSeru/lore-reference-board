@@ -8,7 +8,7 @@ async function loreRefBoard_enrichJournalPage(page, entry) {
     }
 
     if (page.type === "image") {
-        const src     = page.src ?? "";
+        const src = page.src ?? "";
         const caption = page.image?.caption ?? "";
         if (!src) return '<p style="color:#888;font-style:italic;padding:8px 0">No image source set.</p>';
         return `<div class="lrt-doc-image-page">
@@ -17,22 +17,50 @@ async function loreRefBoard_enrichJournalPage(page, entry) {
         </div>`;
     }
 
-    // Other non-text types (PDF, video, etc
+    // PDF pages in iframe
+    if (page.type === "pdf") {
+        const src = page.src ?? "";
+        if (!src) return '<p style="color:#888;font-style:italic;padding:8px 0">No PDF source set.</p>';
+        return `<iframe src="${loreRefBoard_escapeHtml(src)}"
+            style="width:100%;height:100%;min-height:400px;border:none;display:block"></iframe>`;
+    }
+
+    // Video pages in iframe
+    if (page.type === "video") {
+        const vsrc = page.src ?? page.video?.url ?? "";
+        if (!vsrc) return '<p style="color:#888;font-style:italic;padding:8px 0">No video source set.</p>';
+        const isExternal = /^https?:\/\//i.test(vsrc);
+        if (isExternal) {
+            return `<iframe src="${loreRefBoard_escapeHtml(vsrc)}" allowfullscreen
+                style="width:100%;height:100%;min-height:300px;border:none;display:block"></iframe>`;
+        }
+        return `<video controls style="width:100%;max-height:400px;display:block;background:#000">
+            <source src="${loreRefBoard_escapeHtml(vsrc)}">
+        </video>`;
+    }
+
+    // System types (spells, rule, class, etc.)
     if (page.type !== "text") {
-        const iconMap = { pdf: "fa-file-pdf", video: "fa-film" };
-        const icon    = iconMap[page.type] ?? "fa-file";
+        const iconMap = { map: "fa-map" };
+        const icon = iconMap[page.type] ?? "fa-file";
+        const TE = foundry.applications?.ux?.TextEditor?.implementation ?? TextEditor;
+        const uuidLink = `@UUID[${page.uuid}]{${loreRefBoard_escapeHtml(page.name ?? "Open in Journal")}}`;
+        let linkHtml = "";
+        try { linkHtml = await TE.enrichHTML(uuidLink, { relativeTo: entry, rollData: {} }); }
+        catch { linkHtml = `<em style="font-size:11px">Open the full journal to view it.</em>`; }
         return `<div style="text-align:center;padding:24px 12px;color:#888">
             <i class="fas ${icon}" style="font-size:2em;display:block;margin-bottom:10px;color:#555"></i>
             <span style="font-style:italic">This page is type <strong>${loreRefBoard_escapeHtml(page.type)}</strong>.</span><br>
-            <span style="font-size:11px">Open the full journal to view it.</span>
+            <span style="font-size:11px;display:block;margin-top:8px">${linkHtml}</span>
         </div>`;
     }
     const raw = page.text?.content ?? "";
     if (!raw.trim()) {
-        return '<p style="color:#888;font-style:italic;padding:8px 0">No content yet,  click Edit to start writing.</p>';
+        return '<p style="color:#888;font-style:italic;padding:8px 0">No content yet, click Edit to start writing.</p>';
     }
     try {
-        return await TextEditor.enrichHTML(raw, { relativeTo: entry, rollData: {} });
+        const TE = foundry.applications.ux?.TextEditor?.implementation ?? TextEditor;
+        return await TE.enrichHTML(raw, { relativeTo: entry, rollData: {} });
     } catch {
         return raw;
     }
@@ -47,7 +75,7 @@ async function loreRefBoard_wirePageNav(contentEl, journalId) {
         try { entry = await fromUuid(journalId); } catch { entry = null; }
     }
 
-    // Fall back to bare-ID lookup in the world journal collection.
+    // Fall back to bare ID lookup in the world journal collection.
     if (!entry) entry = game.journal.get(journalId) ?? null;
 
     // Construct a world UUID from a bare ID.
@@ -74,17 +102,17 @@ async function loreRefBoard_wirePageNav(contentEl, journalId) {
     `;
     contentEl.parentElement.insertBefore(nav, contentEl);
 
-    const prevBtn  = nav.querySelector(".lrb-pg-prev");
-    const nextBtn  = nav.querySelector(".lrb-pg-next");
+    const prevBtn = nav.querySelector(".lrb-pg-prev");
+    const nextBtn = nav.querySelector(".lrb-pg-next");
     const selectEl = nav.querySelector(".lrb-pg-select");
 
     let currentIdx = 0;
 
     const loadPage = async (idx) => {
-        currentIdx        = idx;
-        prevBtn.disabled  = (idx === 0);
-        nextBtn.disabled  = (idx === pages.length - 1);
-        selectEl.value    = pages[idx].id;
+        currentIdx = idx;
+        prevBtn.disabled = (idx === 0);
+        nextBtn.disabled = (idx === pages.length - 1);
+        selectEl.value = pages[idx].id;
         contentEl.innerHTML =
             "<p style='color:#888;font-style:italic;padding:8px'>Loading…</p>";
         contentEl.innerHTML = await loreRefBoard_enrichJournalPage(pages[idx], entry);
@@ -108,9 +136,9 @@ async function loreRefBoard_wirePageNav(contentEl, journalId) {
 // Render Rolltable/Results
 function _loreRefBoard_renderRollTableHtml(doc) {
     const results = doc.results?.contents ?? [];
-    const sorted  = results.slice().sort((a, b) => (a.range?.[0] ?? 0) - (b.range?.[0] ?? 0));
+    const sorted = results.slice().sort((a, b) => (a.range?.[0] ?? 0) - (b.range?.[0] ?? 0));
     const formula = (doc.formula ?? "").trim();
-    const desc    = (doc.description ?? "").replace(/<[^>]*>/g, "").trim();
+    const desc = (doc.description ?? "").replace(/<[^>]*>/g, "").trim();
 
     if (!sorted.length) {
         return '<p class="lrt-rt-empty">No results defined.</p>';
@@ -127,13 +155,13 @@ function _loreRefBoard_renderRollTableHtml(doc) {
         const rangeMin = r.range?.[0] ?? 0;
         const rangeMax = r.range?.[1] ?? 0;
         const rangeStr = rangeMin === rangeMax ? `${rangeMin}` : `${rangeMin}–${rangeMax}`;
-        const imgHtml  = r.img
+        const imgHtml = r.img
             ? `<img class="lrt-rt-result-img" src="${loreRefBoard_escapeHtml(r.img)}" alt="" />`
             : "";
         const drawnClass = r.drawn ? " lrt-rt-row--drawn" : "";
         return `<tr class="lrt-rt-row${drawnClass}">
             <td class="lrt-rt-range">${loreRefBoard_escapeHtml(rangeStr)}</td>
-            <td class="lrt-rt-text"><span class="lrt-rt-text-inner">${imgHtml}${loreRefBoard_escapeHtml(r.text ?? "")}</span></td>
+            <td class="lrt-rt-text"><span class="lrt-rt-text-inner">${imgHtml}${loreRefBoard_escapeHtml(r.name || r.description || "")}</span></td>
         </tr>`;
     }).join("");
 

@@ -3,25 +3,25 @@ Hooks.on("renderSettingsConfig", (_app, html) => {
 
     const L = key => game.i18n.localize(`lore-reference-board.ImportExport.${key}`);
 
-    const maxTabRowsInput = html.find(`[name="${loreRefBoard_MODULE_SCOPE}.maxTabRows"]`);
+    const maxTabRowsInput = $(html).find(`[name="${loreRefBoard_MODULE_SCOPE}.maxTabRows"]`);
     if (!maxTabRowsInput.length) return;
     const maxTabRowsRow = maxTabRowsInput.closest(".form-group");
     if (!maxTabRowsRow.length) return;
 
     const $row = $(`
         <div class="form-group lrb-ie-row">
-            <label>${L("MenuLabel")}</label>
-            <div class="form-fields" style="gap:6px">
-                <button type="button" class="lrb-ie-export-btn"
-                        style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px">
+            <div class="lrb-ie-left">
+                <label>${L("MenuLabel")}</label>
+                <p class="notes">${L("MenuHint")}</p>
+            </div>
+            <div class="lrb-ie-right">
+                <button type="button" class="lrb-ie-export-btn">
                     <i class="fas fa-file-export"></i> ${L("BtnExport")}
                 </button>
-                <button type="button" class="lrb-ie-import-btn"
-                        style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px">
+                <button type="button" class="lrb-ie-import-btn">
                     <i class="fas fa-file-import"></i> ${L("BtnImport")}
                 </button>
             </div>
-            <p class="notes">${L("MenuHint")}</p>
         </div>
     `);
 
@@ -37,14 +37,15 @@ Hooks.on("renderSettingsConfig", (_app, html) => {
 
     const $resetRow = $(`
         <div class="form-group lrb-ie-row">
-            <label>${L("WindowPosLabel")}</label>
-            <div class="form-fields">
-                <button type="button" class="lrb-reset-pos-btn"
-                        style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px">
+            <div class="lrb-ie-left">
+                <label>${L("WindowPosLabel")}</label>
+                <p class="notes">${L("ResetPosHint")}</p>
+            </div>
+            <div class="lrb-ie-right">
+                <button type="button" class="lrb-reset-pos-btn">
                     <i class="fas fa-undo"></i> ${L("BtnResetPos")}
                 </button>
             </div>
-            <p class="notes">${L("ResetPosHint")}</p>
         </div>
     `);
 
@@ -77,26 +78,33 @@ function _loreRefBoard_toggleBoard() {
     game.loreReferenceBoardAppInstance.render(true);
 }
 
-Hooks.on("renderSceneControls", (app, html) => {
+Hooks.on("getSceneControlButtons", (controls) => {
     const allowed = !!game?.user?.isGM || game?.user?.role === CONST.USER_ROLES.ASSISTANT;
     if (!allowed) return;
 
-    if (html.find(`li[data-control="${loreRefBoard_MODULE_SCOPE}"]`).length) return;
-
-    const li = $(`<li class="scene-control"
-                      data-control="${loreRefBoard_MODULE_SCOPE}"
-                      title="Lore Reference Board">
-                    <i class="fas fa-theater-masks"></i>
-                  </li>`);
-
-    li.on("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        _loreRefBoard_toggleBoard();
-    });
-
-    const mainList = html.find(".main-controls");
-    (mainList.length ? mainList : html.find("ol").first()).append(li);
+    controls[loreRefBoard_MODULE_SCOPE] = {
+        name: loreRefBoard_MODULE_SCOPE,
+        title: "Lore Reference Board",
+        icon: "fas fa-theater-masks",
+        visible: true,
+        button: true,
+        order: Object.keys(controls).length + 1,
+        onChange: (event, active) => {
+            if (active) canvas.tokens?.activate?.();
+        },
+        onToolChange: () => {},
+        tools: {
+            "main-window": {
+                name: "main-window",
+                title: "Lore Reference Board",
+                icon: "fas fa-images",
+                button: true,
+                order: 1,
+                onChange: () => _loreRefBoard_toggleBoard(),
+            },
+        },
+        activeTool: "main-window",
+    };
 });
 
 console.log("[lore-reference-board] Load Complete");

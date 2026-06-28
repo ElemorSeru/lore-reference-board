@@ -17,8 +17,8 @@ async function loreRefBoard_fetchSvgData(url) {
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const text = await resp.text();
         const parser = new DOMParser();
-        const doc    = parser.parseFromString(text, "image/svg+xml");
-        const svgEl  = doc.querySelector("svg");
+        const doc = parser.parseFromString(text, "image/svg+xml");
+        const svgEl = doc.querySelector("svg");
         if (!svgEl) throw new Error("No <svg> element found");
         const viewBox = svgEl.getAttribute("viewBox") || "0 0 512 512";
         svgEl.querySelectorAll("[fill]").forEach(el => {
@@ -37,7 +37,7 @@ async function loreRefBoard_fetchSvgData(url) {
 
 function loreRefBoard_pickImagePath(current = "modules/") {
     return new Promise((resolve) => {
-        new FilePicker({
+        new (foundry.applications.apps.FilePicker.implementation)({
             type: "image",
             current: current || "modules/",
             callback: (path) => resolve(path),
@@ -60,9 +60,8 @@ function _loreRefBoard_docTypeForExt(ext) {
 
 function loreRefBoard_pickDocFilePath(current = "modules/") {
     return new Promise((resolve) => {
-        new FilePicker({
+        new (foundry.applications.apps.FilePicker.implementation)({
             type: "any",
-            extensions: [".pdf", ".txt", ".md", ".html", ".htm", ".docx"],
             current: current || "modules/",
             callback: (path) => resolve(path),
         }).render(true);
@@ -72,7 +71,7 @@ function loreRefBoard_pickDocFilePath(current = "modules/") {
 // Open FilePicker for Reference grid file cells,  only PDF, TXT, and Markdown.
 function loreRefBoard_pickRefFilePath(current = "modules/") {
     return new Promise((resolve) => {
-        new FilePicker({
+        new (foundry.applications.apps.FilePicker.implementation)({
             type: "any",
             extensions: [".pdf", ".txt", ".md"],
             current: current || "modules/",
@@ -102,7 +101,7 @@ function loreRefBoard_attachDialogValidation(anchorId, actionName, requiredIds) 
         if (!anchor) { if (++tries < 60) requestAnimationFrame(tick); return; }
 
         const dialogEl = anchor.closest(".dialog, .app, [data-appid]");
-        const btn = dialogEl?.querySelector(`[data-button="${CSS.escape(actionName)}"]`);
+        const btn = dialogEl?.querySelector(`[data-action="${CSS.escape(actionName)}"]`);
         const form = anchor.closest("form");
         if (!btn || !form) { if (++tries < 60) requestAnimationFrame(tick); return; }
 
@@ -114,7 +113,7 @@ function loreRefBoard_attachDialogValidation(anchorId, actionName, requiredIds) 
             const allFilled = inputs.every(el => el.value.trim() !== "");
             btn.disabled = !allFilled;
             btn.style.opacity = allFilled ? "" : "0.4";
-            btn.style.cursor  = allFilled ? "" : "not-allowed";
+            btn.style.cursor = allFilled ? "" : "not-allowed";
         };
 
         update();
@@ -200,4 +199,71 @@ function loreRefBoard_computeImageRect(containerW, containerH, imgNW, imgNH) {
     }
     const dw = containerH * ir;
     return { offsetX: (containerW - dw) / 2, offsetY: 0, displayW: dw, displayH: containerH };
+}
+
+async function loreRefBoard_renderPdfTextLayer(container, textContent, viewport) {
+    const lib = globalThis.pdfjsLib;
+    if (!lib) return;
+    try {
+        if (typeof lib.TextLayer === "function") {
+            // pdf.js v3+ API
+            try {
+                const tl = new lib.TextLayer({ textContentSource: textContent, container, viewport });
+                await tl.render();
+            } catch {
+                // fallback to v2 API in case TextLayer constructor changed
+                if (typeof lib.renderTextLayer === "function") {
+                    const task = lib.renderTextLayer({ textContent, container, viewport, textDivs: [] });
+                    if (task?.promise) await task.promise;
+                }
+            }
+        } else if (typeof lib.renderTextLayer === "function") {
+            const task = lib.renderTextLayer({ textContent, container, viewport, textDivs: [] });
+            if (task?.promise) await task.promise;
+        }
+    } catch (err) {
+        console.warn("[lore-reference-board] PDF text layer render failed:", err);
+    }
+}
+
+const loreRefBoard_PDF_LIG = { 'ﬀ': 'ff', 'ﬁ': 'fi', 'ﬂ': 'fl', 'ﬃ': 'ffi', 'ﬄ': 'ffl', 'ﬅ': 'st', 'ﬆ': 'st' };
+
+function loreRefBoard_highlightPdfTextLayer(textLayer, queryText) {
+    if (!textLayer || !queryText?.trim()) return;
+    textLayer.querySelectorAll(".lr-hl-span").forEach(s => s.classList.remove("lr-hl-span"));
+    const spans = Array.from(textLayer.querySelectorAll("span"));
+    if (!spans.length) return;
+
+    const buildSegs = (normalize) => {
+        let combined = "";
+        const segs = [];
+        for (const span of spans) {
+            const raw = span.textContent;
+            const t = normalize ? raw.replace(/[ﬀ-ﬆ]/g, c => loreRefBoard_PDF_LIG[c] ?? c) : raw;
+            segs.push({ start: combined.length, end: combined.length + t.length, span });
+            combined += t;
+        }
+        return { combined, segs };
+    };
+
+    const needle = queryText.toLowerCase().replace(/\s+/g, " ").trim();
+    const normNeedle = needle.replace(/[ﬀ-ﬆ]/g, c => loreRefBoard_PDF_LIG[c] ?? c);
+
+    let { combined, segs } = buildSegs(false);
+    let hay = combined.toLowerCase().replace(/\s+/g, " ");
+    let idx = hay.indexOf(needle);
+    let matchLen = needle.length;
+
+    if (idx === -1) {
+        ({ combined, segs } = buildSegs(true));
+        hay = combined.toLowerCase().replace(/\s+/g, " ");
+        idx = hay.indexOf(normNeedle);
+        if (idx === -1) return;
+        matchLen = normNeedle.length;
+    }
+
+    const matchEnd = idx + matchLen;
+    for (const { start, end, span } of segs) {
+        if (end > idx && start < matchEnd) span.classList.add("lr-hl-span");
+    }
 }

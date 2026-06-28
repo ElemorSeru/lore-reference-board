@@ -1,3 +1,5 @@
+var { DialogV2 } = foundry.applications.api;
+
 function _loreRefBoard_factionStandingLabel(value) {
     const n = Number(value) || 0;
     const tiers = loreRefBoard_getFactionStandingTiers();
@@ -232,63 +234,80 @@ function _loreRefBoard_collectAndValidateStandingTiers(h) {
 
 async function loreRefBoard_manageFactionStandingTiersDialog(app, html) {
     const tiers = loreRefBoard_getFactionStandingTiers();
+    const uid = foundry.utils.randomID();
 
     const content = `
       <form>
-        <div class="lrt-faction-standingtier-list">
+        <div class="lrt-faction-standingtier-list" id="lrt-st-list-${uid}">
           ${tiers.map(_loreRefBoard_factionStandingTierRowHtml).join("")}
         </div>
-        <button type="button" class="lrt-faction-standingtier-add">
+        <button type="button" class="lrt-faction-standingtier-add" id="lrt-st-add-${uid}">
           <i class="fas fa-plus"></i> ${game.i18n.localize("lore-reference-board.Faction.StandingTiers.BtnAddTier")}
         </button>
-        <p class="lrt-faction-standingtier-error"></p>
+        <p class="lrt-faction-standingtier-error" id="lrt-st-error-${uid}"></p>
       </form>
     `;
 
-    const result = await new Promise((resolve) => {
-        let resolved = false;
-        const dialog = new Dialog({
-            title: game.i18n.localize("lore-reference-board.Faction.StandingTiers.Title"),
-            content,
-            buttons: {
-                save: { label: game.i18n.localize("lore-reference-board.Common.Save"), callback: () => {} },
-                cancel: {
-                    label: game.i18n.localize("lore-reference-board.Common.Cancel"),
-                    callback: () => { resolved = true; resolve("cancel"); },
-                },
-            },
-            default: "save",
-            render: (h) => {
-                _loreRefBoard_refreshStandingTierRowStates(h);
+    let _savedTiers = null;
 
-                h.find(".lrt-faction-standingtier-add").on("click", () => {
-                    const row = $(_loreRefBoard_factionStandingTierRowHtml({ id: foundry.utils.randomID(), label: "", min: "", max: "" }));
-                    h.find(".lrt-faction-standingtier-list").append(row);
-                    _loreRefBoard_refreshStandingTierRowStates(h);
-                });
-                h.find(".lrt-faction-standingtier-list").on("click", ".lrt-faction-standingtier-remove", function () {
-                    $(this).closest(".lrt-faction-standingtier-row").remove();
-                    _loreRefBoard_refreshStandingTierRowStates(h);
-                });
-
-                h.find('button[data-button="save"]').off("click").on("click", (ev) => {
-                    ev.preventDefault();
-                    const { tiers: collected, error } = _loreRefBoard_collectAndValidateStandingTiers(h);
-                    if (error) {
-                        h.find(".lrt-faction-standingtier-error").text(error);
-                        return;
-                    }
-                    resolved = true;
-                    resolve(collected);
-                    dialog.close();
-                });
-            },
-            close: () => { if (!resolved) resolve("cancel"); },
-        }, { width: 520, classes: ["app", "window-app", "dialog", "lore-rb-dialog"] });
-        dialog.render(true);
+    const _stPromise = DialogV2.wait({
+        window: { title: game.i18n.localize("lore-reference-board.Faction.StandingTiers.Title") },
+        classes: ["lore-rb-dialog"],
+        position: { width: 520 },
+        content,
+        buttons: [
+            { action: "cancel", label: game.i18n.localize("lore-reference-board.Common.Cancel"), default: true },
+        ],
+        rejectClose: false,
     });
 
-    if (!result || result === "cancel") return;
+    let _stTries = 0;
+    const _stSetup = () => {
+        const listEl = document.getElementById(`lrt-st-list-${uid}`);
+        const addBtn = document.getElementById(`lrt-st-add-${uid}`);
+        const errorEl = document.getElementById(`lrt-st-error-${uid}`);
+        if (!listEl || !addBtn || !errorEl) { if (++_stTries < 60) requestAnimationFrame(_stSetup); return; }
+
+        const $ctx = $(listEl.closest("dialog") ?? listEl.parentElement);
+
+        _loreRefBoard_refreshStandingTierRowStates($ctx);
+
+        addBtn.addEventListener("click", () => {
+            const row = $(_loreRefBoard_factionStandingTierRowHtml({ id: foundry.utils.randomID(), label: "", min: "", max: "" }));
+            $(listEl).append(row);
+            _loreRefBoard_refreshStandingTierRowStates($ctx);
+        });
+        listEl.addEventListener("click", (ev) => {
+            const removeBtn = ev.target.closest(".lrt-faction-standingtier-remove");
+            if (!removeBtn) return;
+            $(removeBtn).closest(".lrt-faction-standingtier-row").remove();
+            _loreRefBoard_refreshStandingTierRowStates($ctx);
+        });
+
+        const saveBtn = $ctx.find('[data-action="cancel"]')[0];
+        const origClick = saveBtn?.onclick;
+
+        const saveEl = document.createElement("button");
+        saveEl.type = "button";
+        saveEl.className = "lrt-faction-st-save-btn";
+        saveEl.textContent = game.i18n.localize("lore-reference-board.Common.Save");
+        saveEl.style.cssText = "order:-1;";
+        saveBtn?.parentElement?.prepend(saveEl);
+
+        saveEl.addEventListener("click", () => {
+            const { tiers: collected, error } = _loreRefBoard_collectAndValidateStandingTiers($ctx);
+            if (error) { errorEl.textContent = error; return; }
+            errorEl.textContent = "";
+            _savedTiers = collected;
+            saveBtn?.click();
+        });
+    };
+    requestAnimationFrame(_stSetup);
+
+    await _stPromise;
+    const result = _savedTiers;
+
+    if (!result) return;
 
     await loreRefBoard_saveFactionStandingTiers(result);
     await _loreRefBoard_renderFactionStandingPanel(app, html);

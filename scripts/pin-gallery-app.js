@@ -1,11 +1,13 @@
-class LoreRefBoardPinGalleryApp extends Application {
+var { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
+
+class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2) {
     constructor({ pin, tabId, boardApp }, options = {}) {
         super(options);
         this._pin = pin;
         this._tabId = tabId;
         this._boardApp = boardApp;
         this._gallery = LoreRefBoardPinGalleryApp._cloneGallery(pin);
-        this._journalId    = undefined;
+        this._journalId = undefined;
         this._updateHookId = null;
     }
 
@@ -22,19 +24,17 @@ class LoreRefBoardPinGalleryApp extends Application {
         };
     }
 
-    static get defaultOptions() {
-        return foundry.utils.mergeObject(super.defaultOptions, {
-            id: "lore-reference-board-gallery",
-            template: "modules/lore-reference-board/templates/pin-gallery.html",
-            width: 960,
-            height: 600,
-            resizable: true,
-        });
-    }
+    static DEFAULT_OPTIONS = {
+        id: "lore-reference-board-gallery",
+        window: { title: "lore-reference-board.Gallery.WindowTitle", resizable: true },
+        position: { width: 960, height: 600 },
+    };
 
-    get title() { return game.i18n.localize("lore-reference-board.Gallery.WindowTitle"); }
+    static PARTS = {
+        main: { template: "modules/lore-reference-board/templates/pin-gallery.html" },
+    };
 
-    async getData(_options = {}) {
+    async _prepareContext(_options = {}) {
         //  Gallery (left pane) 
         const galleryCtx = {
             galleryName: this._gallery.name,
@@ -46,8 +46,8 @@ class LoreRefBoardPinGalleryApp extends Application {
             this._journalId = this._pin.journal || null;
         }
 
-        let journalLinked  = false;
-        let journalName    = "";
+        let journalLinked = false;
+        let journalName = "";
         let journalContent = "";
 
         if (this._journalId) {
@@ -57,9 +57,9 @@ class LoreRefBoardPinGalleryApp extends Application {
             }
             if (entry) {
                 journalLinked = true;
-                journalName   = entry.name;
+                journalName = entry.name;
                 // Render the first page (sorted order);
-                const pages    = loreRefBoard_getJournalPages(entry);
+                const pages = loreRefBoard_getJournalPages(entry);
                 const firstPage = pages[0] ?? null;
                 journalContent = await loreRefBoard_enrichJournalPage(firstPage, entry);
             }
@@ -73,8 +73,8 @@ class LoreRefBoardPinGalleryApp extends Application {
         };
     }
 
-    async activateListeners(html) {
-        super.activateListeners(html);
+    async _onRender(context, options) {
+        const html = $(this.element);
 
         //  Folder name (top field) 
         html.find("#pg-name").on("input", ev => {
@@ -88,9 +88,9 @@ class LoreRefBoardPinGalleryApp extends Application {
             const folderPick = await LoreRefBoardPinGalleryApp._promptFolderPath();
 
             const newFolder = {
-                id:     foundry.utils.randomID(),
-                name:   name.trim(),
-                path:   folderPick?.path   ?? "",
+                id: foundry.utils.randomID(),
+                name: name.trim(),
+                path: folderPick?.path ?? "",
                 source: folderPick?.source ?? "data",
                 images: [],
             };
@@ -99,7 +99,7 @@ class LoreRefBoardPinGalleryApp extends Application {
                 const IMAGE_EXT = /\.(apng|avif|bmp|gif|jpe?g|png|svg|tiff?|webp)$/i;
                 try {
                     // FilePicker is a global
-                    const browseResult = await FilePicker.browse(newFolder.source, newFolder.path);
+                    const browseResult = await foundry.applications.apps.FilePicker.implementation.browse(newFolder.source, newFolder.path);
                     const imgs = (browseResult.files ?? []).filter(f => IMAGE_EXT.test(f));
                     newFolder.images = imgs;
                     if (imgs.length) {
@@ -121,7 +121,7 @@ class LoreRefBoardPinGalleryApp extends Application {
 
             this._gallery.folders.push(newFolder);
             await this._save();
-            await this.render(true);
+            await this.render();
         });
 
         //  Per-folder rename/delete
@@ -135,23 +135,24 @@ class LoreRefBoardPinGalleryApp extends Application {
 
             if (result.action === "delete") {
                 const imgCount = folder.images.length;
-                const confirmed = await Dialog.confirm({
-                    title: game.i18n.localize("lore-reference-board.Gallery.DeleteFolder"),
+                const confirmed = await DialogV2.confirm({
+                    window: { title: game.i18n.localize("lore-reference-board.Gallery.DeleteFolder") },
                     content: `<p>${game.i18n.format("lore-reference-board.Gallery.DeleteFolderContent", { name: loreRefBoard_escapeHtml(folder.name), count: imgCount })}</p>`,
+                    rejectClose: false,
                 });
                 if (!confirmed) return;
 
                 await loreRefBoard_clearLoreForImages(folder.images ?? []);
                 this._gallery.folders = this._gallery.folders.filter(f => f.id !== folderId);
                 await this._save();
-                await this.render(true);
+                await this.render();
                 return;
             }
 
             if (result.action === "save" && result.name) {
                 folder.name = result.name;
                 await this._save();
-                await this.render(true);
+                await this.render();
             }
         });
 
@@ -165,7 +166,7 @@ class LoreRefBoardPinGalleryApp extends Application {
             folder.path = picked.path;
             folder.source = picked.source;
             await this._save();
-            await this.render(true);
+            await this.render();
         });
 
         //  Add single image to folder
@@ -177,7 +178,7 @@ class LoreRefBoardPinGalleryApp extends Application {
             if (!path) return;
             if (!folder.images.includes(path)) folder.images.push(path);
             await this._save();
-            await this.render(true);
+            await this.render();
         });
 
         //  Import all images from the folder's path
@@ -196,7 +197,7 @@ class LoreRefBoardPinGalleryApp extends Application {
             let browseResult;
             try {
                 // FilePicker is a global
-                browseResult = await FilePicker.browse(importSource, importPath);
+                browseResult = await foundry.applications.apps.FilePicker.implementation.browse(importSource, importPath);
             } catch (err) {
                 ui.notifications.error(
                     game.i18n.format("lore-reference-board.Gallery.ImportFailed", { path: importPath })
@@ -230,7 +231,7 @@ class LoreRefBoardPinGalleryApp extends Application {
             );
 
             await this._save();
-            await this.render(true);
+            await this.render();
         });
 
         //  Remove image (right-click)
@@ -241,15 +242,16 @@ class LoreRefBoardPinGalleryApp extends Application {
             const folder = this._gallery.folders.find(f => f.id === folderId);
             if (!folder) return;
 
-            const ok = await Dialog.confirm({
-                title: game.i18n.localize("lore-reference-board.Gallery.RemoveImage"),
+            const ok = await DialogV2.confirm({
+                window: { title: game.i18n.localize("lore-reference-board.Gallery.RemoveImage") },
                 content: `<p>${game.i18n.format("lore-reference-board.Gallery.RemoveImageContent", { src: loreRefBoard_escapeHtml(src) })}</p>`,
+                rejectClose: false,
             });
             if (!ok) return;
             folder.images = folder.images.filter(i => i !== src);
             await loreRefBoard_clearLoreForImage(src);
             await this._save();
-            await this.render(true);
+            await this.render();
         });
 
         //  Click thumbnail to open the custom image viewer
@@ -327,10 +329,10 @@ class LoreRefBoardPinGalleryApp extends Application {
     // Pin journal pane helpers
     async _saveJournal(journalId) {
         const pins = await loreRefBoard_loadPinsForTab(this._tabId);
-        const idx  = pins.findIndex(p => p.id === this._pin.id);
+        const idx = pins.findIndex(p => p.id === this._pin.id);
         if (idx === -1) return;
         pins[idx].journal = journalId || "";
-        this._journalId   = journalId || null;
+        this._journalId = journalId || null;
         await loreRefBoard_savePinsForTab(this._tabId, pins);
         this._pin = pins[idx];
     }
@@ -347,10 +349,10 @@ class LoreRefBoardPinGalleryApp extends Application {
         let journalId = null;
         if (data.type === "JournalEntry") {
             const entry = await fromUuid(data.uuid ?? "").catch(() => null);
-            journalId   = entry?.id ?? null;
+            journalId = entry?.id ?? null;
         } else if (data.type === "JournalEntryPage") {
-            const page  = await fromUuid(data.uuid ?? "").catch(() => null);
-            journalId   = page?.parent?.id ?? null;
+            const page = await fromUuid(data.uuid ?? "").catch(() => null);
+            journalId = page?.parent?.id ?? null;
         }
 
         if (!journalId) {
@@ -365,21 +367,20 @@ class LoreRefBoardPinGalleryApp extends Application {
             ui.notifications.error(game.i18n.localize("lore-reference-board.Lore.SaveLinkFail"));
             return;
         }
-        await this.render(true);
+        await this.render();
     }
 
     async _createPinJournal() {
-        const uid       = foundry.utils.randomID();
-        const inputId   = `pgj-name-${uid}`;
+        const uid = foundry.utils.randomID();
+        const inputId = `pgj-name-${uid}`;
         const defaultName = this._gallery.name || game.i18n.localize("lore-reference-board.Pin.LoreEntryDefault");
 
         let chosenName;
         try {
-            chosenName = await new Promise((resolve, reject) => {
-                let clicked = false;
-                new Dialog({
-                    title: game.i18n.localize("lore-reference-board.Lore.NameEntryTitle"),
-                    content: `<form>
+            chosenName = await DialogV2.wait({
+                window: { title: game.i18n.localize("lore-reference-board.Lore.NameEntryTitle") },
+                classes: ["lore-rb-dialog"],
+                content: `<form>
                         <div style="padding:6px 0">
                             <label style="display:block;margin-bottom:4px;font-weight:bold">${game.i18n.localize("lore-reference-board.Lore.JournalEntryName")}</label>
                             <input id="${inputId}" name="${inputId}" type="text"
@@ -387,22 +388,16 @@ class LoreRefBoardPinGalleryApp extends Application {
                                    style="width:100%" autofocus />
                         </div>
                     </form>`,
-                    buttons: {
-                        create: {
-                            label: game.i18n.localize("lore-reference-board.Common.Create"),
-                            callback: (html) => {
-                                clicked = true;
-                                resolve(html[0].querySelector(`#${inputId}`)?.value?.trim() || defaultName);
-                            },
-                        },
-                        cancel: {
-                            label: game.i18n.localize("lore-reference-board.Common.Cancel"),
-                            callback: () => { clicked = true; resolve("cancel"); },
-                        },
+                buttons: [
+                    {
+                        action: "create",
+                        label: game.i18n.localize("lore-reference-board.Common.Create"),
+                        default: true,
+                        callback: (_ev, btn) => btn.closest("dialog")?.querySelector(`#${inputId}`)?.value?.trim() || defaultName,
                     },
-                    default: "create",
-                    close: () => { if (!clicked) reject(new Error("closed")); },
-                }).render(true);
+                    { action: "cancel", label: game.i18n.localize("lore-reference-board.Common.Cancel") },
+                ],
+                rejectClose: true,
             });
         } catch { return; }
         if (chosenName === "cancel") return;
@@ -421,7 +416,7 @@ class LoreRefBoardPinGalleryApp extends Application {
         if (!entry) return;
 
         await this._saveJournal(entry.id);
-        await this.render(true);
+        await this.render();
         entry.sheet.render(true);
     }
 
@@ -435,13 +430,14 @@ class LoreRefBoardPinGalleryApp extends Application {
     }
 
     async _unlinkPinJournal() {
-        const confirmed = await Dialog.confirm({
-            title: game.i18n.localize("lore-reference-board.Lore.UnlinkTitle"),
+        const confirmed = await DialogV2.confirm({
+            window: { title: game.i18n.localize("lore-reference-board.Lore.UnlinkTitle") },
             content: `<p>${game.i18n.localize("lore-reference-board.Pin.UnlinkPinContent")}</p>`,
+            rejectClose: false,
         });
         if (!confirmed) return;
         await this._saveJournal(null);
-        await this.render(true);
+        await this.render();
     }
 
     _registerPinJournalUpdateHook() {
@@ -452,7 +448,7 @@ class LoreRefBoardPinGalleryApp extends Application {
         if (!this._journalId) return;
         const watchedId = this._journalId;
         this._updateHookId = Hooks.on("updateJournalEntryPage", (page) => {
-            if (page.parent?.id === watchedId) this.render(true);
+            if (page.parent?.id === watchedId) this.render();
         });
     }
 
@@ -468,7 +464,7 @@ class LoreRefBoardPinGalleryApp extends Application {
     static _pickFolder(startPath = "", startSource = "data") {
         return new Promise((resolve) => {
             let resolved = false;
-            const fp = new FilePicker({
+            const fp = new (foundry.applications.apps.FilePicker.implementation)({
                 type: "folder",
                 current: startPath,
                 activeSource: startSource,
@@ -487,64 +483,55 @@ class LoreRefBoardPinGalleryApp extends Application {
     }
 
     static async _promptFolderRename(folder) {
-        const uid     = foundry.utils.randomID();
+        const uid = foundry.utils.randomID();
         const inputId = `pg-rename-${uid}`;
 
-        const waitPromise = new Promise((resolve, reject) => {
-            let clicked = false;
-            new Dialog({
-                title: game.i18n.localize("lore-reference-board.Gallery.EditFolder"),
-                content: `<form>
+        const waitPromise = DialogV2.wait({
+            window: { title: game.i18n.localize("lore-reference-board.Gallery.EditFolder") },
+            classes: ["lore-rb-dialog"],
+            position: { width: 380 },
+            content: `<form>
                     <div style="padding:6px 0">
                         <label style="display:block;margin-bottom:4px;font-weight:bold">${game.i18n.localize("lore-reference-board.Gallery.FolderNameLabel")}</label>
                         <input id="${inputId}" name="${inputId}" type="text" value="${loreRefBoard_escapeHtml(folder.name)}"
                                style="width:100%" autofocus />
                     </div>
                 </form>`,
-                buttons: {
-                    save: {
-                        label: game.i18n.localize("lore-reference-board.Common.Save"),
-                        callback: (html) => {
-                            clicked = true;
-                            resolve({
-                                action: "save",
-                                name: html[0].querySelector(`#${inputId}`)?.value?.trim() ?? folder.name,
-                            });
-                        },
-                    },
-                    cancel: {
-                        label: game.i18n.localize("lore-reference-board.Common.Cancel"),
-                        callback: () => { clicked = true; resolve("cancel"); },
-                    },
-                    delete: {
-                        label: game.i18n.localize("lore-reference-board.Gallery.DeleteFolder"),
-                        callback: () => { clicked = true; resolve({ action: "delete" }); },
-                    },
+            buttons: [
+                {
+                    action: "save",
+                    label: game.i18n.localize("lore-reference-board.Common.Save"),
+                    default: true,
+                    callback: (_ev, btn) => ({
+                        action: "save",
+                        name: btn.closest("dialog")?.querySelector(`#${inputId}`)?.value?.trim() ?? folder.name,
+                    }),
                 },
-                default: "save",
-                close: () => { if (!clicked) reject(new Error("closed")); },
-            }, { width: 380, classes: ["app", "window-app", "dialog", "lore-rb-dialog"] }).render(true);
+                { action: "cancel", label: game.i18n.localize("lore-reference-board.Common.Cancel") },
+                { action: "delete", label: game.i18n.localize("lore-reference-board.Gallery.DeleteFolder"), callback: () => ({ action: "delete" }) },
+            ],
+            rejectClose: true,
         });
 
         loreRefBoard_attachDialogValidation(inputId, "save", [inputId]);
 
         let result;
         try { result = await waitPromise; } catch { return null; }
-        if (result === "cancel") return null;
+        if (!result || result === "cancel") return null;
         return result;
     }
 
     static async _promptFolderPath(defaultPath = "", defaultSource = "data") {
         const uid = foundry.utils.randomID();
-        const inputId   = `pg-fp-input-${uid}`;
+        const inputId = `pg-fp-input-${uid}`;
         const browseBtnId = `pg-fp-browse-${uid}`;
         let currentSource = defaultSource;
 
-        const waitPromise = new Promise((resolve, reject) => {
-            let clicked = false;
-            new Dialog({
-                title: game.i18n.localize("lore-reference-board.Gallery.FolderPath"),
-                content: `<form>
+        const waitPromise = DialogV2.wait({
+            window: { title: game.i18n.localize("lore-reference-board.Gallery.FolderPath") },
+            classes: ["lore-rb-dialog"],
+            position: { width: 440 },
+            content: `<form>
                     <div style="padding:6px 0">
                         <label style="display:block;margin-bottom:4px;font-weight:bold">
                             ${game.i18n.localize("lore-reference-board.Gallery.FolderPathLabel")}
@@ -566,25 +553,19 @@ class LoreRefBoardPinGalleryApp extends Application {
                         </p>
                     </div>
                 </form>`,
-                buttons: {
-                    ok: {
-                        label: game.i18n.localize("lore-reference-board.Common.OK"),
-                        callback: (html) => {
-                            clicked = true;
-                            resolve({
-                                path:   html[0].querySelector(`#${inputId}`)?.value?.trim() ?? "",
-                                source: currentSource,
-                            });
-                        },
-                    },
-                    cancel: {
-                        label: game.i18n.localize("lore-reference-board.Common.Cancel"),
-                        callback: () => { clicked = true; resolve("cancel"); },
-                    },
+            buttons: [
+                {
+                    action: "ok",
+                    label: game.i18n.localize("lore-reference-board.Common.OK"),
+                    default: true,
+                    callback: (_ev, btn) => ({
+                        path: btn.closest("dialog")?.querySelector(`#${inputId}`)?.value?.trim() ?? "",
+                        source: currentSource,
+                    }),
                 },
-                default: "ok",
-                close: () => { if (!clicked) reject(new Error("closed")); },
-            }, { width: 440, classes: ["app", "window-app", "dialog", "lore-rb-dialog"] }).render(true);
+                { action: "cancel", label: game.i18n.localize("lore-reference-board.Common.Cancel") },
+            ],
+            rejectClose: true,
         });
 
         // Attach the folder picker to the Browse button.
@@ -615,30 +596,24 @@ class LoreRefBoardPinGalleryApp extends Application {
         const uid = foundry.utils.randomID();
         const inputId = `pg-prompt-${uid}`;
 
-        const waitPromise = new Promise((resolve, reject) => {
-            let clicked = false;
-            new Dialog({
-                title,
-                content: `<form><div style="padding:6px 0">
+        const waitPromise = DialogV2.wait({
+            window: { title },
+            classes: ["lore-rb-dialog"],
+            position: { width: 380 },
+            content: `<form><div style="padding:6px 0">
                     <label style="display:block;margin-bottom:4px;font-weight:bold">${loreRefBoard_escapeHtml(label)}</label>
                     <input id="${inputId}" type="text" value="${loreRefBoard_escapeHtml(defaultVal)}" style="width:100%" autofocus />
                 </div></form>`,
-                buttons: {
-                    ok: {
-                        label: game.i18n.localize("lore-reference-board.Common.OK"),
-                        callback: (html) => {
-                            clicked = true;
-                            resolve(html[0].querySelector(`#${inputId}`)?.value ?? "");
-                        },
-                    },
-                    cancel: {
-                        label: game.i18n.localize("lore-reference-board.Common.Cancel"),
-                        callback: () => { clicked = true; resolve("cancel"); },
-                    },
+            buttons: [
+                {
+                    action: "ok",
+                    label: game.i18n.localize("lore-reference-board.Common.OK"),
+                    default: true,
+                    callback: (_ev, btn) => btn.closest("dialog")?.querySelector(`#${inputId}`)?.value ?? "",
                 },
-                default: "ok",
-                close: () => { if (!clicked) reject(new Error("closed")); },
-            }, { width: 380, classes: ["app", "window-app", "dialog", "lore-rb-dialog"] }).render(true);
+                { action: "cancel", label: game.i18n.localize("lore-reference-board.Common.Cancel") },
+            ],
+            rejectClose: true,
         });
 
         if (required) loreRefBoard_attachDialogValidation(inputId, "ok", [inputId]);

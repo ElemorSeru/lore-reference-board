@@ -178,13 +178,14 @@
       "SpanNotSelected": "Please select a cell area first.",
       "DeleteCell": "Remove Cell",
       "FileCellDivider": "- or load a file -",
-      "FileCellInstruct": "Supported: PDF · TXT · Markdown",
+      "FileCellInstruct": "Supported: PDF \u00b7 TXT \u00b7 Markdown",
       "FileCellBrowse": "Browse",
       "FileCellPathPlaceholder": "Paste or enter file path...",
       "FileCellBadgePdf": "PDF",
       "FileCellBadgeTxt": "Text File",
       "FileCellBadgeMd": "Markdown",
-      "FileCellLoadFail": "Could not load file."
+      "FileCellLoadFail": "Could not load file.",
+      "FileCellBadgeImg": "Image"
     },
     "Faction": {
       "Toolbar": {
@@ -293,6 +294,23 @@
       "MaxTabRows": {
         "Name": "Maximum Tab Rows",
         "Hint": "How many rows the tab bar can grow to before scrolling. Set to 0 for unlimited rows."
+      },
+      "ClearCache": {
+        "Name": "Clear Search Cache",
+        "Label": "Clear Cache",
+        "Hint": "Remove all cached search index data. The index will rebuild automatically as you browse tabs.",
+        "Title": "Clear Search Cache",
+        "Confirm": "Remove all cached search index data for this world? The index will rebuild the next time you open each tab.",
+        "Done": "Search cache cleared."
+      },
+      "IndexAll": {
+        "Name": "Index All Sources",
+        "Label": "Index All",
+        "Hint": "Force-index every document tab and reference cell now, so search results are complete immediately.",
+        "Title": "Index All Sources",
+        "Confirm": "Fetch and index every document tab and reference cell in this world? This may take a moment for large collections.",
+        "Running": "Indexing all sources\u2026",
+        "Done": "All sources indexed."
       }
     },
     "DocumentTab": {
@@ -301,7 +319,7 @@
       "CreateEntry": "Create New Journal Entry",
       "OrBrowse": "- or -",
       "LoadFileLabel": "Load a document file",
-      "SupportedTypes": "PDF · TXT · Markdown",
+      "SupportedTypes": "PDF \u00b7 TXT \u00b7 Markdown",
       "BrowseFile": "Browse Files",
       "PastePathHint": "- or paste a file path or web URL -",
       "PathPlaceholder": "data/worlds/file.html  or  https://example.com/page",
@@ -391,6 +409,20 @@
       "UnlinkContent": "<p>Remove the journal link for this image?</p><p>The journal entry itself will not be deleted.</p>",
       "NameEntryTitle": "Name Your Lore Entry",
       "JournalEntryName": "Journal Entry Name"
+    },
+    "Search": {
+      "Toggle": "Search documents",
+      "Close": "Close search",
+      "Placeholder": "Search documents...",
+      "NoResults": "No matches found",
+      "Indexing": "Indexing...",
+      "NotSearchable": "External URL - open in browser to search",
+      "PageLabel": "p. {page}",
+      "PdfUnavailable": "PDF.js not available \u2014 cannot search PDF",
+      "DocxUnavailable": "mammoth.js not available \u2014 cannot search DOCX",
+      "IndexingStatus": "Searching {indexed} sources ({pending} still indexing\u2026)",
+      "CollapseAll": "Collapse All",
+      "ExpandAll": "Expand All"
     }
   }
 }

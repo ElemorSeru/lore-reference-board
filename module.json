@@ -2,10 +2,10 @@
   "id": "lore-reference-board",
   "title": "GM Tools: Lore Reference Board",
   "description": "A GM aid for theater-of-the-mind campaigns with maps, pins, and galleries that inspired you.",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "compatibility": {
-    "minimum": "12",
-    "verified": "12"
+    "minimum": "13",
+    "verified": "14"
   },
   "authors": [
     {
@@ -23,6 +23,14 @@
     "scripts/faction-circles.js",
     "scripts/faction-relations.js",
     "scripts/faction-standing.js",
+    "scripts/libs/mammoth.browser.min.js",
+    "scripts/libs/pdf.min.js",
+    "scripts/search.js",
+    "scripts/lrb-app-shell.js",
+    "scripts/lrb-tab-image.js",
+    "scripts/lrb-tab-dialogs.js",
+    "scripts/lrb-tab-document.js",
+    "scripts/lrb-tab-reference.js",
     "scripts/lrb-app.js",
     "scripts/pin-gallery-app.js",
     "scripts/npc-generators.js",
@@ -48,7 +56,6 @@
     }
   ],
   "packs": [],
-  "dependencies": [],
   "license": "",
   "url": "https://github.com/ElemorSeru/lore-reference-board",
   "manifest": "https://github.com/ElemorSeru/lore-reference-board/releases/latest/download/module.json",

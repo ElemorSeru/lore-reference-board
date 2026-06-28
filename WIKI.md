@@ -14,6 +14,7 @@ This guide covers how to use every part of the Lore Reference Board. If somethin
   - [Pin Galleries](#pin-galleries)
 - [Document Tabs](#document-tabs)
   - [Supported File Types](#supported-file-types)
+  - [PDF Viewer](#pdf-viewer)
   - [Linking a Journal Entry](#linking-a-journal-entry)
   - [Loading a URL](#loading-a-url)
 - [Reference Tabs](#reference-tabs)
@@ -31,8 +32,15 @@ This guide covers how to use every part of the Lore Reference Board. If somethin
   - [Relationship Types](#relationship-types)
   - [Standing Tiers](#standing-tiers)
   - [Party Standing Panel](#party-standing-panel)
+- [Search](#search)
+  - [Opening the Search Panel](#opening-the-search-panel)
+  - [How Search Works](#how-search-works)
+  - [Navigating to a Result](#navigating-to-a-result)
+  - [What Gets Indexed](#what-gets-indexed)
+  - [Indexing Status](#indexing-status)
 - [Settings](#settings)
   - [Max Tab Rows](#max-tab-rows)
+  - [Index All](#index-all)
   - [Import and Export](#import-and-export)
   - [Reset Window Position](#reset-window-position)
 
@@ -54,28 +62,28 @@ The tab bar runs along the top of the board window. Tabs can wrap to multiple ro
 
 Click the `+` button at the far right of the tab bar. A dialog will appear asking you to pick a tab type:
 
-- **Image Tab** - For maps/images you want to place pins on and use that functionlity
+- **Image Tab** - For maps or images you want to place pins on
 - **Document Tab** - For a single full-pane document or file
-- **Reference Tab** - For a grid-based dashboard of documents/game objects (Journals, Actors, Roll Tables, Macros, etc.)
-- **Faction Tab** *(New in v1.2)* - For a relationship map of factions, NPCs, and how they stand with each other and the party
+- **Reference Tab** - For a grid-based dashboard of documents and game objects (Journals, Actors, Roll Tables, Macros, etc.)
+- **Faction Tab** - For a relationship map of factions, NPCs, and how they stand with each other and the party
 
-After selecting a type, a second dialog will ask for a name (and an image path, if you selected the Image Tab type, and if you want to load a specific folder to start. You can always do this later). The name field must be filled before the Add button becomes active.
+After selecting a type, a second dialog will ask for a name (and an image path if you selected the Image Tab type, along with an optional folder to pre-load). The name field must be filled before the Add button becomes active.
 
 **Renaming or deleting a tab**
 
-Click the settings/gear button that appears on the right side of the main window. Your current active tab settings will open the tab settings dialog. From there you can rename the tab or delete it. Deleting a tab also removes all associated pins or cell data, so be careful.
+Click the settings/gear button that appears on the right side of the main window. Your current active tab settings will open the tab settings dialog. From there you can rename the tab or delete it. Deleting a tab also removes all associated pins or cell data.
 
-**Pinning a tab** *(New in v1.2)*
+**Pinning a tab**
 
 Hover over a tab to reveal a thumbtack icon, then click it to pin the tab. Pinned tabs move to the front of the tab bar and are separated from the rest by a small divider, keeping your most-used tabs in place no matter how many others you add. Click the thumbtack again to unpin.
 
-**Reordering tabs** *(New in v1.2)*
+**Reordering tabs**
 
 Click the reorder button (four-arrow icon) in the toolbar to enter reorder mode. While active, drag any tab and drop it before or after another to change its position. Pinned and unpinned tabs are reordered separately so you can't drag a tab across the divider between the two groups. Click the reorder button again to exit reorder mode.
 
 ---
 
-### Tab Colors *(New in v1.2)*
+### Tab Colors
 
 Each tab is tinted by its type so you can tell what kind of tab it is at a glance:
 
@@ -96,14 +104,14 @@ An Image tab shows a single image that you can pan and zoom. It is designed for 
 
 **Pan and zoom**
 
-- Scroll the mouse wheel to zoom in and out while your cursor is within the module window/image area
+- Scroll the mouse wheel to zoom in and out while your cursor is within the module window or image area
 - Click and drag on the image (not on a pin) to pan
-- A zoom bar at the bottom of the tab shows a slider, the current zoom percentage, and a reset view button *(New in v1.2)*
-- Use the Reset button to return to the default view/zoom level
+- A zoom bar at the bottom of the tab shows a slider, the current zoom percentage, and a reset view button
+- Use the Reset button to return to the default view and zoom level
 
 **Replacing the image**
 
-As a warning, currently, if you change the image and have pins/galleries, it will delete it (I may change this or prompt in a future build). Open tab settings (use the settings icon in the toolbar). The image path field accepts a new path. Use the Browse button to pick from your Foundry data directory. 
+As a warning, if you change the image and have pins or galleries set up, changing the image will clear them. Open tab settings (use the settings icon in the toolbar). The image path field accepts a new path. Use the Browse button to pick from your Foundry data directory.
 
 ---
 
@@ -113,9 +121,10 @@ To place a pin, click the pin placement toggle button in the toolbar (it turns b
 
 A dialog will open immediately so you can fill in the pin details. Once you save, the pin appears on the map.
 
-To disable placement mode, click the toggle button again (this allows you to edit the gallery associated with the pin).
+To disable placement mode, click the toggle button again (this is also required to open pin galleries by clicking a pin).
 
-You can move the pin later by toggling the pin button on, and then left clicking and dragging the icon somewhere else.
+You can move an existing pin by toggling the pin button on, then left-clicking and dragging the icon to a new position.
+
 ---
 
 ### Pin Icons
@@ -150,17 +159,17 @@ Click the Unlink button. You will be asked to confirm. The journal entry itself 
 
 ### Pin Galleries
 
-Each pin can have its own image gallery organized into folders. This is useful for keeping NPC portraits, location references, or item art associated with a specific pin; Really, any image you like.
+Each pin can have its own image gallery organized into folders. This is useful for keeping NPC portraits, location references, or item art associated with a specific pin; any image you would like to reference or use.
 
 **Opening the gallery**
 
-When your pin placement is toggled off, just left click the pin. This opens the Pin Gallery window associated with that pin.
+When pin placement is toggled off, left-click any pin to open the Pin Gallery window for that pin.
 
 **Adding a folder**
 
 Click "Add Folder" in the gallery window (to the right of the Save Name button). You will be asked for a folder name, then prompted to select a folder from your Foundry data directory (optional). All image files found in that folder are imported automatically.
 
-You can also add individual images to a folder using the `+` button next to the folder name, or import all images from the folder's path using the folder button nest to the `+`.
+You can also add individual images to a folder using the `+` button next to the folder name, or import all images from the folder path using the folder button next to the `+`.
 
 **Removing an image**
 
@@ -168,22 +177,21 @@ Right-click any thumbnail in the gallery to remove it from the folder. The file 
 
 **Clicking an image**
 
-Left clicking a thumbnail opens a larger preview of the image in a dialog. From there you have options to add specific lore for that token, copy the file path to clipboard, create a new scene using the image, or create the image as a Foundry token. If the Encounter Forge module is active, creating a token will first ask whether to create a blank actor or generate a full NPC with stats via Gm Tools: Encounter Forge. The generator opens pre-loaded with this image as the portrait and token art. *(New in v1.2)*
+Left-clicking a thumbnail opens a larger preview of the image in a dialog. From there you have options to add specific lore for that image, copy the file path to clipboard, create a new scene using the image, or create the image as a Foundry token. If the Encounter Forge module is active, creating a token will first ask whether to create a blank actor or generate a full NPC with stats. The generator opens pre-loaded with this image as the portrait and token art.
 
 ---
 
 ## Document Tabs
 
-A Document tab gives you a full-pane viewer tied to a single file or journal. The content fills the entire tab area.
+A Document tab gives you a full-pane viewer tied to a single file, journal, or html/website. The content fills the entire tab area.
 
 When the tab has nothing linked yet, you will see a drop zone with two ways to load something:
 
 1. **Drag and drop** a journal entry from the sidebar onto the drop zone
 2. **Browse** using the file browser button to pick a file from your data directory
+3. **Select** load a website or html file stored locally into the tab. (Subject to iframe limitations and website security)
 
 Once something is loaded, a header bar appears at the top of the tab showing what is linked. You can use the Unlink button in that bar to disconnect it and return to the empty state.
-
-**Note:** V12 currently has a web browser/html loading function. I am working through how to move that to Version 13+ more cleanly.
 
 ---
 
@@ -191,40 +199,63 @@ Once something is loaded, a header bar appears at the top of the tab showing wha
 
 | Extension | How it renders |
 |---|---|
-| `.pdf` | Embedded PDF viewer |
+| `.pdf` | Infinite scroll canvas viewer (see PDF Viewer section below) |
 | `.md` | Rendered Markdown |
 | `.txt` | Preformatted plain text |
-| `.html` / `.htm` | Rendered HTML page in V12 Only |
-| `.docx` | Converted to readable HTML (via mammoth.js) |
+| `.html` / `.htm` | Rendered HTML page |
+| `.docx` | Converted to readable HTML via mammoth.js |
 | `.png` / `.jpg` / `.webp` / `.gif` / `.svg` / `.bmp` / `.avif` | Centered image viewer |
 | Journal Entry (world or compendium) | Rendered journal content with page navigation |
-| `http://` / `https://` URL | Web page in V12 Only |
+| `http://` / `https://` URL | Web page via iframe |
 
-**Note on URLs in V12:** Whether a URL loads depends on whether the target site allows being embedded in an iframe. Many sites block this. If you see a blank frame or an error, the site does not permit embedding.
+**Note on URLs:** Whether a URL loads depends on whether the target site allows being embedded in an iframe. Many sites block this. If you see a blank frame or an error, the site does not permit embedding.
 
-**Note on DOCX files:** The module is converting DOCX files into HTML. Complex formatting like tables, multi-column layouts, and certain styles may not convert perfectly. Simple documents with headings and paragraphs work well.
+**Note on DOCX files:** The module converts DOCX files into HTML. Complex formatting like tables, multi-column layouts, and certain styles may not convert perfectly. Simple documents with headings and paragraphs work well.
+
+---
+
+### PDF Viewer
+
+PDFs use an infinite scroll canvas renderer. All pages are available immediately and load progressively as you scroll down, so you do not need to flip through pages one at a time.
+
+**Page navigation**
+
+There is a page number input within the header bar. Type a page number and press Enter to jump directly to that page.
+
+**Sidebar**
+
+Click the list icon in the header to open the sidebar. The sidebar starts collapsed by default. Depending on whether the PDF includes an outline (table of contents), the sidebar shows either:
+
+- **Table of Contents** - Click any entry to jump to that section
+- **Page Thumbnails** - Click any thumbnail to jump to that page; the active page is highlighted as you scroll
+
+Click the list icon again to collapse the sidebar. Because reference cells can be small, using the sidebar may be more practical when the cell is expanded wide or when the full board window is widened.
+
+**Search highlighting**
+
+When you click a search result that points to a PDF, the viewer scrolls to the correct page and highlights the matched text on that page.
 
 ---
 
 ### Linking a Journal Entry
 
-Drag any journal entry from the Foundry sidebar (Journals or Compendium Journals) and drop it onto the Document tab's drop zone. The will render and stay with the linked item.
+Drag any journal entry from the Foundry sidebar (Journals or Compendium Journals) and drop it onto the Document tab's drop zone. The content will render and stay linked.
 
-If the journal has more than one page, a navigation bar appears at the top of the content area with previous/next buttons and a page dropdown. Pages are listed in their sorted order from the journal.
+If the journal has more than one page, a navigation bar appears at the top of the content area with previous and next buttons and a page dropdown. Pages are listed in their sorted order from the journal.
 
 ---
 
-### Loading a URL (V12 Build Only, for now)
+### Loading a URL
 
-Type or paste a full URL (starting with `http://` or `https://`) into the path input at the bottom of the drop zone and click Load. The URL is loaded into the tab.
+Type or paste a full URL (starting with `http://` or `https://`) into the path input at the bottom of the drop zone and click Load. The URL is loaded into the tab via iframe.
 
-Some sites will refuse to load inside an iframe (what I'm using to load the page) due to their own security headers. If this happens there is no workaround from within Foundry or this Module.
+Some sites will refuse to load inside an iframe due to their own security headers. If this happens there is no workaround from within Foundry or this module.
 
 ---
 
 ## Reference Tabs
 
-A Reference tab shows a 4-column grid of cells. Each cell links to one Foundry document or one file. The grid expands downward as you add more cells, and scrolls vertically.
+A Reference tab shows a 4-column grid of cells. Each cell links to one Foundry document or one file. The grid expands downward as you add more cells and scrolls vertically. You'll always have more cells to create more content on the reference tab. 
 
 When a Reference tab is first created it is entirely empty. Every grid position shows a dashed placeholder with a `+` button.
 
@@ -270,12 +301,13 @@ If any cell in the rectangle is occupied by an existing cell, the preview turns 
 
 A size readout below the picker shows the current selection as "X cols x Y rows".
 
-The picker initializes with a 1x1 default selection at the grid position of the `+` button you clicked to open the dialog, so if you just want a single-size cell in that exact spot you can click Add immediately without interacting with the picker. You can also just pick a completely new set of cells from this window. You arent bound to which cell you started with.
+The picker initializes with a 1x1 default selection at the grid position of the `+` button you clicked to open the dialog. If you just want a single-size cell in that exact spot you can click Add immediately without interacting with the picker. You can also just pick a completely new set of cells from this window. You arent bound to which cell you started with.
 
 ---
 
 ### Cell Types and What They Do
-For system agnostic functionality (I wanted to support more systems), some cells load/link to a shortcut of that added item according to their designated system module.
+
+For system-agnostic functionality, cells load and link to a shortcut view of the added item rather than a full sheet.
 
 **Actor**
 
@@ -287,7 +319,7 @@ Same layout as Actor. Shows portrait and an Open Sheet button.
 
 **Journal Entry**
 
-Renders the journal content inline inside the cell, including formatted text, images, and tables. If the journal has multiple pages, a navigation bar appears at the top of the cell with previous/next buttons and a page dropdown. An "Open" button in the cell header opens the full journal sheet.
+Renders the journal content inline inside the cell, including formatted text, images, and tables. If the journal has multiple pages, a navigation bar appears at the top of the cell with previous and next buttons and a page dropdown. An "Open" button in the cell header opens the full journal sheet.
 
 **Macro**
 
@@ -313,11 +345,11 @@ Shows the card deck name with two icon buttons: Shuffle (randomizes the deck ord
 
 ### File Cells (PDF, TXT, Markdown)
 
-**PDF cells** embed the file directly as an iframe inside the cell. The PDF viewer is the browser's native one. The cell needs to be reasonably tall for this to be usable, so consider using a span of at least 3 rows.
+**PDF cells** use the same infinite scroll canvas viewer as Document tabs. All pages load as you scroll to conserve resources. A page number input lets you jump directly to any page, and a collapsible sidebar is available for the table of contents or page thumbnails. The sidebar starts collapsed by default. For PDF cells, consider using a span of at least 3 rows so the viewer has enough room to be usable. Expanding the board window width also helps when using the sidebar.
 
-**TXT cells** display the file content as preformatted text, preserving line breaks and spacing. Good for quick reference notes stored as plain files.
+**TXT cells** display the file content as preformatted text, preserving line breaks and spacing.
 
-**Markdown cells** fetch the file and render it as formatted HTML. Images in Markdown files will only display if the image path is a full URL or a path accessible from Foundry's system.
+**Markdown cells** fetch the file and render it as formatted HTML. Images in Markdown files will only display if the image path is a full URL or a path accessible from Foundry.
 
 File type is detected automatically from the file extension. You do not need to select a type manually.
 
@@ -342,7 +374,7 @@ The Edit Cell window is the same as the Add Cell dialog with two differences:
 
 ---
 
-## Faction Tabs *(New in v1.2)*
+## Faction Tabs
 
 A Faction tab is a pannable, zoomable canvas for mapping out factions, NPCs, and how they relate to each other and the party. Factions appear as colored circles that you can freely arrange.
 
@@ -355,7 +387,7 @@ Use the toolbar buttons across the top of the tab to add factions and relationsh
 Click the **Add Faction** button (circle with a plus) in the toolbar to drop a new faction circle onto the canvas.
 
 - **Move** a faction by clicking and dragging it anywhere on the canvas
-- **Resize** a faction by dragging the small arrow handle at its corner (seen when you mouse over the circle)
+- **Resize** a faction by dragging the small arrow handle at its corner (visible when you hover over the circle)
 - Relationship lines connected to a faction follow it automatically as you move or resize it
 
 ---
@@ -387,7 +419,7 @@ The rating is used to determine which [Standing Tier](#standing-tiers) the facti
 
 ### Linking Entities to a Faction
 
-Drag any Actor, Item, Journal Entry, or other supported Foundry document from a sidebar (or compendium) and drop it onto a faction circle to link it as a member of that faction.
+Drag any Actor, Item, Journal Entry, or other supported Foundry document from a sidebar or compendium and drop it onto a faction circle to link it as a member of that faction.
 
 - Linked entities appear as small portrait tokens inside the circle
 - Click a token to open that document's sheet
@@ -402,7 +434,7 @@ Click **Add Relationship** (link chain) in the toolbar to enter relationship mod
 
 1. Click a faction to select it as the first end of the relationship
 2. Click a second, different faction to connect to
-3. A dialog opens asking you to pick the relationship type, choose one and confirm
+3. A dialog opens asking you to pick the relationship type; choose one and confirm
 
 A line is drawn between the two factions, styled and colored according to the relationship type you picked. Click the button again to exit relationship mode.
 
@@ -422,9 +454,9 @@ Click the **Relationship Types** button (palette icon) to manage the list of rel
 - A **line style** - Solid, Dashed, Dotted, or Dash-Dot
 - A **color**
 
-You can add new types, edit existing ones, or remove types you don't need. The module ships with a default set of types: Allies, Rivals, Trade Partners, Vassal/Liege, Blood Feud, Truce/Ceasefire, Mentor & Student, and Spy Network.
+You can add new types, edit existing ones, or remove types you don't need. The module has a default set included: Allies, Rivals, Trade Partners, Vassal/Liege, Blood Feud, Truce/Ceasefire, Mentor & Student, and Spy Network. You can add, modify, or remove any as you'd like.
 
-If no relationship types exist, you'll be prompted to add one before you can create a relationship.
+If no relationship types exist, you will be prompted to add one before you can create a relationship.
 
 ---
 
@@ -442,7 +474,7 @@ Each tier has a label and a minimum/maximum rating range. The default tiers are:
 | Friendly | 21 to 40 |
 | Allied | 41 and above |
 
-You can add or remove tiers and edit the labels and ranges. Ranges must be contiguous, no gaps and no overlaps, and every tier needs both a label and a min/max value, or the dialog will show an error explaining what to fix.
+You can add or remove tiers and edit the labels and ranges. Ranges must be contiguous with no gaps and no overlaps. Every tier needs both a label and a min/max value, or the dialog will show an error explaining what to fix.
 
 ---
 
@@ -456,6 +488,70 @@ Click **Party Standing** (handshake icon) to open a side panel listing every fac
 
 ---
 
+## Search
+
+### Opening the Search Panel
+
+Click the magnifying glass button in the board's toolbar to open or close the search panel. The panel displays on right side of the main board window. Drag the divider on the left edge of the panel to resize it.
+
+---
+
+### How Search Works
+
+Type at least two characters into the search input to start a search. Results update as you type (sometimes with a short delay depending on content size).
+
+Results are grouped by the document or cell they belong to. Each result shows a text snippet with the matched word highlighted. Groups can be collapsed or expanded using the chevron on each group header. Use the **Collapse All** and **Expand All** buttons in the panel header to manage all groups at once.
+
+Click the X button (beside the search box) to clear the search and close the panel. The search persists through reloads/refreshes. It only clears when you close it via the X.
+
+---
+
+### Navigating to a Result
+
+Click any result row to navigate to it. The board will:
+
+1. Switch to the tab containing that document or cell (if it is not already active)
+2. Scroll to the page or location where the match appears
+3. Highlight the matched text in the content
+
+For PDF documents, the viewer scrolls to the correct page and highlights the matched text in the rendered text layer. For journals and HTML content, the matched section is scrolled into view and the text is highlighted inline.
+
+---
+
+### What Gets Indexed
+
+| Source | What is read |
+|---|---|
+| Document tab - PDF | All pages, read directly from the file |
+| Document tab - TXT, Markdown, HTML | Full file text |
+| Document tab - DOCX | Converted text content |
+| Document tab - Journal Entry | All pages in sorted order |
+| Reference cell - PDF | All pages, read directly from the file |
+| Reference cell - TXT, Markdown | Full file text |
+| Reference cell - Journal Entry | All pages in sorted order |
+| URL tabs | Not searchable (content not indexed) |
+| Image tabs | Not searchable |
+| Faction tabs | Not searchable |
+
+PDF pages are indexed from the file directly rather than from what you have scrolled through, so the full document is searchable as soon as it is loaded.
+
+Indexing runs automatically:
+- When a tab or cell is first loaded
+- When the file or document linked to a tab or cell changes
+- When a tab or cell is deleted (the entry is removed so it no longer appears in results)
+
+The search index is cached in localStorage so results are available immediately on subsequent sessions without re-reading files. The cache is invalidated automatically when file content changes.
+
+---
+
+### Indexing Status
+
+While documents are being indexed in the background (especially large PDFs), a status bar at the top of the results list shows how many items are indexed versus still pending. Once all items are indexed the bar disappears.
+
+If results ever seem stale or incomplete, use the **Index All** button in the module settings panel to force a full re-index of all tabs and cells.
+
+---
+
 ## Settings
 
 Open Foundry's module settings (Game Settings > Configure Settings > Module Settings) and find Lore Reference Board.
@@ -466,9 +562,17 @@ Open Foundry's module settings (Game Settings > Configure Settings > Module Sett
 
 Controls how many rows of tabs are shown before the tab bar stops growing and starts scrolling vertically within its current height. Default is 4.
 
-Set this to 0 to allow unlimited rows (the tab bar will grow as tall as it needs to, but doesn't look great).
+Set this to 0 to allow unlimited rows (the tab bar will grow as tall as it needs to). Just be mindful that the window does become difficult to manage when the tabs are not restricted beyond a certain point.
 
-This is a per-client setting, so each GM (if multiple) can set their own preference independently.
+This is a per-client setting, so each GM can set their own preference independently (if you have more than one GM user).
+
+---
+
+### Index All
+
+Forces a full re-index of every document tab and reference cell. Use this if search results seem out of date after making changes outside of a normal session, or as a troubleshooting step if results look wrong.
+
+The process runs in the background. The status bar in the search panel will show progress while indexing is happening.
 
 ---
 

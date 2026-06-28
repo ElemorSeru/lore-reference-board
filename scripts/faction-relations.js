@@ -183,39 +183,28 @@ async function _loreRefBoard_factionRelationshipDialog(types, existing) {
       </form>
     `;
 
-    return new Promise((resolve) => {
-        let clicked = false;
-        const buttons = {
-            save: {
-                label: game.i18n.localize("lore-reference-board.Common.Save"),
-                callback: (h) => {
-                    clicked = true;
-                    const form = h[0].querySelector("form")?.elements;
-                    resolve({ action: "save", typeId: form?.relType?.value });
-                },
+    const _btns = [
+        {
+            action: "save",
+            label: game.i18n.localize("lore-reference-board.Common.Save"),
+            default: true,
+            callback: (_ev, btn) => {
+                const form = btn.closest("dialog")?.querySelector("form")?.elements;
+                return { action: "save", typeId: form?.relType?.value };
             },
-        };
+        },
+    ];
+    if (existing) _btns.push({ action: "delete", label: game.i18n.localize("lore-reference-board.Faction.Relationship.BtnDelete"), callback: () => ({ action: "delete" }) });
+    _btns.push({ action: "cancel", label: game.i18n.localize("lore-reference-board.Common.Cancel") });
 
-        if (existing) {
-            buttons.delete = {
-                label: game.i18n.localize("lore-reference-board.Faction.Relationship.BtnDelete"),
-                callback: () => { clicked = true; resolve({ action: "delete" }); },
-            };
-        }
-
-        buttons.cancel = {
-            label: game.i18n.localize("lore-reference-board.Common.Cancel"),
-            callback: () => { clicked = true; resolve("cancel"); },
-        };
-
-        new Dialog({
-            title: game.i18n.localize("lore-reference-board.Faction.Relationship.Title"),
-            content,
-            buttons,
-            default: "save",
-            close: () => { if (!clicked) resolve("cancel"); },
-        }, { width: 360, classes: ["app", "window-app", "dialog", "lore-rb-dialog"] }).render(true);
-    });
+    return DialogV2.wait({
+        window: { title: game.i18n.localize("lore-reference-board.Faction.Relationship.Title") },
+        classes: ["lore-rb-dialog"],
+        position: { width: 360 },
+        content,
+        buttons: _btns,
+        rejectClose: false,
+    }).then(r => r ?? "cancel");
 }
 
 function _loreRefBoard_bindFactionRelationshipEvents(app, html) {
@@ -294,34 +283,44 @@ async function loreRefBoard_manageFactionRelationshipTypesDialog(app, html) {
       </form>
     `;
 
-    const result = await new Promise((resolve) => {
-        let clicked = false;
-        new Dialog({
-            title: game.i18n.localize("lore-reference-board.Faction.RelationshipTypes.Title"),
-            content,
-            buttons: {
-                save: {
-                    label: game.i18n.localize("lore-reference-board.Common.Save"),
-                    callback: (h) => { clicked = true; resolve(_loreRefBoard_collectFactionRelTypeRows(h)); },
-                },
-                cancel: {
-                    label: game.i18n.localize("lore-reference-board.Common.Cancel"),
-                    callback: () => { clicked = true; resolve("cancel"); },
+    const _relTypePromise = DialogV2.wait({
+        window: { title: game.i18n.localize("lore-reference-board.Faction.RelationshipTypes.Title") },
+        classes: ["lore-rb-dialog"],
+        position: { width: 480 },
+        content,
+        buttons: [
+            {
+                action: "save",
+                label: game.i18n.localize("lore-reference-board.Common.Save"),
+                default: true,
+                callback: (_ev, btn) => {
+                    const $dlg = $(btn.closest("dialog"));
+                    return _loreRefBoard_collectFactionRelTypeRows($dlg);
                 },
             },
-            default: "save",
-            render: (h) => {
-                h.find(".lrt-faction-reltype-add").on("click", () => {
-                    const row = $(_loreRefBoard_factionRelTypeRowHtml({ id: foundry.utils.randomID(), label: "", lineStyle: "solid", color: loreRefBoard_FACTION_REL_DEFAULT_COLOR }));
-                    h.find(".lrt-faction-reltype-list").append(row);
-                });
-                h.find(".lrt-faction-reltype-list").on("click", ".lrt-faction-reltype-remove", function () {
-                    $(this).closest(".lrt-faction-reltype-row").remove();
-                });
-            },
-            close: () => { if (!clicked) resolve("cancel"); },
-        }, { width: 480, classes: ["app", "window-app", "dialog", "lore-rb-dialog"] }).render(true);
+            { action: "cancel", label: game.i18n.localize("lore-reference-board.Common.Cancel") },
+        ],
+        rejectClose: false,
     });
+
+    let _rltTries = 0;
+    const _rltSetup = () => {
+        const addBtn = document.querySelector(".lrt-faction-reltype-add");
+        if (!addBtn) { if (++_rltTries < 60) requestAnimationFrame(_rltSetup); return; }
+        const $dlg = $(addBtn.closest("dialog"));
+        const $list = $dlg.find(".lrt-faction-reltype-list");
+        addBtn.addEventListener("click", () => {
+            const row = $(_loreRefBoard_factionRelTypeRowHtml({ id: foundry.utils.randomID(), label: "", lineStyle: "solid", color: loreRefBoard_FACTION_REL_DEFAULT_COLOR }));
+            $list.append(row);
+        });
+        $list[0]?.addEventListener("click", (ev) => {
+            const removeBtn = ev.target.closest(".lrt-faction-reltype-remove");
+            if (removeBtn) $(removeBtn).closest(".lrt-faction-reltype-row").remove();
+        });
+    };
+    requestAnimationFrame(_rltSetup);
+
+    const result = (await _relTypePromise) ?? "cancel";
 
     if (!result || result === "cancel") return;
 

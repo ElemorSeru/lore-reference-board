@@ -1,3 +1,5 @@
+var { DialogV2 } = foundry.applications.api;
+
 
 const loreRefBoard_FACTION_CIRCLE_DEFAULT_RADIUS = 80;
 const loreRefBoard_FACTION_CIRCLE_MIN_RADIUS = 30;
@@ -202,14 +204,16 @@ async function _loreRefBoard_showFactionEntityOverflowDialog(app, html, circleId
 
     const content = `<div id="${listId}" class="lrt-faction-entity-list">${entities.map(rowHtml).join("")}</div>`;
 
-    new Dialog({
-        title: game.i18n.format("lore-reference-board.Faction.Circle.Entity.ListTitle", { name: circle.name ?? "" }),
+    DialogV2.wait({
+        window: { title: game.i18n.format("lore-reference-board.Faction.Circle.Entity.ListTitle", { name: circle.name ?? "" }) },
+        classes: ["lore-rb-dialog"],
+        position: { width: 320 },
         content,
-        buttons: {
-            close: { label: game.i18n.localize("lore-reference-board.Common.Close") },
-        },
-        default: "close",
-    }, { width: 320, classes: ["app", "window-app", "dialog", "lore-rb-dialog"] }).render(true);
+        buttons: [
+            { action: "close", label: game.i18n.localize("lore-reference-board.Common.Close"), default: true },
+        ],
+        rejectClose: false,
+    });
 
     let tries = 0;
     const bind = () => {
@@ -440,36 +444,29 @@ async function _loreRefBoard_factionCircleSettingsDialog(app, html, circleId) {
       </form>
     `;
 
-    const result = await new Promise((resolve) => {
-        let clicked = false;
-        new Dialog({
-            title: game.i18n.localize("lore-reference-board.Faction.Circle.Settings.Title"),
-            content,
-            buttons: {
-                save: {
-                    label: game.i18n.localize("lore-reference-board.Common.Save"),
-                    callback: (html) => {
-                        clicked = true;
-                        const form = html[0].querySelector("form")?.elements;
-                        resolve({
-                            action: "save",
-                            name: (form?.circleName?.value ?? "").trim(),
-                            color: form?.circleColor?.value ?? loreRefBoard_FACTION_CIRCLE_DEFAULT_COLOR,
-                        });
-                    },
-                },
-                delete: {
-                    label: game.i18n.localize("lore-reference-board.Faction.Circle.Settings.BtnDelete"),
-                    callback: () => { clicked = true; resolve({ action: "delete" }); },
-                },
-                cancel: {
-                    label: game.i18n.localize("lore-reference-board.Common.Cancel"),
-                    callback: () => { clicked = true; resolve("cancel"); },
+    const result = await DialogV2.wait({
+        window: { title: game.i18n.localize("lore-reference-board.Faction.Circle.Settings.Title") },
+        classes: ["lore-rb-dialog"],
+        position: { width: 360 },
+        content,
+        buttons: [
+            {
+                action: "save",
+                label: game.i18n.localize("lore-reference-board.Common.Save"),
+                default: true,
+                callback: (_ev, btn) => {
+                    const form = btn.closest("dialog")?.querySelector("form")?.elements;
+                    return {
+                        action: "save",
+                        name: (form?.circleName?.value ?? "").trim(),
+                        color: form?.circleColor?.value ?? loreRefBoard_FACTION_CIRCLE_DEFAULT_COLOR,
+                    };
                 },
             },
-            default: "save",
-            close: () => { if (!clicked) resolve("cancel"); },
-        }, { width: 360, classes: ["app", "window-app", "dialog", "lore-rb-dialog"] }).render(true);
+            { action: "delete", label: game.i18n.localize("lore-reference-board.Faction.Circle.Settings.BtnDelete"), callback: () => ({ action: "delete" }) },
+            { action: "cancel", label: game.i18n.localize("lore-reference-board.Common.Cancel") },
+        ],
+        rejectClose: false,
     });
 
     loreRefBoard_attachDialogValidation(nameInputId, "save", ["circleName"]);
@@ -477,9 +474,10 @@ async function _loreRefBoard_factionCircleSettingsDialog(app, html, circleId) {
     if (!result || result === "cancel") return;
 
     if (result.action === "delete") {
-        const confirmed = await Dialog.confirm({
-            title: game.i18n.localize("lore-reference-board.Faction.Circle.Settings.DeleteTitle"),
+        const confirmed = await DialogV2.confirm({
+            window: { title: game.i18n.localize("lore-reference-board.Faction.Circle.Settings.DeleteTitle") },
             content: `<p>${game.i18n.format("lore-reference-board.Faction.Circle.Settings.DeleteContent", { name: loreRefBoard_escapeHtml(circle.name ?? "") })}</p>`,
+            rejectClose: false,
         });
         if (!confirmed) return;
 

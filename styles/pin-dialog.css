@@ -1,57 +1,18 @@
-/* Global box-sizing reset */
-.pd-layout,
-.pd-layout *,
-.pd-layout *::before,
-.pd-layout *::after {
-    box-sizing: border-box;
-}
-
-/* All text-like inputs + selects + textareas fill their parent cell */
-.pd-layout input[type="text"],
-.pd-layout input[type="number"],
-.pd-layout input[type="color"],
-.pd-layout select,
-.pd-layout textarea {
-    width: 100%;
-    box-sizing: border-box;
-}
-
-/* Dark-mode opened dropdown list */
-.pd-layout select {
-    color-scheme: dark;
-}
-
-.pd-layout select option {
-    background: #2a2a2a;
-    color: #eee;
-}
-
-.pd-layout button {
-    width: auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
 /* Two-column grid layout */
-
 .pd-layout {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0 20px;
     padding: 4px 0;
     align-items: start;
-    min-width: 0;
-    width: 100%;
 }
 
-/* Left column,  pin fields */
+/* Left column pin fields */
 
 .pd-left {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    min-width: 0;   
 }
 
 /* Centred preview icon above the fields */
@@ -92,7 +53,6 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    min-width: 0;
 }
 
 .pd-field label {
@@ -101,18 +61,32 @@
     display: block;
 }
 
-.pd-field-flex { flex: 1 1 0; min-width: 0; }
+.pd-field-flex { flex: 1; }
 
-.pd-field-color { width: 72px; flex-shrink: 0; }
+.pd-field-color { width: 90px; flex-shrink: 0; }
 .pd-field-color input[type="color"] {
     width: 100%;
     height: 32px;
     padding: 0 2px;
     cursor: pointer;
-    box-sizing: border-box;
 }
 
-/* Right column,  journal linking panel */
+/* Icon select dropdown */
+.pd-field select {
+    color-scheme: dark;
+    background: #2a2a2a;
+    color: #eee;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 4px 6px;
+}
+
+.pd-field select option {
+    background: #2a2a2a;
+    color: #eee;
+}
+
+/* Right column journal linking */
 
 .pd-right {
     display: flex;
@@ -120,7 +94,6 @@
     border-left: 1px solid #3a3a3a;
     padding-left: 18px;
     align-self: stretch;
-    min-width: 0;
 }
 
 .pd-journal-label {
@@ -134,7 +107,8 @@
     flex-shrink: 0;
 }
 
-/* Unlinked state,  drop zone */
+/* Unlinked state drop zone */
+
 .pd-journal-unlinked {
     flex: 1 1 auto;
     display: flex;
@@ -149,15 +123,14 @@
     align-items: center;
     justify-content: center;
     gap: 0;
-    padding: 16px 12px;
+    padding: 24px 16px;
     border: 2px dashed #3a3a3a;
     border-radius: 10px;
     text-align: center;
     background: transparent;
     transition: border-color 0.18s, background 0.18s;
     box-sizing: border-box;
-    min-height: 140px;
-    width: 100%;
+    min-height: 160px;
 }
 
 /* Drag-active */
@@ -193,7 +166,6 @@
 
 .pd-btn-create {
     padding: 7px 18px;
-    width: auto;
     background: #2a3f2a;
     border: 1px solid #4a6a4a;
     border-radius: 5px;
@@ -211,7 +183,7 @@
     color: #bef;
 }
 
-/* Linked state, journal bar + content preview */
+/* Linked state journal bar + content preview */
 
 .pd-journal-linked {
     flex: 1 1 auto;
@@ -250,7 +222,6 @@
 .pd-btn-edit,
 .pd-btn-unlink {
     padding: 3px 9px;
-    width: auto;
     font-size: 11px;
     border-radius: 4px;
     cursor: pointer;
@@ -283,9 +254,42 @@
     color: #fcc;
 }
 
+/* Page navigation bar */
+.pd-page-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    background: #1e1e1e;
+    border: 1px solid #3a3a3a;
+    border-top: none;
+    flex-shrink: 0;
+}
+
+.pd-page-nav > i {
+    color: #888;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.pd-page-nav select {
+    flex: 1;
+    color-scheme: dark;
+    background: #2a2a2a;
+    color: #eee;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 12px;
+}
+
+.pd-page-nav select option {
+    background: #2a2a2a;
+    color: #eee;
+}
+
 /* Scrollable journal content preview */
 .pd-linked-content {
-    flex: 1 1 auto;
     overflow-y: auto;
     padding: 10px 12px;
     background: #1e1e1e;
@@ -295,7 +299,8 @@
     color: #ddd;
     font-size: 12px;
     line-height: 1.5;
-    min-height: 60px;
+    min-height: 0;
+    flex: 1 1 auto;
 }
 
 .pd-linked-content h1,
@@ -332,4 +337,3 @@
     min-height: 80px;
     resize: none;
 }
-

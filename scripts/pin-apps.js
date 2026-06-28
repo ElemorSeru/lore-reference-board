@@ -1,4 +1,6 @@
-class LoreRefBoardPinImageViewer extends Application {
+var { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
+
+class LoreRefBoardPinImageViewer extends HandlebarsApplicationMixin(ApplicationV2) {
 
     constructor({ src, folderName, folderPath, pinId, tabId }, options = {}) {
         options.id = options.id ?? `lore-image-viewer-${foundry.utils.randomID()}`;
@@ -12,16 +14,16 @@ class LoreRefBoardPinImageViewer extends Application {
 
     get title() { return this._folderName || game.i18n.localize("lore-reference-board.ImageViewer.WindowTitle"); }
 
-    static get defaultOptions() {
-        return foundry.utils.mergeObject(super.defaultOptions, {
-            template: "modules/lore-reference-board/templates/pin-image-viewer.html",
-            width: 520,
-            height: 660,
-            resizable: true,
-        });
-    }
+    static DEFAULT_OPTIONS = {
+        window: { resizable: true },
+        position: { width: 520, height: 660 },
+    };
 
-    async getData(_options = {}) {
+    static PARTS = {
+        main: { template: "modules/lore-reference-board/templates/pin-image-viewer.html" },
+    };
+
+    async _prepareContext(_options = {}) {
         const fileName = this._src.split("/").pop();
         const locationFolder = this._src.includes("/")
             ? this._src.substring(0, this._src.lastIndexOf("/"))
@@ -29,8 +31,8 @@ class LoreRefBoardPinImageViewer extends Application {
         return { src: this._src, fileName, locationFolder };
     }
 
-    activateListeners(html) {
-        super.activateListeners(html);
+    async _onRender(context, options) {
+        const html = $(this.element);
 
         // Resolve image dimensions asynchronously
         const img = new Image();
@@ -155,28 +157,17 @@ class LoreRefBoardPinImageViewer extends Application {
 
         let mode;
         try {
-            mode = await new Promise((resolve, reject) => {
-                let clicked = false;
-                new Dialog({
-                    title: game.i18n.localize("lore-reference-board.ImageViewer.CreateTokenTitle"),
-                    content: `<p style="margin:0 0 14px">${game.i18n.format("lore-reference-board.ImageViewer.GeneratorPrompt", { module: generator.label })}</p>`,
-                    buttons: {
-                        generated: {
-                            label: game.i18n.localize("lore-reference-board.ImageViewer.GeneratorGenerated"),
-                            callback: () => { clicked = true; resolve("generated"); },
-                        },
-                        blank: {
-                            label: game.i18n.localize("lore-reference-board.ImageViewer.GeneratorBlank"),
-                            callback: () => { clicked = true; resolve("blank"); },
-                        },
-                        cancel: {
-                            label: game.i18n.localize("lore-reference-board.Common.Cancel"),
-                            callback: () => { clicked = true; resolve("cancel"); },
-                        },
-                    },
-                    default: "generated",
-                    close: () => { if (!clicked) reject(new Error("closed")); },
-                }, { classes: ["app", "window-app", "dialog", "lore-rb-dialog"], width: 480 }).render(true);
+            mode = await DialogV2.wait({
+                window: { title: game.i18n.localize("lore-reference-board.ImageViewer.CreateTokenTitle") },
+                classes: ["lore-rb-dialog"],
+                position: { width: 480 },
+                content: `<p style="margin:0 0 14px">${game.i18n.format("lore-reference-board.ImageViewer.GeneratorPrompt", { module: generator.label })}</p>`,
+                buttons: [
+                    { action: "generated", label: game.i18n.localize("lore-reference-board.ImageViewer.GeneratorGenerated"), default: true, callback: () => "generated" },
+                    { action: "blank", label: game.i18n.localize("lore-reference-board.ImageViewer.GeneratorBlank"), callback: () => "blank" },
+                    { action: "cancel", label: game.i18n.localize("lore-reference-board.Common.Cancel") },
+                ],
+                rejectClose: true,
             });
         } catch { return; }
         if (mode === "cancel") return;
@@ -197,33 +188,26 @@ class LoreRefBoardPinImageViewer extends Application {
         const uid = foundry.utils.randomID();
         let result;
         try {
-            result = await new Promise((resolve, reject) => {
-                let clicked = false;
-                new Dialog({
-                    title: game.i18n.localize("lore-reference-board.ImageViewer.CreateTokenTitle"),
-                    content: `<form>
+            result = await DialogV2.wait({
+                window: { title: game.i18n.localize("lore-reference-board.ImageViewer.CreateTokenTitle") },
+                classes: ["lore-rb-dialog"],
+                content: `<form>
                         <div style="padding:6px 0">
                             <label style="display:block;margin-bottom:4px;font-weight:bold">${game.i18n.localize("lore-reference-board.ImageViewer.ActorNameLabel")}</label>
                             <input id="piv-actor-${uid}" type="text"
                                    value="${loreRefBoard_escapeHtml(defaultName)}" style="width:100%" autofocus />
                         </div>
                     </form>`,
-                    buttons: {
-                        ok: {
-                            label: game.i18n.localize("lore-reference-board.Common.Create"),
-                            callback: (html) => {
-                                clicked = true;
-                                resolve(html[0].querySelector(`#piv-actor-${uid}`)?.value ?? defaultName);
-                            },
-                        },
-                        cancel: {
-                            label: game.i18n.localize("lore-reference-board.Common.Cancel"),
-                            callback: () => { clicked = true; resolve("cancel"); },
-                        },
+                buttons: [
+                    {
+                        action: "ok",
+                        label: game.i18n.localize("lore-reference-board.Common.Create"),
+                        default: true,
+                        callback: (_ev, btn) => btn.closest("dialog")?.querySelector(`#piv-actor-${uid}`)?.value ?? defaultName,
                     },
-                    default: "ok",
-                    close: () => { if (!clicked) reject(new Error("closed")); },
-                }, { classes: ["app", "window-app", "dialog", "lore-rb-dialog"] }).render(true);
+                    { action: "cancel", label: game.i18n.localize("lore-reference-board.Common.Cancel") },
+                ],
+                rejectClose: true,
             });
         } catch { return; }
         if (result === "cancel" || !result) return;
@@ -253,7 +237,7 @@ class LoreRefBoardPinImageViewer extends Application {
             img.onload = resolve;
             img.onerror = resolve;
         });
-        const width  = img.naturalWidth  || 2000;
+        const width = img.naturalWidth  || 2000;
         const height = img.naturalHeight || 2000;
 
         await Scene.create({
@@ -271,31 +255,31 @@ class LoreRefBoardPinImageViewer extends Application {
 
 
 // Pin's Lore
-class LoreRefBoardPinLoreApp extends Application {
+class LoreRefBoardPinLoreApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     constructor({ src, imageName, pinId, tabId }, options = {}) {
         options.id = options.id ?? `lore-pin-lore-${foundry.utils.randomID()}`;
         super(options);
-        this._src        = src;
-        this._imageName  = imageName ?? src.split("/").pop().replace(/\.[^.]+$/, "");
-        this._pinId      = pinId ?? null;
-        this._tabId      = tabId ?? null;
-        this._journalId  = undefined;
+        this._src = src;
+        this._imageName = imageName ?? src.split("/").pop().replace(/\.[^.]+$/, "");
+        this._pinId = pinId ?? null;
+        this._tabId = tabId ?? null;
+        this._journalId = undefined;
         this._updateHookId = null;
     }
 
     get title() { return this._imageName || game.i18n.localize("lore-reference-board.Lore.WindowTitle"); }
 
-    static get defaultOptions() {
-        return foundry.utils.mergeObject(super.defaultOptions, {
-            template: "modules/lore-reference-board/templates/pin-lore.html",
-            width: 560,
-            height: 520,
-            resizable: true,
-        });
-    }
+    static DEFAULT_OPTIONS = {
+        window: { resizable: true },
+        position: { width: 560, height: 520 },
+    };
 
-    async getData(_options = {}) {
+    static PARTS = {
+        main: { template: "modules/lore-reference-board/templates/pin-lore.html" },
+    };
+
+    async _prepareContext(_options = {}) {
         if (this._journalId === undefined) {
             const map = loreRefBoard_getImageJournalMap();
             this._journalId = (this._pinId ? map[this._pinId]?.[this._src] : null) ?? null;
@@ -316,8 +300,8 @@ class LoreRefBoardPinLoreApp extends Application {
             return { linked: false };
         }
 
-        const pages         = loreRefBoard_getJournalPages(entry);
-        const firstPage     = pages[0] ?? null;
+        const pages = loreRefBoard_getJournalPages(entry);
+        const firstPage = pages[0] ?? null;
         const enrichedContent = await loreRefBoard_enrichJournalPage(firstPage, entry);
 
         return {
@@ -327,8 +311,8 @@ class LoreRefBoardPinLoreApp extends Application {
         };
     }
 
-    activateListeners(html) {
-        super.activateListeners(html);
+    async _onRender(context, options) {
+        const html = $(this.element);
 
         if (this._journalId) {
             // Linked state
@@ -339,7 +323,7 @@ class LoreRefBoardPinLoreApp extends Application {
             loreRefBoard_wirePageNav(contentEl, this._journalId);
         } else {
             // Unlinked state
-            const appEl = this.element[0];
+            const appEl = this.element;
             let dragDepth = 0;
 
             appEl.addEventListener("dragenter", (ev) => {
@@ -394,7 +378,7 @@ class LoreRefBoardPinLoreApp extends Application {
 
         const watchedId = this._journalId;
         this._updateHookId = Hooks.on("updateJournalEntryPage", (page) => {
-            if (page.parent?.id === watchedId) this.render(true);
+            if (page.parent?.id === watchedId) this.render();
         });
     }
 
@@ -439,7 +423,7 @@ class LoreRefBoardPinLoreApp extends Application {
             console.error("LoreReferenceBoard | failed to save journal link on drop:", err);
             ui.notifications.error(game.i18n.localize("lore-reference-board.Lore.SaveLinkFail"));
         }
-        await this.render(true);
+        await this.render();
     }
 
     // Actions
@@ -450,11 +434,10 @@ class LoreRefBoardPinLoreApp extends Application {
 
         let chosenName;
         try {
-            chosenName = await new Promise((resolve, reject) => {
-                let clicked = false;
-                new Dialog({
-                    title: game.i18n.localize("lore-reference-board.Lore.NameEntryTitle"),
-                    content: `<form>
+            chosenName = await DialogV2.wait({
+                window: { title: game.i18n.localize("lore-reference-board.Lore.NameEntryTitle") },
+                classes: ["lore-rb-dialog"],
+                content: `<form>
                         <div style="padding:6px 0">
                             <label style="display:block;margin-bottom:4px;font-weight:bold">${game.i18n.localize("lore-reference-board.Lore.JournalEntryName")}</label>
                             <input id="${inputId}" name="${inputId}" type="text"
@@ -462,22 +445,16 @@ class LoreRefBoardPinLoreApp extends Application {
                                    style="width:100%" autofocus />
                         </div>
                     </form>`,
-                    buttons: {
-                        create: {
-                            label: game.i18n.localize("lore-reference-board.Common.Create"),
-                            callback: (html) => {
-                                clicked = true;
-                                resolve(html[0].querySelector(`#${inputId}`)?.value?.trim() || defaultName);
-                            },
-                        },
-                        cancel: {
-                            label: game.i18n.localize("lore-reference-board.Common.Cancel"),
-                            callback: () => { clicked = true; resolve("cancel"); },
-                        },
+                buttons: [
+                    {
+                        action: "create",
+                        label: game.i18n.localize("lore-reference-board.Common.Create"),
+                        default: true,
+                        callback: (_ev, btn) => btn.closest("dialog")?.querySelector(`#${inputId}`)?.value?.trim() || defaultName,
                     },
-                    default: "create",
-                    close: () => { if (!clicked) reject(new Error("closed")); },
-                }).render(true);
+                    { action: "cancel", label: game.i18n.localize("lore-reference-board.Common.Cancel") },
+                ],
+                rejectClose: true,
             });
         } catch { return; }
         if (chosenName === "cancel") return;
@@ -497,7 +474,7 @@ class LoreRefBoardPinLoreApp extends Application {
 
         this._journalId = entry.id;
         await this._persistLink();
-        await this.render(true);
+        await this.render();
         entry.sheet.render(true);
     }
 
@@ -511,9 +488,10 @@ class LoreRefBoardPinLoreApp extends Application {
     }
 
     async _unlink() {
-        const confirmed = await Dialog.confirm({
-            title: game.i18n.localize("lore-reference-board.Lore.UnlinkTitle"),
+        const confirmed = await DialogV2.confirm({
+            window: { title: game.i18n.localize("lore-reference-board.Lore.UnlinkTitle") },
             content: `<p>${game.i18n.localize("lore-reference-board.Lore.UnlinkContent")}</p>`,
+            rejectClose: false,
         });
         if (!confirmed) return;
 
@@ -523,6 +501,6 @@ class LoreRefBoardPinLoreApp extends Application {
         } catch (err) {
             console.error("LoreReferenceBoard | failed to clear journal link on unlink:", err);
         }
-        await this.render(true);
+        await this.render();
     }
 }

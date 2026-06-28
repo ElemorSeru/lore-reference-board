@@ -16,12 +16,12 @@ if (typeof window.marked === "undefined") {
     document.head.appendChild(_ms);
 }
 
-// Document to HTML for Document tabs with .docx files.
-if (typeof window.mammoth === "undefined") {
-    const _mm = document.createElement("script");
-    _mm.src = "https://cdn.jsdelivr.net/npm/mammoth/mammoth.browser.min.js";
-    document.head.appendChild(_mm);
-}
+Hooks.once("init", () => {
+    if (typeof pdfjsLib !== "undefined") {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            "modules/lore-reference-board/scripts/libs/pdf.worker.min.js";
+    }
+});
 
 const loreRefBoard_MODULE_SCOPE = "lore-reference-board";
 
@@ -50,12 +50,62 @@ const loreRefBoard_DEFAULT_STANDING_TIERS = [
     { id: "allied", label: "Allied", min: 41, max: null },
 ];
 
+
+class LoreRefBoardClearCacheMenu extends foundry.applications.api.ApplicationV2 {
+    async render() {
+        const confirmed = await DialogV2.confirm({
+            window: { title: game.i18n.localize("lore-reference-board.Settings.ClearCache.Title") },
+            content: `<p>${game.i18n.localize("lore-reference-board.Settings.ClearCache.Confirm")}</p>`,
+            rejectClose: false,
+        });
+        if (confirmed) {
+            loreRefBoard_clearSearchCache();
+            ui.notifications.info(game.i18n.localize("lore-reference-board.Settings.ClearCache.Done"));
+        }
+    }
+}
+
+class LoreRefBoardIndexAllMenu extends foundry.applications.api.ApplicationV2 {
+    async render() {
+        const confirmed = await DialogV2.confirm({
+            window: { title: game.i18n.localize("lore-reference-board.Settings.IndexAll.Title") },
+            content: `<p>${game.i18n.localize("lore-reference-board.Settings.IndexAll.Confirm")}</p>`,
+            rejectClose: false,
+        });
+        if (!confirmed) return;
+        const notif = ui.notifications.info(game.i18n.localize("lore-reference-board.Settings.IndexAll.Running"), { permanent: true });
+        await loreRefBoard_forceIndexAll((done, total) => {
+            notif?.update?.(`Indexing... ${done}/${total}`);
+        }).catch(err => console.warn("[lore-reference-board] forceIndexAll failed:", err));
+        notif?.close?.();
+        ui.notifications.info(game.i18n.localize("lore-reference-board.Settings.IndexAll.Done"));
+    }
+}
+
 Hooks.once("init", () => {
-    game.settings.register(loreRefBoard_MODULE_SCOPE, "tabs",       { name: "Lore Board Tabs",        scope: "world", config: false, type: Object, default: [] });
-    game.settings.register(loreRefBoard_MODULE_SCOPE, "pins",       { name: "Lore Board Pins",        scope: "world", config: false, type: Object, default: {} });
+    game.settings.registerMenu(loreRefBoard_MODULE_SCOPE, "clearSearchCache", {
+        name: game.i18n.localize("lore-reference-board.Settings.ClearCache.Name"),
+        label: game.i18n.localize("lore-reference-board.Settings.ClearCache.Label"),
+        hint: game.i18n.localize("lore-reference-board.Settings.ClearCache.Hint"),
+        icon: "fas fa-trash",
+        type: LoreRefBoardClearCacheMenu,
+        restricted: false,
+    });
+
+    game.settings.registerMenu(loreRefBoard_MODULE_SCOPE, "indexAll", {
+        name: game.i18n.localize("lore-reference-board.Settings.IndexAll.Name"),
+        label: game.i18n.localize("lore-reference-board.Settings.IndexAll.Label"),
+        hint: game.i18n.localize("lore-reference-board.Settings.IndexAll.Hint"),
+        icon: "fas fa-database",
+        type: LoreRefBoardIndexAllMenu,
+        restricted: false,
+    });
+
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "tabs", { name: "Lore Board Tabs", scope: "world", config: false, type: Object, default: [] });
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "pins", { name: "Lore Board Pins", scope: "world", config: false, type: Object, default: {} });
     game.settings.register(loreRefBoard_MODULE_SCOPE, "image-lore", { name: "Lore Board Image Links", scope: "world", config: false, type: Object, default: {} });
     game.settings.register(loreRefBoard_MODULE_SCOPE, "imageJournals", { name: "Image Journal Links", scope: "world", config: false, type: Object, default: {} });
-    game.settings.register(loreRefBoard_MODULE_SCOPE, "tabViews",   { name: "Tab Views (legacy)",     scope: "world", config: false, type: Object, default: {} });
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "tabViews", { name: "Tab Views (legacy)", scope: "world", config: false, type: Object, default: {} });
     game.settings.register(loreRefBoard_MODULE_SCOPE, "factionBoardData", { name: "Faction Board Data", scope: "world", config: false, type: Object, default: {} });
     game.settings.register(loreRefBoard_MODULE_SCOPE, "relationshipTypes", { name: "Relationship Types", scope: "world", config: false, type: Object, default: loreRefBoard_DEFAULT_RELATIONSHIP_TYPES });
     game.settings.register(loreRefBoard_MODULE_SCOPE, "factionStandingTiers", { name: "Faction Standing Tiers", scope: "world", config: false, type: Object, default: loreRefBoard_DEFAULT_STANDING_TIERS });
@@ -65,18 +115,18 @@ Hooks.once("init", () => {
     game.settings.register(loreRefBoard_MODULE_SCOPE, "maxTabRows", {
         name: game.i18n.localize("lore-reference-board.Settings.MaxTabRows.Name"),
         hint: game.i18n.localize("lore-reference-board.Settings.MaxTabRows.Hint"),
-        scope:   "client",
-        config:  true,
-        type:    Number,
+        scope: "client",
+        config: true,
+        type: Number,
         default: 4,
-        range:   { min: 0, max: 30, step: 1 },
+        range: { min: 0, max: 30, step: 1 },
     });
 
 
     game.settings.register(loreRefBoard_MODULE_SCOPE, "windowPos", {
-        scope:   "client",
-        config:  false,
-        type:    Object,
+        scope: "client",
+        config: false,
+        type: Object,
         default: {},
     });
 
@@ -87,9 +137,9 @@ Hooks.once("init", () => {
 
 Hooks.once("ready", () => {
     if (document.getElementById("lr-svg-filter-defs")) return; 
-    const ns  = "http://www.w3.org/2000/svg";
+    const ns = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(ns, "svg");
-    svg.id    = "lr-svg-filter-defs";
+    svg.id = "lr-svg-filter-defs";
     svg.setAttribute("style", "position:absolute;width:0;height:0;overflow:hidden;pointer-events:none;");
     svg.setAttribute("aria-hidden", "true");
     svg.innerHTML = `

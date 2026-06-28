@@ -13,8 +13,8 @@ async function loreRefBoard_saveTabs(tabs) {
     return true;
 }
 
-let _loreRefBoard_pinsWriteCache  = null;   
-let _loreRefBoard_pinsDebounceId  = null;
+let _loreRefBoard_pinsWriteCache = null;   
+let _loreRefBoard_pinsDebounceId = null;
 
 // Ensure the cache is populated from the settings store.
 function _loreRefBoard_initPinsCache() {
@@ -110,7 +110,7 @@ function loreRefBoard_getImageJournalMap() {
 }
 
 async function loreRefBoard_saveImageJournalLink(pinId, src, journalId) {
-    const map    = loreRefBoard_getImageJournalMap();
+    const map = loreRefBoard_getImageJournalMap();
     const pinMap = map[pinId] ?? {};
     await game.settings.set(loreRefBoard_MODULE_SCOPE, "imageJournals", {
         ...map,
@@ -121,7 +121,7 @@ async function loreRefBoard_saveImageJournalLink(pinId, src, journalId) {
 async function loreRefBoard_clearImageJournalLink(pinId, src) {
     const map = loreRefBoard_getImageJournalMap();
     if (!map[pinId]?.[src]) return;
-    const pinMap  = { ...map[pinId] };
+    const pinMap = { ...map[pinId] };
     delete pinMap[src];
     const updated = { ...map };
     if (Object.keys(pinMap).length === 0) delete updated[pinId];
