@@ -22,3 +22,5 @@ function loreRefBoard_getActiveNpcGenerator() {
     }
     return null;
 }
+
+export { loreRefBoard_getActiveNpcGenerator };

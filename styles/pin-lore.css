@@ -253,3 +253,11 @@
     background: #3a5a3a;
     color: #bef;
 }
+
+
+/* broken journal link note */
+.plr-broken-note {
+  color: #c17e7e;
+  font-size: 12px;
+  margin: 0 0 8px;
+}

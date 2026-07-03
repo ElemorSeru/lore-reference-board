@@ -1,3 +1,7 @@
+import { _loreRefBoard_export, _loreRefBoard_import } from "./import-export.js";
+import { LoreRefBoardApp } from "./lrb-app.js";
+import { loreRefBoard_MODULE_SCOPE } from "./module-init.js";
+
 Hooks.on("renderSettingsConfig", (_app, html) => {
     if (!game.user?.isGM) return;
 
@@ -77,6 +81,33 @@ function _loreRefBoard_toggleBoard() {
     game.loreReferenceBoardAppInstance = new LoreRefBoardApp();
     game.loreReferenceBoardAppInstance.render(true);
 }
+
+Hooks.once("init", () => {
+    game.keybindings.register(loreRefBoard_MODULE_SCOPE, "toggleBoard", {
+        name: "lore-reference-board.Keybindings.ToggleBoard.Name",
+        hint: "lore-reference-board.Keybindings.ToggleBoard.Hint",
+        editable: [{ key: "KeyB", modifiers: ["Control"] }],
+        onDown: () => {
+            const allowed = !!game?.user?.isGM || game?.user?.role === CONST.USER_ROLES.ASSISTANT;
+            if (!allowed) return false;
+            _loreRefBoard_toggleBoard();
+            return true;
+        },
+        precedence: CONST.KEYBINDING_PRECEDENCE?.NORMAL ?? 0,
+    });
+});
+
+Hooks.on("renderSceneControls", (_app, html) => {
+    const rootEl = html instanceof HTMLElement ? html : html?.[0];
+    const btn = rootEl?.querySelector?.(`button.layer[data-control="${loreRefBoard_MODULE_SCOPE}"]`);
+    if (!btn || btn.dataset.lrbBound) return;
+    btn.dataset.lrbBound = "1";
+    btn.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        _loreRefBoard_toggleBoard();
+    });
+});
 
 Hooks.on("getSceneControlButtons", (controls) => {
     const allowed = !!game?.user?.isGM || game?.user?.role === CONST.USER_ROLES.ASSISTANT;

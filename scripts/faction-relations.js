@@ -1,3 +1,9 @@
+import { loreRefBoard_FACTION_CIRCLE_DEFAULT_RADIUS } from "./faction-circles.js";
+import { loreRefBoard_loadFactionDataForTab, loreRefBoard_loadRelationshipTypes, loreRefBoard_saveFactionDataForTab, loreRefBoard_saveRelationshipTypes } from "./storage.js";
+import { loreRefBoard_LINE_DASH, loreRefBoard_escapeHtml, loreRefBoard_lineDashArray, loreRefBoard_offsetLineEndpoints } from "./utils.js";
+
+const { DialogV2 } = foundry.applications.api;
+
 const loreRefBoard_FACTION_REL_LINE_WIDTH = 3;
 const loreRefBoard_FACTION_REL_HIT_WIDTH = 14;
 const loreRefBoard_FACTION_REL_DEFAULT_COLOR = "#888888";
@@ -327,3 +333,5 @@ async function loreRefBoard_manageFactionRelationshipTypesDialog(app, html) {
     await loreRefBoard_saveRelationshipTypes(result);
     await loreRefBoard_renderFactionRelationships(app, html);
 }
+
+export { _loreRefBoard_handleCircleRelClick, _loreRefBoard_updateRelationshipLinesForCircle, loreRefBoard_manageFactionRelationshipTypesDialog, loreRefBoard_renderFactionRelationships, loreRefBoard_toggleFactionRelationshipMode };

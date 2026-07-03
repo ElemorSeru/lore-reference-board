@@ -1,3 +1,11 @@
+import { loreRefBoard_enrichJournalPage, loreRefBoard_getJournalPages, loreRefBoard_wirePageNav, loreRefBoard_resolveJournalRef } from "./journal-helpers.js";
+import { loreRefBoard_syncMapZoomBar } from "./lrb-app-shell.js";
+import { LoreRefBoardPinGalleryApp } from "./pin-gallery-app.js";
+import { loreRefBoard_clearAllImageJournalLinksForPin, loreRefBoard_clearLoreForImages, loreRefBoard_collectPinImages, loreRefBoard_loadPinsForTab, loreRefBoard_loadTabs, loreRefBoard_savePinsForTab, loreRefBoard_saveTabs } from "./storage.js";
+import { loreRefBoard_attachDialogValidation, loreRefBoard_computeImageRect, loreRefBoard_escapeHtml, loreRefBoard_fetchSvgData, loreRefBoard_isSvgIcon, loreRefBoard_pickImagePath } from "./utils.js";
+
+const { DialogV2 } = foundry.applications.api;
+
 async function loreRefBoard_pinDialog({ pin, isNew }) {
         const L = key => game.i18n.localize(`lore-reference-board.Pin.Icons.${key}`);
         const faIcons = [
@@ -33,6 +41,7 @@ async function loreRefBoard_pinDialog({ pin, isNew }) {
         };
 
         let pinJournalId = current.journal || null;
+        let pinJournalName = current.journalName || null;
 
         const uid = foundry.utils.randomID();
         const idColor = `lr-pin-color-${uid}`;
@@ -146,13 +155,14 @@ async function loreRefBoard_pinDialog({ pin, isNew }) {
                             title: (form?.pTitle?.value ?? "").trim(),
                             description: (form?.pDesc?.value ?? "").trim(),
                             journal: pinJournalId,
+                            journalName: pinJournalName,
                         },
                     };
                 },
             },
             { action: "cancel", label: game.i18n.localize("lore-reference-board.Common.Cancel") },
         ];
-        if (!isNew) _pinBtns.push({ action: "delete", label: game.i18n.localize("lore-reference-board.Common.Delete"), callback: () => ({ action: "delete" }) });
+        if (!isNew) _pinBtns.splice(1, 0, { action: "delete", label: game.i18n.localize("lore-reference-board.Common.Delete"), callback: () => ({ action: "delete" }) });
 
         const waitPromise = DialogV2.wait({
             window: { title: game.i18n.localize(isNew ? "lore-reference-board.Pin.DialogTitleNew" : "lore-reference-board.Pin.DialogTitleEdit") },
@@ -227,14 +237,13 @@ async function loreRefBoard_pinDialog({ pin, isNew }) {
 
             // Journal state helpers
             const showLinked = async (journalId) => {
-                let entry = game.journal.get(journalId);
-                if (!entry) {
-                    try { entry = await fromUuid(`JournalEntry.${journalId}`); }
-                    catch { entry = null; }
-                }
+                const entry = await loreRefBoard_resolveJournalRef(journalId);
                 unlinkedEl.style.display = "none";
                 linkedEl.style.display = "flex";
-                journalTitle.textContent = entry?.name ?? "(Unknown Journal)";
+                journalTitle.textContent = entry?.name
+                    ?? (pinJournalName
+                        ? game.i18n.format("lore-reference-board.Pin.JournalMissingNamed", { name: pinJournalName })
+                        : game.i18n.localize("lore-reference-board.Pin.JournalMissingTitle"));
 
                 linkedEl.querySelectorAll(".lrb-page-nav").forEach(el => el.remove());
 
@@ -246,13 +255,13 @@ async function loreRefBoard_pinDialog({ pin, isNew }) {
 
                     await loreRefBoard_wirePageNav(journalCont, journalId);
                 } else {
-                    journalCont.innerHTML =
-                        '<em style="color:#666;font-size:12px">Journal entry not found.</em>';
+                    journalCont.innerHTML = `<em style="color:#c17e7e;font-size:12px">${loreRefBoard_escapeHtml(game.i18n.localize("lore-reference-board.Pin.JournalMissingHint"))}</em>`;
                 }
             };
 
             const showUnlinked = () => {
                 pinJournalId = null;
+                pinJournalName = null;
                 linkedEl.style.display = "none";
                 unlinkedEl.style.display = "flex";
             };
@@ -285,12 +294,15 @@ async function loreRefBoard_pinDialog({ pin, isNew }) {
                 catch { ui.notifications.warn(game.i18n.localize("lore-reference-board.Pin.DropReadFail")); return; }
 
                 let journalId = null;
+                let journalName = null;
                 if (data.type === "JournalEntry") {
                     const entry = await fromUuid(data.uuid ?? "").catch(() => null);
                     journalId = entry?.id ?? null;
+                    journalName = entry?.name ?? null;
                 } else if (data.type === "JournalEntryPage") {
                     const page = await fromUuid(data.uuid ?? "").catch(() => null);
                     journalId = page?.parent?.id ?? null;
+                    journalName = page?.parent?.name ?? null;
                 }
 
                 if (!journalId) {
@@ -299,6 +311,7 @@ async function loreRefBoard_pinDialog({ pin, isNew }) {
                 }
 
                 pinJournalId = journalId;
+                pinJournalName = journalName;
                 await showLinked(journalId);
             });
 
@@ -349,13 +362,14 @@ async function loreRefBoard_pinDialog({ pin, isNew }) {
                 if (!entry) return;
 
                 pinJournalId = entry.id;
+                pinJournalName = entry.name ?? null;
                 await showLinked(entry.id);
                 entry.sheet.render(true);
             });
 
             // Edit linked journal
-            btnEdit?.addEventListener("click", () => {
-                const entry = game.journal.get(pinJournalId);
+            btnEdit?.addEventListener("click", async () => {
+                const entry = await loreRefBoard_resolveJournalRef(pinJournalId);
                 if (entry) entry.sheet.render(true);
                 else ui.notifications.warn(game.i18n.localize("lore-reference-board.Pin.JournalNotFound"));
             });
@@ -363,6 +377,7 @@ async function loreRefBoard_pinDialog({ pin, isNew }) {
             // Unlink journal
             btnUnlink?.addEventListener("click", async () => {
                 const confirmed = await DialogV2.confirm({
+                    classes: ["lore-rb-dialog"],
                     window: { title: game.i18n.localize("lore-reference-board.Pin.UnlinkTitle") },
                     content: `<p>${game.i18n.localize("lore-reference-board.Pin.UnlinkPinContent")}</p>`,
                     rejectClose: false,
@@ -397,6 +412,7 @@ async function loreRefBoard_pinDialog({ pin, isNew }) {
 async function loreRefBoard_setupImageTab(app, html) {
         // Map image
         html.find("#lr-map-image").css({ "background-image": "" });
+        html.find(".lr-map-missing").remove();
 
         if (app._mapResizeObs) {
             app._mapResizeObs.disconnect();
@@ -569,6 +585,7 @@ async function loreRefBoard_setupImageTab(app, html) {
 
                 if (res?.action === "delete") {
                     const ok = await DialogV2.confirm({
+                        classes: ["lore-rb-dialog"],
                         window: { title: game.i18n.localize("lore-reference-board.Pin.RemoveTitle") },
                         content: `<p>${game.i18n.localize("lore-reference-board.Pin.RemoveContent")}</p>`,
                         rejectClose: false,
@@ -603,6 +620,7 @@ async function loreRefBoard_setupImageTab(app, html) {
 
             const pinId = $(ev.currentTarget).data("pinid");
             const ok = await DialogV2.confirm({
+                classes: ["lore-rb-dialog"],
                 window: { title: game.i18n.localize("lore-reference-board.Pin.RemoveTitle") },
                 content: game.i18n.localize("lore-reference-board.Pin.RemoveContent"),
                 rejectClose: false,
@@ -651,10 +669,38 @@ async function loreRefBoard_setupImageTab(app, html) {
                     console.error("[lore-reference-board] renderPins failed", err)
                 );
             };
+            const _showMissing = () => {
+                if (_imgSrc !== app._cachedActiveTabImg) return;
+                app._naturalSizeImg = null;
+                const viewport = html.find(".lr-map-viewport")[0];
+                if (!viewport) return;
+                viewport.querySelector(".lr-map-missing")?.remove();
+                const div = document.createElement("div");
+                div.className = "lr-map-missing";
+                div.innerHTML = `
+                    <i class="fas fa-exclamation-triangle lr-map-missing-icon"></i>
+                    <p class="lr-map-missing-msg">${loreRefBoard_escapeHtml(game.i18n.localize("lore-reference-board.ImageTab.Missing"))}</p>
+                    <p class="lr-map-missing-path">${loreRefBoard_escapeHtml(_imgSrc)}</p>
+                    <button type="button" class="lr-map-missing-btn">
+                      <i class="fas fa-folder-open"></i> ${loreRefBoard_escapeHtml(game.i18n.localize("lore-reference-board.ImageTab.BtnLocate"))}
+                    </button>`;
+                div.querySelector(".lr-map-missing-btn").addEventListener("click", async () => {
+                    const picked = await loreRefBoard_pickImagePath(_imgSrc || "modules/");
+                    if (!picked) return;
+                    const all = await loreRefBoard_loadTabs();
+                    const idx = all.findIndex(t => t.id === app.activeTab);
+                    if (idx === -1) return;
+                    all[idx].img = picked;
+                    await loreRefBoard_saveTabs(all);
+                    app._cachedActiveTabImg = picked;
+                    await app.render();
+                });
+                viewport.appendChild(div);
+            };
             const _decodePromise = _img.decode
                 ? _img.decode()
                 : new Promise((res, rej) => { _img.onload = res; _img.onerror = rej; });
-            _decodePromise.then(_setupAfterDecode).catch(_setupAfterDecode);
+            _decodePromise.then(_setupAfterDecode).catch(_showMissing);
         } else {
             app._imgNaturalW = 0;
             app._imgNaturalH = 0;
@@ -706,6 +752,20 @@ async function loreRefBoard_buildPinElement(app, pin, zoom = 1, imgRect = null, 
             }
         }
         $el.attr("title", `${pin.title || ""}\n${pin.description || ""}`.trim());
+
+        if (pin.journal) {
+            app._journalOkCache ??= new Map();
+            let ok = app._journalOkCache.get(pin.journal);
+            if (ok === undefined) {
+                ok = !!(await loreRefBoard_resolveJournalRef(pin.journal));
+                app._journalOkCache.set(pin.journal, ok);
+            }
+            if (!ok) {
+                $el.addClass("lr-pin-broken");
+                const missing = game.i18n.localize("lore-reference-board.Pin.JournalMissingBadge");
+                $el.attr("title", `${$el.attr("title")}\n${missing}`.trim());
+            }
+        }
         return $el;
     }
 
@@ -750,3 +810,5 @@ async function loreRefBoard_renderPins(app, html) {
             pinLayer.append(await loreRefBoard_buildPinElement(app, pin, zoom, imgRect, containerW, containerH));
         }
     }
+
+export { loreRefBoard_buildPinElement, loreRefBoard_pinDialog, loreRefBoard_renderPins, loreRefBoard_setupImageTab };

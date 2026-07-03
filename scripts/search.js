@@ -1,3 +1,7 @@
+import { loreRefBoard_resolveJournalRef } from "./journal-helpers.js";
+import { loreRefBoard_loadTabs } from "./storage.js";
+import { loreRefBoard_escapeHtml, loreRefBoard_highlightPdfTextLayer } from "./utils.js";
+
 const loreRefBoard_SEARCH_CACHE_PFX = "lrb-sc2";
 const loreRefBoard_SEARCH_STATE_PFX = "lrb-ss";
 const loreRefBoard_SEARCH_MAX_PCT = 0.35;
@@ -10,6 +14,63 @@ let loreRefBoard_searchDragCleanup = null;
 let loreRefBoard_searchIsDragging = false;
 let loreRefBoard_searchDebounceTimer = null;
 const loreRefBoard_searchCollapsedIds = new Set();
+const loreRefBoard_indexProgress = new Map();
+const loreRefBoard_indexCancelled = new Set();
+
+function loreRefBoard_indexBadgeAnchor(id) {
+    if (id.startsWith("doc::")) {
+        const app = game.loreReferenceBoardAppInstance;
+        if (!app?.rendered || app.activeTab !== id.slice(5)) return null;
+        return document.getElementById("lr-doc-pane");
+    }
+    if (id.startsWith("ref::")) {
+        return document.querySelector(`.lrt-ref-cell[data-cell-id="${id.slice(5)}"] .lrt-ref-cell-header`);
+    }
+    return null;
+}
+
+function loreRefBoard_updateIndexBadge(id) {
+    const prog = loreRefBoard_indexProgress.get(id);
+    let badge = document.querySelector(`.lrb-index-badge[data-index-id="${id}"]`);
+    if (!prog) { badge?.remove(); return; }
+    const anchor = loreRefBoard_indexBadgeAnchor(id);
+    if (!anchor) { badge?.remove(); return; }
+    if (!badge || !anchor.contains(badge)) {
+        badge?.remove();
+        badge = document.createElement("span");
+        badge.className = "lrb-index-badge";
+        badge.dataset.indexId = id;
+        badge.innerHTML =
+            `<i class="fas fa-spinner fa-spin"></i><span class="lrb-index-badge-text"></span>` +
+            `<a class="lrb-index-badge-cancel" title="${loreRefBoard_escapeHtml(game.i18n.localize("lore-reference-board.Search.CancelIndexing"))}"><i class="fas fa-times"></i></a>`;
+        badge.querySelector(".lrb-index-badge-cancel").addEventListener("click", (ev) => {
+            ev.preventDefault();
+            loreRefBoard_indexCancelled.add(id);
+            loreRefBoard_indexProgress.delete(id);
+            loreRefBoard_updateIndexBadge(id);
+        });
+        anchor.appendChild(badge);
+    }
+    badge.querySelector(".lrb-index-badge-text").textContent =
+        game.i18n.format("lore-reference-board.Search.IndexingPages", { done: prog.done, total: prog.total });
+}
+
+function loreRefBoard_indexProgressStart(id, total) {
+    loreRefBoard_indexCancelled.delete(id);
+    loreRefBoard_indexProgress.set(id, { done: 0, total });
+    loreRefBoard_updateIndexBadge(id);
+}
+
+function loreRefBoard_indexProgressStep(id, done, total) {
+    if (!loreRefBoard_indexProgress.has(id)) return;
+    loreRefBoard_indexProgress.set(id, { done, total });
+    loreRefBoard_updateIndexBadge(id);
+}
+
+function loreRefBoard_indexProgressEnd(id) {
+    loreRefBoard_indexProgress.delete(id);
+    loreRefBoard_updateIndexBadge(id);
+}
 
 
 function loreRefBoard_clearSearchCache() {
@@ -18,7 +79,7 @@ function loreRefBoard_clearSearchCache() {
     loreRefBoard_memIndex.clear();
 }
 
-async function loreRefBoard_forceIndexAll(onProgress) {
+async function loreRefBoard_forceIndexAll(onProgress, shouldCancel) {
     loreRefBoard_clearSearchCache();
     const tabs = await loreRefBoard_loadTabs();
     const items = [];
@@ -30,15 +91,17 @@ async function loreRefBoard_forceIndexAll(onProgress) {
     }
     let done = 0;
     for (const item of items) {
+        if (shouldCancel?.()) { loreRefBoard_maybeRefreshSearch(); return false; }
         if (item.kind === "doc") {
-            await loreRefBoard_indexDocTab(item.tab).catch(() => {});
+            await loreRefBoard_indexDocTab(item.tab, true).catch(() => {});
         } else {
             const cellName = item.cell.name || (item.cell.filePath ?? "").split("/").pop() || "Cell";
-            await loreRefBoard_indexRefCell(item.cell, cellName, item.tab.id).catch(() => {});
+            await loreRefBoard_indexRefCell(item.cell, cellName, item.tab.id, true).catch(() => {});
         }
         onProgress?.(++done, items.length);
     }
     loreRefBoard_maybeRefreshSearch();
+    return true;
 }
 
 function loreRefBoard_searchWorldKey(pfx) {
@@ -81,7 +144,7 @@ function loreRefBoard_htmlToText(html) {
     return tmp.innerText || tmp.textContent || "";
 }
 
-async function loreRefBoard_pdfToChunks(path) {
+async function loreRefBoard_pdfToChunks(path, progressId = null) {
     try {
         const lib = globalThis.pdfjsLib;
         if (!lib) return null;
@@ -89,17 +152,22 @@ async function loreRefBoard_pdfToChunks(path) {
         if (!resp.ok) return null;
         const buf = await resp.arrayBuffer();
         const pdf = await lib.getDocument({ data: buf }).promise;
+        if (progressId) loreRefBoard_indexProgressStart(progressId, pdf.numPages);
         const chunks = [];
         for (let i = 1; i <= pdf.numPages; i++) {
+            if (progressId && loreRefBoard_indexCancelled.has(progressId)) return "cancelled";
             const pg = await pdf.getPage(i);
             const ct = await pg.getTextContent();
             const text = ct.items.map(it => it.str).join(" ").trim();
             if (text) chunks.push({ text, location: { page: i } });
+            if (progressId) loreRefBoard_indexProgressStep(progressId, i, pdf.numPages);
         }
         return chunks.length ? chunks : null;
     } catch (err) {
         console.warn("[lore-reference-board] PDF indexing failed:", err);
         return null;
+    } finally {
+        if (progressId) loreRefBoard_indexProgressEnd(progressId);
     }
 }
 
@@ -132,7 +200,7 @@ function loreRefBoard_maybeRefreshSearch() {
     }
 }
 
-async function loreRefBoard_indexDocTab(tab) {
+async function loreRefBoard_indexDocTab(tab, awaitHeavy = false) {
     const id = `doc::${tab.id}`;
     const docType = tab.docType ?? null;
     const docRef = tab.docRef ?? null;
@@ -153,10 +221,7 @@ async function loreRefBoard_indexDocTab(tab) {
         if (_exJ && _exJ.docRef !== docRef) loreRefBoard_dropCachedIndex(id);
         if (loreRefBoard_memIndex.has(id)) return;
         loreRefBoard_memIndex.set(id, { id, name, type: "indexing", chunks: [], docRef });
-        let entry = game.journal?.get(docRef);
-        if (!entry) {
-            try { entry = await fromUuid(`JournalEntry.${docRef}`); } catch { entry = null; }
-        }
+        const entry = await loreRefBoard_resolveJournalRef(docRef);
         if (!entry) { loreRefBoard_memIndex.delete(id); return; }
         const modTime = entry._stats?.modifiedTime ?? 0;
         const cached = loreRefBoard_loadCachedIndex(id);
@@ -190,14 +255,19 @@ async function loreRefBoard_indexDocTab(tab) {
             return;
         }
         loreRefBoard_memIndex.set(id, { id, name, type: "pdf-indexing", chunks: [], docRef });
-        (async () => {
-            const chunks = await loreRefBoard_pdfToChunks(docRef);
+        const work = (async () => {
+            const chunks = await loreRefBoard_pdfToChunks(docRef, id);
+            if (chunks === "cancelled") {
+                loreRefBoard_memIndex.set(id, { id, name, type: "cancelled", chunks: [], docRef });
+                return;
+            }
             if (!chunks) return;
             const rec = { id, name, type: "pdf", chunks, docRef };
             loreRefBoard_memIndex.set(id, rec);
             loreRefBoard_saveCachedIndex(id, rec);
             loreRefBoard_maybeRefreshSearch();
         })();
+        if (awaitHeavy) await work;
         return;
     }
 
@@ -255,7 +325,7 @@ async function loreRefBoard_indexDocTab(tab) {
     loreRefBoard_maybeRefreshSearch();
 }
 
-async function loreRefBoard_indexRefCell(cell, cellName, tabId = null) {
+async function loreRefBoard_indexRefCell(cell, cellName, tabId = null, awaitHeavy = false) {
     const id = `ref::${cell.id}`;
 
     if (cell.docType === "file") {
@@ -278,14 +348,19 @@ async function loreRefBoard_indexRefCell(cell, cellName, tabId = null) {
                 return;
             }
             loreRefBoard_memIndex.set(id, { id, name: cellName, type: "pdf-indexing", chunks: [], docRef: fPath, parentTabId: tabId });
-            (async () => {
-                const chunks = await loreRefBoard_pdfToChunks(fPath);
+            const work = (async () => {
+                const chunks = await loreRefBoard_pdfToChunks(fPath, id);
+                if (chunks === "cancelled") {
+                    loreRefBoard_memIndex.set(id, { id, name: cellName, type: "cancelled", chunks: [], docRef: fPath, parentTabId: tabId });
+                    return;
+                }
                 if (!chunks) return;
                 const rec = { id, name: cellName, type: "pdf", chunks, docRef: fPath, parentTabId: tabId };
                 loreRefBoard_memIndex.set(id, rec);
                 loreRefBoard_saveCachedIndex(id, rec);
                 loreRefBoard_maybeRefreshSearch();
             })();
+            if (awaitHeavy) await work;
             return;
         }
 
@@ -462,6 +537,27 @@ function loreRefBoard_renderSearchResults(results, query, panel) {
     }).join("");
 }
 
+// runs cb with the page's text layer and waiting for lrb-pdf-page-rendered if needed
+function loreRefBoard_whenPdfPageReady(root, selector, targetPage, cb) {
+    const existing = root.querySelector(selector);
+    if (existing) { cb(existing); return; }
+    let settled = false;
+    const finish = (tl) => {
+        if (settled) return;
+        settled = true;
+        document.removeEventListener("lrb-pdf-page-rendered", onRendered);
+        if (tl) cb(tl);
+        else console.warn("[lore-reference-board] PDF page", targetPage, "never finished rendering; highlight skipped");
+    };
+    const onRendered = (ev) => {
+        if (ev.detail?.page !== targetPage) return;
+        finish(root.querySelector(selector));
+    };
+    document.addEventListener("lrb-pdf-page-rendered", onRendered);
+    // safety nett to give up after 90 seconds so the listener never leaks
+    setTimeout(() => { if (!settled) finish(root.querySelector(selector)); }, 90000);
+}
+
 function loreRefBoard_pollForEl(root, selector, callback, maxTries = 25, interval = 150) {
     let tries = 0;
     const poll = () => {
@@ -491,10 +587,11 @@ async function loreRefBoard_goToSearchResult(result, matchIdx, app) {
                 const tlSel = targetPage > 1
                     ? `#lr-doc-pane .lrb-pdf-text-layer[data-pdf-page="${targetPage}"]`
                     : "#lr-doc-pane .lrb-pdf-text-layer";
-                const query = loreRefBoard_getSearchPanelState().query;
-                loreRefBoard_pollForEl(document, tlSel, tl => {
-                    setTimeout(() => loreRefBoard_highlightPdfTextLayer(tl, query), 150);
-                }, 40, 300);
+                const needle = match?.snippet?.slice(match.matchStart, match.matchStart + match.matchLen)
+                    || loreRefBoard_getSearchPanelState().query;
+                loreRefBoard_whenPdfPageReady(document, tlSel, targetPage, tl => {
+                    setTimeout(() => loreRefBoard_highlightPdfTextLayer(tl, needle), 150);
+                });
             }, 60, 300);
         } else if (result.type === "journal" && match.location?.pageIndex != null && match.location.pageIndex > 0) {
             loreRefBoard_pollForEl(document, `#lrt-doc-psel-${entityId}`, sel => {
@@ -503,7 +600,14 @@ async function loreRefBoard_goToSearchResult(result, matchIdx, app) {
                 setTimeout(() => loreRefBoard_highlightInElement(document.getElementById("lr-doc-pane"), match), 500);
             });
         } else {
-            setTimeout(() => loreRefBoard_highlightInElement(document.getElementById("lr-doc-pane"), match), 200);
+            // docx/txt/md render asynchronously so retry until content exists
+            let hlTries = 0;
+            const attempt = () => {
+                const el = document.getElementById("lr-doc-pane");
+                if (el && loreRefBoard_highlightInElement(el, match)) return;
+                if (++hlTries < 15) setTimeout(attempt, 300);
+            };
+            setTimeout(attempt, 200);
         }
         return;
     }
@@ -523,12 +627,12 @@ async function loreRefBoard_goToSearchResult(result, matchIdx, app) {
 }
 
 function loreRefBoard_highlightInElement(el, match) {
-    if (!el || !match?.snippet) return;
+    if (!el || !match?.snippet) return false;
 
     el.querySelectorAll("mark.lr-hl").forEach(m => m.replaceWith(document.createTextNode(m.textContent)));
 
     const q = match.snippet.slice(match.matchStart, match.matchStart + match.matchLen).toLowerCase();
-    if (!q) return;
+    if (!q) return false;
 
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
     const nodes = [];
@@ -554,7 +658,7 @@ function loreRefBoard_highlightInElement(el, match) {
         occ++;
         searchFrom = found + 1;
     }
-    if (hitStart === -1) return;
+    if (hitStart === -1) return false;
     const hitEnd = hitStart + q.length;
 
     let firstMark = null;
@@ -577,6 +681,7 @@ function loreRefBoard_highlightInElement(el, match) {
         if (!firstMark) firstMark = mark;
     }
     firstMark?.scrollIntoView({ behavior: "smooth", block: "center" });
+    return !!firstMark;
 }
 
 function loreRefBoard_highlightRefCell(cellId, match) {
@@ -596,15 +701,12 @@ function loreRefBoard_highlightRefCell(cellId, match) {
             if (scrollEl) {
                 const ph = scrollEl.querySelector(`[data-page="${targetPage}"]`);
                 if (ph) ph.scrollIntoView({ behavior: "smooth", block: "start" });
-                const query = loreRefBoard_getSearchPanelState().query;
+                const needle = match?.snippet?.slice(match.matchStart, match.matchStart + match.matchLen)
+                    || loreRefBoard_getSearchPanelState().query;
                 const tlSel = `.lrb-pdf-text-layer[data-pdf-page="${targetPage}"]`;
-                let hlTries = 0;
-                const pollTl = () => {
-                    const tl = cell.querySelector(tlSel);
-                    if (tl) { loreRefBoard_highlightPdfTextLayer(tl, query); return; }
-                    if (++hlTries < 40) setTimeout(pollTl, 300);
-                };
-                setTimeout(pollTl, 200);
+                loreRefBoard_whenPdfPageReady(cell, tlSel, targetPage, tl => {
+                    loreRefBoard_highlightPdfTextLayer(tl, needle);
+                });
                 return;
             }
             if (++scTries < 60) setTimeout(waitForScroll, 300);
@@ -907,3 +1009,5 @@ function loreRefBoard_setupSearchPanel(app, root) {
         loreRefBoard_maybeRefreshSearch();
     }).catch(err => console.warn("[lore-reference-board] setupSearchPanel loadTabs failed:", err));
 }
+
+export { loreRefBoard_clearSearchCache, loreRefBoard_forceIndexAll, loreRefBoard_setupSearchPanel };

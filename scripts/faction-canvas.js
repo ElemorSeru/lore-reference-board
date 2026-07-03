@@ -1,3 +1,6 @@
+import { loreRefBoard_addFactionCircle, loreRefBoard_renderFactionCircles } from "./faction-circles.js";
+import { loreRefBoard_manageFactionRelationshipTypesDialog, loreRefBoard_renderFactionRelationships, loreRefBoard_toggleFactionRelationshipMode } from "./faction-relations.js";
+import { _loreRefBoard_bindFactionStandingPanelEvents, _loreRefBoard_renderFactionStandingPanel, loreRefBoard_manageFactionStandingTiersDialog } from "./faction-standing.js";
 
 function _loreRefBoard_syncFactionZoomBar(html, scale) {
     const pct = Math.round((scale ?? 1) * 100);
@@ -130,3 +133,5 @@ async function loreRefBoard_setupFactionTab(app, html, tab) {
     await loreRefBoard_renderFactionCircles(app, html);
     await loreRefBoard_renderFactionRelationships(app, html);
 }
+
+export { loreRefBoard_setupFactionTab };

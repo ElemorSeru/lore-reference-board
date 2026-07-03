@@ -1,3 +1,14 @@
+import { loreRefBoard_setupFactionTab } from "./faction-canvas.js";
+import { loreRefBoard_applyTabRowLimit, loreRefBoard_bindNewTab, loreRefBoard_bindTabSettings, loreRefBoard_bindTabStrip, loreRefBoard_bindToolbar, loreRefBoard_restoreWindowPos } from "./lrb-app-shell.js";
+import { loreRefBoard_addDocumentTabDialog, loreRefBoard_addFactionTabDialog, loreRefBoard_addImageTabDialog, loreRefBoard_addReferenceTabDialog, loreRefBoard_addTabDialog, loreRefBoard_addTabTypeDialog, loreRefBoard_documentTabSettingsDialog, loreRefBoard_factionTabSettingsDialog, loreRefBoard_finishAddTab, loreRefBoard_referenceTabSettingsDialog, loreRefBoard_tabSettingsDialog, loreRefBoard_typeButtonsHtml } from "./lrb-tab-dialogs.js";
+import { loreRefBoard_setupDocumentTab } from "./lrb-tab-document.js";
+import { loreRefBoard_buildPinElement, loreRefBoard_pinDialog, loreRefBoard_renderPins, loreRefBoard_setupImageTab } from "./lrb-tab-image.js";
+import { loreRefBoard_setupReferenceTab } from "./lrb-tab-reference.js";
+import { loreRefBoard_MODULE_SCOPE } from "./module-init.js";
+import { loreRefBoard_setupSearchPanel } from "./search.js";
+import { loreRefBoard_loadTabs } from "./storage.js";
+import { loreRefBoard_escapeHtml } from "./utils.js";
+
 var { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 
 class LoreRefBoardApp extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -94,6 +105,12 @@ class LoreRefBoardApp extends HandlebarsApplicationMixin(ApplicationV2) {
             isDocumentTab: currentTab?.type === "document",
             isReferenceTab: currentTab?.type === "reference",
             isFactionTab: currentTab?.type === "faction",
+            typeIcons: {
+                image: "fa-image",
+                document: "fa-file-lines",
+                reference: "fa-table-cells",
+                faction: "fa-people-group",
+            },
         };
     }
 
@@ -282,3 +299,5 @@ class LoreRefBoardApp extends HandlebarsApplicationMixin(ApplicationV2) {
         return super.close(options);
     }
 }
+
+export { LoreRefBoardApp };

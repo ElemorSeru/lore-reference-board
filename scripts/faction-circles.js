@@ -1,3 +1,8 @@
+import { _loreRefBoard_handleCircleRelClick, _loreRefBoard_updateRelationshipLinesForCircle, loreRefBoard_renderFactionRelationships } from "./faction-relations.js";
+import { _loreRefBoard_renderFactionStandingPanel } from "./faction-standing.js";
+import { loreRefBoard_loadFactionDataForTab, loreRefBoard_saveFactionDataForTab } from "./storage.js";
+import { loreRefBoard_attachDialogValidation, loreRefBoard_escapeHtml, loreRefBoard_parseRatingInput, loreRefBoard_resolveDroppedFactionEntity } from "./utils.js";
+
 var { DialogV2 } = foundry.applications.api;
 
 
@@ -120,6 +125,26 @@ async function loreRefBoard_renderFactionCircles(app, html) {
     }
 
     _loreRefBoard_bindFactionCircleEvents(app, html);
+    _loreRefBoard_markBrokenFactionEntities(app, canvasEl, data).catch(() => {});
+}
+
+async function _loreRefBoard_markBrokenFactionEntities(app, canvasEl, data) {
+    app._factionUuidOk ??= new Map();
+    const uuids = new Set();
+    for (const c of data.circles) for (const e of (c.entities ?? [])) if (e?.uuid) uuids.add(e.uuid);
+    for (const uuid of uuids) {
+        if (app._factionUuidOk.has(uuid)) continue;
+        let ok = false;
+        try { ok = !!(await fromUuid(uuid)); } catch { }
+        app._factionUuidOk.set(uuid, ok);
+    }
+    const missing = game.i18n.localize("lore-reference-board.Faction.Circle.Entity.MissingTitle");
+    canvasEl.querySelectorAll(".lrt-faction-circle-entity-token[data-uuid]").forEach(tok => {
+        if (app._factionUuidOk.get(tok.dataset.uuid) === false) {
+            tok.classList.add("lrt-faction-entity-broken");
+            tok.title = `${tok.title} - ${missing}`.trim();
+        }
+    });
 }
 
 async function _loreRefBoard_persistFactionCircleGeometry(app, el, circleId) {
@@ -172,13 +197,26 @@ async function _loreRefBoard_removeEntityFromFactionCircle(app, html, circleId, 
     await loreRefBoard_renderFactionCircles(app, html);
 }
 
-async function _loreRefBoard_openFactionEntitySheet(uuid) {
-    const doc = await fromUuid(uuid);
-    if (!doc) {
-        ui.notifications.warn(game.i18n.localize("lore-reference-board.Faction.Circle.Entity.OpenError"));
+async function _loreRefBoard_openFactionEntitySheet(uuid, ctx = null) {
+    let doc = null;
+    try { doc = await fromUuid(uuid); } catch { }
+    if (doc) {
+        doc.sheet?.render(true);
+        if (ctx?.app?._factionUuidOk) ctx.app._factionUuidOk.set(uuid, true);
         return;
     }
-    doc.sheet?.render(true);
+    if (ctx?.app && ctx.html && ctx.circleId) {
+        ctx.app._factionUuidOk?.set(uuid, false);
+        const confirmed = await DialogV2.confirm({
+            classes: ["lore-rb-dialog"],
+            window: { title: game.i18n.localize("lore-reference-board.Faction.Circle.Entity.MissingTitle") },
+            content: `<p>${game.i18n.format("lore-reference-board.Faction.Circle.Entity.MissingPrompt", { name: loreRefBoard_escapeHtml(ctx.name || uuid) })}</p>`,
+            rejectClose: false,
+        });
+        if (confirmed) await _loreRefBoard_removeEntityFromFactionCircle(ctx.app, ctx.html, ctx.circleId, uuid);
+        return;
+    }
+    ui.notifications.warn(game.i18n.localize("lore-reference-board.Faction.Circle.Entity.OpenError"));
 }
 
 async function _loreRefBoard_showFactionEntityOverflowDialog(app, html, circleId) {
@@ -231,7 +269,10 @@ async function _loreRefBoard_showFactionEntityOverflowDialog(app, html, circleId
                 return;
             }
 
-            await _loreRefBoard_openFactionEntitySheet(uuid);
+            await _loreRefBoard_openFactionEntitySheet(uuid, {
+                app, html, circleId,
+                name: row.querySelector(".lrt-faction-entity-row-name")?.textContent ?? "",
+            });
         });
     };
     requestAnimationFrame(bind);
@@ -382,9 +423,11 @@ function _loreRefBoard_bindFactionCircleEvents(app, html) {
     });
 
     $canvas.on("click.lrtfactioncircle", ".lrt-faction-circle-entity-token", async function (ev) {
+        const _circleEl = this.closest(".lrt-faction-circle");
+        const _entCtx = { app, html, circleId: _circleEl?.dataset?.circleid ?? null, name: this.title ?? "" };
         if (ev.target.closest(".lrt-faction-circle-entity-remove")) return;
         if (this.classList.contains("lrt-faction-circle-entity-overflow")) return;
-        await _loreRefBoard_openFactionEntitySheet(this.dataset.uuid);
+        await _loreRefBoard_openFactionEntitySheet(this.dataset.uuid, _entCtx);
     });
 
     $canvas.on("click.lrtfactioncircle", ".lrt-faction-circle-entity-overflow", async function (ev) {
@@ -475,6 +518,7 @@ async function _loreRefBoard_factionCircleSettingsDialog(app, html, circleId) {
 
     if (result.action === "delete") {
         const confirmed = await DialogV2.confirm({
+            classes: ["lore-rb-dialog"],
             window: { title: game.i18n.localize("lore-reference-board.Faction.Circle.Settings.DeleteTitle") },
             content: `<p>${game.i18n.format("lore-reference-board.Faction.Circle.Settings.DeleteContent", { name: loreRefBoard_escapeHtml(circle.name ?? "") })}</p>`,
             rejectClose: false,
@@ -500,3 +544,5 @@ async function _loreRefBoard_factionCircleSettingsDialog(app, html, circleId) {
     await loreRefBoard_renderFactionRelationships(app, html);
     if (app._factionStandingPanelOpen) await _loreRefBoard_renderFactionStandingPanel(app, html);
 }
+
+export { loreRefBoard_FACTION_CIRCLE_DEFAULT_COLOR, loreRefBoard_FACTION_CIRCLE_DEFAULT_RADIUS, loreRefBoard_addFactionCircle, loreRefBoard_renderFactionCircles };

@@ -459,3 +459,31 @@
     background: #3a5a3a;
     color: #bef;
 }
+
+
+/* broken folder links */
+.pg-folder-missing {
+  color: #d9a03c;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.pg-folder-path--missing {
+  color: #c17e7e;
+  text-decoration: line-through;
+}
+
+
+.pg-thumb-wrap {
+  position: relative;
+}
+
+.pg-thumb-broken-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  color: #e74c3c;
+  font-size: 12px;
+  text-shadow: 0 0 3px #000, 0 0 3px #000;
+  pointer-events: none;
+}

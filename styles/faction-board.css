@@ -760,3 +760,15 @@
     margin: 0;
     min-height: 14px;
 }
+
+
+/* broken member links */
+.lrt-faction-circle-entity-token.lrt-faction-entity-broken {
+  outline: 2px solid rgba(220, 60, 60, 0.9);
+  outline-offset: 1px;
+}
+
+.lrt-faction-circle-entity-token.lrt-faction-entity-broken img {
+  opacity: 0.5;
+  filter: grayscale(0.8);
+}

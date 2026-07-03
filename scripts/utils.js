@@ -213,12 +213,12 @@ async function loreRefBoard_renderPdfTextLayer(container, textContent, viewport)
             } catch {
                 // fallback to v2 API in case TextLayer constructor changed
                 if (typeof lib.renderTextLayer === "function") {
-                    const task = lib.renderTextLayer({ textContent, container, viewport, textDivs: [] });
+                    const task = lib.renderTextLayer({ textContentSource: textContent, container, viewport, textDivs: [] });
                     if (task?.promise) await task.promise;
                 }
             }
         } else if (typeof lib.renderTextLayer === "function") {
-            const task = lib.renderTextLayer({ textContent, container, viewport, textDivs: [] });
+            const task = lib.renderTextLayer({ textContentSource: textContent, container, viewport, textDivs: [] });
             if (task?.promise) await task.promise;
         }
     } catch (err) {
@@ -234,36 +234,52 @@ function loreRefBoard_highlightPdfTextLayer(textLayer, queryText) {
     const spans = Array.from(textLayer.querySelectorAll("span"));
     if (!spans.length) return;
 
-    const buildSegs = (normalize) => {
-        let combined = "";
-        const segs = [];
-        for (const span of spans) {
-            const raw = span.textContent;
-            const t = normalize ? raw.replace(/[ﬀ-ﬆ]/g, c => loreRefBoard_PDF_LIG[c] ?? c) : raw;
-            segs.push({ start: combined.length, end: combined.length + t.length, span });
-            combined += t;
+    const needle = queryText.toLowerCase()
+        .replace(/[\uFB00-\uFB06]/g, c => loreRefBoard_PDF_LIG[c] ?? c)
+        .replace(/\s+/g, " ").trim();
+    if (!needle) return;
+
+    // pdf.js span boundaries are ambiguous, scan both ways
+    const build = (boundaryIsSpace) => {
+        const hay = [];
+        const spanIdx = [];
+        let lastWasSpace = true;
+        for (let s = 0; s < spans.length; s++) {
+            for (const ch of spans[s].textContent) {
+                for (const c of (loreRefBoard_PDF_LIG[ch] ?? ch).toLowerCase()) {
+                    if (c === " " || c === "\t" || c === "\n" || c === "\r" || c === "\u00a0") {
+                        if (lastWasSpace) continue;
+                        hay.push(" ");
+                        spanIdx.push(s);
+                        lastWasSpace = true;
+                    } else {
+                        hay.push(c);
+                        spanIdx.push(s);
+                        lastWasSpace = false;
+                    }
+                }
+            }
+            if (boundaryIsSpace && !lastWasSpace) { hay.push(" "); spanIdx.push(s); lastWasSpace = true; }
         }
-        return { combined, segs };
+        return { hayStr: hay.join(""), spanIdx };
     };
 
-    const needle = queryText.toLowerCase().replace(/\s+/g, " ").trim();
-    const normNeedle = needle.replace(/[ﬀ-ﬆ]/g, c => loreRefBoard_PDF_LIG[c] ?? c);
+    const mark = ({ hayStr, spanIdx }) => {
+        let from = 0;
+        while (true) {
+            const idx = hayStr.indexOf(needle, from);
+            if (idx === -1) break;
+            const first = spanIdx[idx];
+            const last = spanIdx[idx + needle.length - 1];
+            for (let s = first; s <= last; s++) {
+                if (spans[s].textContent) spans[s].classList.add("lr-hl-span");
+            }
+            from = idx + needle.length;
+        }
+    };
 
-    let { combined, segs } = buildSegs(false);
-    let hay = combined.toLowerCase().replace(/\s+/g, " ");
-    let idx = hay.indexOf(needle);
-    let matchLen = needle.length;
-
-    if (idx === -1) {
-        ({ combined, segs } = buildSegs(true));
-        hay = combined.toLowerCase().replace(/\s+/g, " ");
-        idx = hay.indexOf(normNeedle);
-        if (idx === -1) return;
-        matchLen = normNeedle.length;
-    }
-
-    const matchEnd = idx + matchLen;
-    for (const { start, end, span } of segs) {
-        if (end > idx && start < matchEnd) span.classList.add("lr-hl-span");
-    }
+    mark(build(true));
+    mark(build(false));
 }
+
+export { _loreRefBoard_docTypeForExt, _loreRefBoard_isUrl, loreRefBoard_LINE_DASH, loreRefBoard_attachDialogValidation, loreRefBoard_computeImageRect, loreRefBoard_escapeHtml, loreRefBoard_fetchSvgData, loreRefBoard_highlightPdfTextLayer, loreRefBoard_isSvgIcon, loreRefBoard_lineDashArray, loreRefBoard_normalizePath, loreRefBoard_offsetLineEndpoints, loreRefBoard_parseRatingInput, loreRefBoard_pickDocFilePath, loreRefBoard_pickImagePath, loreRefBoard_pickRefFilePath, loreRefBoard_renderPdfTextLayer, loreRefBoard_resolveDroppedFactionEntity };

@@ -1,3 +1,7 @@
+import { loreRefBoard_clearSearchCache, loreRefBoard_forceIndexAll } from "./search.js";
+
+const { DialogV2 } = foundry.applications.api;
+
 console.log("[lore-reference-board] Loading...");
 
 if (typeof window.Panzoom === "undefined") {
@@ -54,6 +58,7 @@ const loreRefBoard_DEFAULT_STANDING_TIERS = [
 class LoreRefBoardClearCacheMenu extends foundry.applications.api.ApplicationV2 {
     async render() {
         const confirmed = await DialogV2.confirm({
+            classes: ["lore-rb-dialog"],
             window: { title: game.i18n.localize("lore-reference-board.Settings.ClearCache.Title") },
             content: `<p>${game.i18n.localize("lore-reference-board.Settings.ClearCache.Confirm")}</p>`,
             rejectClose: false,
@@ -68,17 +73,47 @@ class LoreRefBoardClearCacheMenu extends foundry.applications.api.ApplicationV2 
 class LoreRefBoardIndexAllMenu extends foundry.applications.api.ApplicationV2 {
     async render() {
         const confirmed = await DialogV2.confirm({
+            classes: ["lore-rb-dialog"],
             window: { title: game.i18n.localize("lore-reference-board.Settings.IndexAll.Title") },
             content: `<p>${game.i18n.localize("lore-reference-board.Settings.IndexAll.Confirm")}</p>`,
             rejectClose: false,
         });
         if (!confirmed) return;
-        const notif = ui.notifications.info(game.i18n.localize("lore-reference-board.Settings.IndexAll.Running"), { permanent: true });
-        await loreRefBoard_forceIndexAll((done, total) => {
-            notif?.update?.(`Indexing... ${done}/${total}`);
-        }).catch(err => console.warn("[lore-reference-board] forceIndexAll failed:", err));
-        notif?.close?.();
-        ui.notifications.info(game.i18n.localize("lore-reference-board.Settings.IndexAll.Done"));
+
+        let cancelled = false;
+        const dlg = await new DialogV2({
+            window: { title: game.i18n.localize("lore-reference-board.Settings.IndexAll.Title") },
+            classes: ["lore-rb-dialog"],
+            position: { width: 420 },
+            content: `
+                <div class="lrb-indexall-progress">
+                    <progress value="0" max="1" style="width:100%"></progress>
+                    <p class="lrb-indexall-label notes">${game.i18n.localize("lore-reference-board.Settings.IndexAll.Running")}</p>
+                </div>`,
+            buttons: [{
+                action: "cancel",
+                label: game.i18n.localize("lore-reference-board.Common.Cancel"),
+                callback: () => { cancelled = true; },
+            }],
+        }).render(true);
+
+        // Closing the dialog cancels the run
+        const shouldCancel = () => cancelled || !dlg.rendered;
+        const onProgress = (done, total) => {
+            if (!dlg.rendered) return;
+            const bar = dlg.element?.querySelector?.("progress");
+            const label = dlg.element?.querySelector?.(".lrb-indexall-label");
+            if (bar) { bar.max = total; bar.value = done; }
+            if (label) label.textContent = `${done}/${total}`;
+        };
+
+        const completed = await loreRefBoard_forceIndexAll(onProgress, shouldCancel)
+            .catch(err => { console.warn("[lore-reference-board] forceIndexAll failed:", err); return false; });
+
+        if (dlg.rendered) await dlg.close();
+        ui.notifications.info(game.i18n.localize(
+            completed ? "lore-reference-board.Settings.IndexAll.Done" : "lore-reference-board.Settings.IndexAll.Cancelled"
+        ));
     }
 }
 
@@ -135,6 +170,16 @@ Hooks.once("init", () => {
     }
 });
 
+Hooks.once("init", () => {
+    for (const hook of ["deleteJournalEntry", "deleteActor", "deleteItem", "deleteRollTable", "deleteScene", "deleteMacro", "deletePlaylist", "deleteCards"]) {
+        Hooks.on(hook, () => {
+            const app = game.loreReferenceBoardAppInstance;
+            app?._journalOkCache?.clear();
+            app?._factionUuidOk?.clear();
+        });
+    }
+});
+
 Hooks.once("ready", () => {
     if (document.getElementById("lr-svg-filter-defs")) return; 
     const ns = "http://www.w3.org/2000/svg";
@@ -166,3 +211,5 @@ Hooks.once("ready", () => {
     `;
     document.body.appendChild(svg);
 });
+
+export { loreRefBoard_DEFAULT_RELATIONSHIP_TYPES, loreRefBoard_DEFAULT_STANDING_TIERS, loreRefBoard_MODULE_SCOPE };

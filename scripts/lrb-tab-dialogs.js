@@ -1,3 +1,8 @@
+import { loreRefBoard_loadTabs, loreRefBoard_saveTabs } from "./storage.js";
+import { _loreRefBoard_docTypeForExt, _loreRefBoard_isUrl, loreRefBoard_attachDialogValidation, loreRefBoard_escapeHtml, loreRefBoard_normalizePath, loreRefBoard_pickDocFilePath, loreRefBoard_pickImagePath } from "./utils.js";
+
+const { DialogV2 } = foundry.applications.api;
+
 async function loreRefBoard_addTabDialog(app, presetType = null) {
         const type = presetType ?? await loreRefBoard_addTabTypeDialog(app);
         if (type === "cancel") return "cancel";
@@ -464,8 +469,8 @@ async function loreRefBoard_tabSettingsDialog(app, tab) {
                         };
                     },
                 },
-                { action: "cancel", label: game.i18n.localize("lore-reference-board.Common.Cancel") },
                 { action: "delete", label: game.i18n.localize("lore-reference-board.TabSettings.BtnDeleteTab"), callback: () => ({ action: "delete" }) },
+                { action: "cancel", label: game.i18n.localize("lore-reference-board.Common.Cancel") },
             ],
             rejectClose: true,
         });
@@ -662,3 +667,5 @@ async function loreRefBoard_referenceTabSettingsDialog(app, tab) {
     }
 
 
+
+export { loreRefBoard_addDocumentTabDialog, loreRefBoard_addFactionTabDialog, loreRefBoard_addImageTabDialog, loreRefBoard_addReferenceTabDialog, loreRefBoard_addTabDialog, loreRefBoard_addTabTypeDialog, loreRefBoard_documentTabSettingsDialog, loreRefBoard_factionTabSettingsDialog, loreRefBoard_finishAddTab, loreRefBoard_referenceTabSettingsDialog, loreRefBoard_tabSettingsDialog, loreRefBoard_typeButtonsHtml };

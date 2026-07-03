@@ -1,3 +1,5 @@
+import { loreRefBoard_escapeHtml } from "./utils.js";
+
 function loreRefBoard_getJournalPages(entry) {
     return entry.pages.contents.slice().sort((a, b) => a.sort - b.sort);
 }
@@ -64,6 +66,18 @@ async function loreRefBoard_enrichJournalPage(page, entry) {
     } catch {
         return raw;
     }
+}
+
+async function loreRefBoard_resolveJournalRef(ref) {
+    if (!ref) return null;
+    let entry = game.journal.get(ref) ?? null;
+    if (!entry && String(ref).includes(".")) {
+        try { entry = await fromUuid(ref); } catch { entry = null; }
+    }
+    if (!entry) {
+        try { entry = await fromUuid(`JournalEntry.${ref}`); } catch { entry = null; }
+    }
+    return entry?.documentName === "JournalEntryPage" ? entry.parent : entry;
 }
 
 async function loreRefBoard_wirePageNav(contentEl, journalId) {
@@ -154,7 +168,7 @@ function _loreRefBoard_renderRollTableHtml(doc) {
     const rows = sorted.map(r => {
         const rangeMin = r.range?.[0] ?? 0;
         const rangeMax = r.range?.[1] ?? 0;
-        const rangeStr = rangeMin === rangeMax ? `${rangeMin}` : `${rangeMin}–${rangeMax}`;
+        const rangeStr = rangeMin === rangeMax ? `${rangeMin}` : `${rangeMin}-${rangeMax}`;
         const imgHtml = r.img
             ? `<img class="lrt-rt-result-img" src="${loreRefBoard_escapeHtml(r.img)}" alt="" />`
             : "";
@@ -167,3 +181,5 @@ function _loreRefBoard_renderRollTableHtml(doc) {
 
     return `${formulaHtml}${descHtml}<table class="lrt-rt-table"><tbody>${rows}</tbody></table>`;
 }
+
+export { _loreRefBoard_renderRollTableHtml, loreRefBoard_enrichJournalPage, loreRefBoard_getJournalPages, loreRefBoard_wirePageNav, loreRefBoard_resolveJournalRef };

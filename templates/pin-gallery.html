@@ -27,7 +27,10 @@
                     <button class="pg-folder-rename pg-icon-btn" title="{{localize 'lore-reference-board.Gallery.RenameFolder'}}">
                         <i class="fas fa-pencil"></i>
                     </button>
-                    <span class="pg-folder-path" title="{{localize 'lore-reference-board.Gallery.FolderPathHint'}}">{{this.path}}</span>
+                    {{#if this.missing}}
+                    <i class="fas fa-exclamation-triangle pg-folder-missing" title="{{localize 'lore-reference-board.Gallery.FolderMissing'}}"></i>
+                    {{/if}}
+                    <span class="pg-folder-path{{#if this.missing}} pg-folder-path--missing{{/if}}" title="{{localize 'lore-reference-board.Gallery.FolderPathHint'}}">{{this.path}}</span>
                     <button class="pg-folder-add-images pg-icon-btn" title="{{localize 'lore-reference-board.Gallery.AddSingleImage'}}">
                         <i class="fas fa-plus"></i>
                     </button>
@@ -43,10 +46,14 @@
                     {{#each this.images}}
                     <div class="pg-thumb-wrap">
                         <img class="pg-thumb"
-                             src="{{this}}"
-                             data-src="{{this}}"
-                             title="{{this}} {{localize 'lore-reference-board.Gallery.RightClickRemove'}}"
+                             src="{{this.src}}"
+                             data-src="{{this.src}}"
+                             title="{{this.src}} {{localize 'lore-reference-board.Gallery.RightClickRemove'}}"
                              loading="lazy" />
+                        {{#if this.brokenJournal}}
+                        <i class="fas fa-exclamation-triangle pg-thumb-broken-badge"
+                           title="{{localize 'lore-reference-board.Gallery.ImageJournalMissing'}}"></i>
+                        {{/if}}
                     </div>
                     {{/each}}
                 </div>
@@ -86,6 +93,12 @@
         {{else}}
         <!-- Unlinked state: drag-and-drop / create -->
         <div class="pgj-dropzone">
+            {{#if brokenJournal}}
+            <p class="plr-broken-note">
+                <i class="fas fa-exclamation-triangle"></i>
+                {{localize "lore-reference-board.Pin.JournalMissingHint"}}
+            </p>
+            {{/if}}
             <i class="fas fa-book pgj-drop-icon"></i>
             <p class="pgj-drop-primary">{{localize "lore-reference-board.Lore.DropPrimary"}}</p>
             <div class="pgj-drop-or">{{localize "lore-reference-board.Lore.DropOr"}}</div>

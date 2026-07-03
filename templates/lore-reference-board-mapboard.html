@@ -8,7 +8,7 @@
             {{else}}
             <button class="lr-tab lr-tab--type-{{this.type}} {{#if (eq this.id ../activeTab)}}active{{/if}} {{#if this.pinned}}lr-tab--pinned{{/if}}"
                     data-tabid="{{this.id}}">
-                <i class="fas fa-thumbtack lr-tab-pin-icon"></i>{{this.name}}
+                <i class="fas fa-thumbtack lr-tab-pin-icon"></i><i class="fas {{lookup ../typeIcons this.type}} lr-tab-type-icon"></i>{{this.name}}
             </button>
             {{/if}}
             {{/each}}

@@ -1,3 +1,8 @@
+import { loreRefBoard_enrichJournalPage, loreRefBoard_getJournalPages, loreRefBoard_wirePageNav, loreRefBoard_resolveJournalRef } from "./journal-helpers.js";
+import { LoreRefBoardPinImageViewer } from "./pin-apps.js";
+import { loreRefBoard_clearLoreForImage, loreRefBoard_clearLoreForImages, loreRefBoard_getImageJournalMap, loreRefBoard_loadPinsForTab, loreRefBoard_savePinsForTab } from "./storage.js";
+import { loreRefBoard_attachDialogValidation, loreRefBoard_escapeHtml, loreRefBoard_pickImagePath } from "./utils.js";
+
 var { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 
 class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -36,9 +41,32 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
 
     async _prepareContext(_options = {}) {
         //  Gallery (left pane) 
+        this._folderOk ??= new Map();
+        for (const f of this._gallery.folders) {
+            if (!f.path || this._folderOk.has(f.path)) continue;
+            let ok = false;
+            try { await FilePicker.browse("data", f.path); ok = true; } catch { }
+            // core Foundry assets are served from "public"
+            if (!ok) { try { await FilePicker.browse("public", f.path); ok = true; } catch { } }
+            this._folderOk.set(f.path, ok);
+        }
+        const journalMap = loreRefBoard_getImageJournalMap()[this._pin.id] ?? {};
+        const imgJournalOk = new Map();
+        for (const jid of new Set(Object.values(journalMap).filter(Boolean))) {
+            let ok = !!game.journal.get(jid);
+            if (!ok) { try { ok = !!(await fromUuid(`JournalEntry.${jid}`)); } catch { } }
+            imgJournalOk.set(jid, ok);
+        }
         const galleryCtx = {
             galleryName: this._gallery.name,
-            folders: this._gallery.folders,
+            folders: this._gallery.folders.map(f => ({
+                ...f,
+                missing: !!f.path && this._folderOk.get(f.path) === false,
+                images: (f.images ?? []).map(src => ({
+                    src,
+                    brokenJournal: !!journalMap[src] && imgJournalOk.get(journalMap[src]) === false,
+                })),
+            })),
         };
 
         //  Pin journal (right pane) 
@@ -50,11 +78,9 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
         let journalName = "";
         let journalContent = "";
 
+        let brokenJournal = false;
         if (this._journalId) {
-            let entry = game.journal.get(this._journalId);
-            if (!entry) {
-                try { entry = await fromUuid(`JournalEntry.${this._journalId}`); } catch { entry = null; }
-            }
+            const entry = await loreRefBoard_resolveJournalRef(this._journalId);
             if (entry) {
                 journalLinked = true;
                 journalName = entry.name;
@@ -62,12 +88,17 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
                 const pages = loreRefBoard_getJournalPages(entry);
                 const firstPage = pages[0] ?? null;
                 journalContent = await loreRefBoard_enrichJournalPage(firstPage, entry);
+            } else {
+                // broken link: bind the unlinked drop zone so a new journal can be linked
+                brokenJournal = true;
+                this._journalId = null;
             }
         }
 
         return {
             ...galleryCtx,
             journalLinked,
+            brokenJournal,
             journalName,
             journalContent,
         };
@@ -136,6 +167,7 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
             if (result.action === "delete") {
                 const imgCount = folder.images.length;
                 const confirmed = await DialogV2.confirm({
+                    classes: ["lore-rb-dialog"],
                     window: { title: game.i18n.localize("lore-reference-board.Gallery.DeleteFolder") },
                     content: `<p>${game.i18n.format("lore-reference-board.Gallery.DeleteFolderContent", { name: loreRefBoard_escapeHtml(folder.name), count: imgCount })}</p>`,
                     rejectClose: false,
@@ -243,6 +275,7 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
             if (!folder) return;
 
             const ok = await DialogV2.confirm({
+                classes: ["lore-rb-dialog"],
                 window: { title: game.i18n.localize("lore-reference-board.Gallery.RemoveImage") },
                 content: `<p>${game.i18n.format("lore-reference-board.Gallery.RemoveImageContent", { src: loreRefBoard_escapeHtml(src) })}</p>`,
                 rejectClose: false,
@@ -327,14 +360,19 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
     }
 
     // Pin journal pane helpers
-    async _saveJournal(journalId) {
+    async _saveJournal(journalId, journalName = null) {
         const pins = await loreRefBoard_loadPinsForTab(this._tabId);
         const idx = pins.findIndex(p => p.id === this._pin.id);
         if (idx === -1) return;
         pins[idx].journal = journalId || "";
+        pins[idx].journalName = journalName || "";
         this._journalId = journalId || null;
         await loreRefBoard_savePinsForTab(this._tabId, pins);
         this._pin = pins[idx];
+        // refresh the board's pin layer so the broken badge clears
+        if (this._boardApp?.rendered) {
+            await this._boardApp.renderPins(this._boardApp._htmlRef).catch(() => {});
+        }
     }
 
     async _onPinJournalDrop(ev) {
@@ -347,12 +385,15 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
         }
 
         let journalId = null;
+        let journalName = null;
         if (data.type === "JournalEntry") {
             const entry = await fromUuid(data.uuid ?? "").catch(() => null);
             journalId = entry?.id ?? null;
+            journalName = entry?.name ?? null;
         } else if (data.type === "JournalEntryPage") {
             const page = await fromUuid(data.uuid ?? "").catch(() => null);
             journalId = page?.parent?.id ?? null;
+            journalName = page?.parent?.name ?? null;
         }
 
         if (!journalId) {
@@ -361,7 +402,7 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
         }
 
         try {
-            await this._saveJournal(journalId);
+            await this._saveJournal(journalId, journalName);
         } catch (err) {
             console.error("LoreReferenceBoard | failed to save pin journal on drop:", err);
             ui.notifications.error(game.i18n.localize("lore-reference-board.Lore.SaveLinkFail"));
@@ -415,13 +456,13 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
         });
         if (!entry) return;
 
-        await this._saveJournal(entry.id);
+        await this._saveJournal(entry.id, entry.name);
         await this.render();
         entry.sheet.render(true);
     }
 
-    _openPinJournalSheet() {
-        const entry = game.journal.get(this._journalId);
+    async _openPinJournalSheet() {
+        const entry = await loreRefBoard_resolveJournalRef(this._journalId);
         if (entry) {
             entry.sheet.render(true);
         } else {
@@ -431,6 +472,7 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
 
     async _unlinkPinJournal() {
         const confirmed = await DialogV2.confirm({
+            classes: ["lore-rb-dialog"],
             window: { title: game.i18n.localize("lore-reference-board.Lore.UnlinkTitle") },
             content: `<p>${game.i18n.localize("lore-reference-board.Pin.UnlinkPinContent")}</p>`,
             rejectClose: false,
@@ -624,3 +666,5 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
         return result ?? null;
     }
 }
+
+export { LoreRefBoardPinGalleryApp };

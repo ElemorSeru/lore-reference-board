@@ -96,7 +96,11 @@
         "Waterfall": "Waterfall",
         "Whale": "Whale",
         "Windmill": "Windmill"
-      }
+      },
+      "JournalMissingNamed": "{name} (missing)",
+      "JournalMissingTitle": "Linked journal missing",
+      "JournalMissingHint": "The previously linked journal can no longer be found. Link a new one below.",
+      "JournalMissingBadge": "Linked journal is missing - open the pin to relink."
     },
     "AddTab": {
       "Title": "Add New Tab",
@@ -155,7 +159,7 @@
       "DealBtn": "Deal",
       "DealNoHands": "No card hands found. Create a hand first.",
       "BtnUnlink": "Unlink",
-      "NotFound": "The linked entry could not be found. Click Unlink to reset.",
+      "NotFound": "The linked entry could not be found.",
       "DropWarn": "Please drop an Actor, Cards deck, Item, Journal, Macro, Playlist, Roll Table, or Scene.",
       "DropReadFail": "Could not read dropped data.",
       "TypeBadgeActor": "Actor",
@@ -165,7 +169,9 @@
       "TypeBadgePlaylist": "Playlist",
       "TypeBadgeRollTable": "Roll Table",
       "TypeBadgeCards": "Cards",
-      "TypeBadgeScene": "Scene"
+      "TypeBadgeScene": "Scene",
+      "RelinkHint": "Use the pencil button to relink this cell.",
+      "PreviouslyLinked": "Previously linked: {name} (missing)"
     },
     "ReferenceGrid": {
       "AddCellTitle": "Add Cell",
@@ -178,7 +184,7 @@
       "SpanNotSelected": "Please select a cell area first.",
       "DeleteCell": "Remove Cell",
       "FileCellDivider": "- or load a file -",
-      "FileCellInstruct": "Supported: PDF \u00b7 TXT \u00b7 Markdown",
+      "FileCellInstruct": "Supported: PDF · TXT · Markdown",
       "FileCellBrowse": "Browse",
       "FileCellPathPlaceholder": "Paste or enter file path...",
       "FileCellBadgePdf": "PDF",
@@ -215,7 +221,9 @@
           "OpenError": "Could not find that document.",
           "MoreTitle": "View all linked entities",
           "ListTitle": "{name} - Linked Entities",
-          "Open": "Open"
+          "Open": "Open",
+          "MissingTitle": "Member Not Found",
+          "MissingPrompt": "\"{name}\" can no longer be found in this world. Remove it from this faction?"
         }
       },
       "Relationship": {
@@ -275,7 +283,7 @@
       "Title": "Lore Board - Import / Export",
       "Hint": "Export saves all tabs, pins, and image references to a JSON file you can import into another world. Image paths must exist in the destination world's file structure to display correctly.",
       "BtnExport": "Export Data",
-      "BtnImport": "Import File",
+      "BtnImport": "Import",
       "ExportSuccess": "Board data exported successfully.",
       "ExportFailed": "Export failed. Check the browser console for details.",
       "ParseError": "Could not read the file. Make sure it is a valid JSON export from this module.",
@@ -288,7 +296,31 @@
       "WindowPosLabel": "Window Position",
       "BtnResetPos": "Reset Window Position",
       "ResetPosHint": "Closes the board and clears its saved size and position. Re-open to apply the default dimensions.",
-      "ResetPosSuccess": "Window position reset. Re-open the board to apply the default dimensions."
+      "ResetPosSuccess": "Window position reset. Re-open the board to apply the default dimensions.",
+      "ValidationTitle": "Import - Link Check",
+      "ValidationSummary": "{ok} of {total} links resolved. The following {broken} could not be found in this world:",
+      "ValidationHint": "These entries will still import, but their links will appear empty or broken until relinked.",
+      "BtnImportAnyway": "Import Anyway",
+      "LinkTab": "Tab",
+      "LinkCell": "Reference cell in",
+      "LinkPin": "Pin",
+      "LinkGallery": "Gallery folder on pin",
+      "LinkPinImage": "Journal link on image",
+      "LinkFaction": "Member of faction",
+      "ValidationAllFixed": "All links resolved. Ready to import.",
+      "BtnRelink": "Relink",
+      "BtnUndo": "Undo",
+      "RelinkAll": "Relink all exact matches ({count})",
+      "SuggestFound": "Found \"{name}\" in this world",
+      "SuggestMultiple": "{count} possible matches in this world",
+      "SuggestChoose": "Choose a match...",
+      "RemapTitle": "Fix file paths",
+      "RemapHint": "{count} broken file links share a folder prefix. Enter their new location to repair them in one step.",
+      "RemapOld": "Old prefix",
+      "RemapNew": "New prefix",
+      "RemapNewPlaceholder": "worlds/my-world/assets/",
+      "RemapBrowse": "Browse for the new folder",
+      "RemapStatus": "Remap fixes {fixed} of {total} file links."
     },
     "Settings": {
       "MaxTabRows": {
@@ -309,8 +341,9 @@
         "Hint": "Force-index every document tab and reference cell now, so search results are complete immediately.",
         "Title": "Index All Sources",
         "Confirm": "Fetch and index every document tab and reference cell in this world? This may take a moment for large collections.",
-        "Running": "Indexing all sources\u2026",
-        "Done": "All sources indexed."
+        "Running": "Indexing all sources…",
+        "Done": "All sources indexed.",
+        "Cancelled": "Indexing cancelled. Already indexed documents remain searchable."
       }
     },
     "DocumentTab": {
@@ -319,7 +352,7 @@
       "CreateEntry": "Create New Journal Entry",
       "OrBrowse": "- or -",
       "LoadFileLabel": "Load a document file",
-      "SupportedTypes": "PDF \u00b7 TXT \u00b7 Markdown",
+      "SupportedTypes": "PDF · TXT · Markdown",
       "BrowseFile": "Browse Files",
       "PastePathHint": "- or paste a file path or web URL -",
       "PathPlaceholder": "data/worlds/file.html  or  https://example.com/page",
@@ -329,11 +362,12 @@
       "Unlink": "Unlink",
       "Change": "Change",
       "Remove": "Remove",
-      "NotFound": "The linked document could not be found. Click Unlink to reset.",
+      "NotFound": "The linked document could not be found.",
       "DropWarn": "Please drop a Journal Entry from the Journals sidebar.",
       "DropReadFail": "Could not read the dropped data.",
       "UnsupportedFile": "Unsupported file type. Supported formats: PDF, TXT, Markdown, HTML, DOCX, and common image types (PNG, JPG, WEBP, GIF, SVG).",
-      "LoadFail": "Could not load the file. Check that the path is correct and the server can access it."
+      "LoadFail": "Could not load the file. Check that the path is correct and the server can access it.",
+      "Relink": "Choose New Document"
     },
     "Gallery": {
       "WindowTitle": "Pin Gallery",
@@ -366,7 +400,9 @@
       "ImportedAlready": "All images from \"{path}\" were already in this folder.",
       "NoImagesFound": "No image files found in \"{path}\".",
       "ImportNewFolderFailed": "Could not read \"{path}\". You can import images later via the folder import button.",
-      "ImportFailed": "Could not read directory \"{path}\". Check the path and that the server can access it."
+      "ImportFailed": "Could not read directory \"{path}\". Check the path and that the server can access it.",
+      "FolderMissing": "Folder not found. Use the folder button to re-import from a new location.",
+      "ImageJournalMissing": "The journal linked to this image is missing. Open the image to relink."
     },
     "ImageViewer": {
       "WindowTitle": "Image Viewer",
@@ -418,11 +454,23 @@
       "Indexing": "Indexing...",
       "NotSearchable": "External URL - open in browser to search",
       "PageLabel": "p. {page}",
-      "PdfUnavailable": "PDF.js not available \u2014 cannot search PDF",
-      "DocxUnavailable": "mammoth.js not available \u2014 cannot search DOCX",
-      "IndexingStatus": "Searching {indexed} sources ({pending} still indexing\u2026)",
+      "PdfUnavailable": "PDF.js not available - cannot search PDF",
+      "DocxUnavailable": "mammoth.js not available - cannot search DOCX",
+      "IndexingStatus": "Searching {indexed} sources ({pending} still indexing…)",
       "CollapseAll": "Collapse All",
-      "ExpandAll": "Expand All"
+      "ExpandAll": "Expand All",
+      "IndexingPages": "Indexing {done}/{total} pages",
+      "CancelIndexing": "Cancel indexing"
+    },
+    "Keybindings": {
+      "ToggleBoard": {
+        "Name": "Toggle Reference Board",
+        "Hint": "Show or hide the Lore Reference Board window."
+      }
+    },
+    "ImageTab": {
+      "Missing": "The map image for this tab could not be loaded.",
+      "BtnLocate": "Locate Image"
     }
   }
 }

@@ -2,10 +2,12 @@
 
 [![Patreon](https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white)](https://patreon.com/Elemor)
 [![Foundry Version](https://img.shields.io/badge/Foundry-v13%20%7C%20v14-informational?style=for-the-badge)](https://foundryvtt.com)
-[![Module Version](https://img.shields.io/badge/Version-2.0.0-success?style=for-the-badge)](https://github.com/ElemorSeru/lore-reference-board/releases/latest)
+[![Module Version](https://img.shields.io/badge/Version-2.1.0-success?style=for-the-badge)](https://github.com/ElemorSeru/lore-reference-board/releases/latest)
 <img alt="GitHub Downloads (all assets, latest release)" src="https://img.shields.io/github/downloads/ElemorSeru/lore-reference-board/latest/total">
 
 A system agnostic Foundry VTT module built for GMs who want an organized reference board that stores all your information as well as image references of your favorite art. Keep your maps, image references, documents, and world documents organized and accessible in one window that stays consistent no matter which scene or scenario you're running.
+
+Open the board from its scene controls button or with **Ctrl+B** (rebindable in Configure Controls). Neither requires an active scene (since not all systems load a default scene).
 
 ---
 
@@ -109,9 +111,24 @@ Type at least two characters to search. Results are grouped by tab or cell, with
 - Document tabs: PDF (all pages), TXT, Markdown, HTML, DOCX, and Journal entries (all pages)
 - Reference cells: PDF, TXT, Markdown, and Journal entries
 
-Indexing runs automatically when items are added, changed, or deleted. PDF pages are read from the file directly, not from what you have scrolled through, so the entire document is searchable immediately after it is loaded.
+Indexing runs automatically when items are added, changed, or deleted. PDF pages are read from the file directly, not from what you have scrolled through, so the entire document is searchable immediately after it is loaded. While a large PDF indexes, its tab or cell shows a small progress badge with a cancel button.
 
-The module settings panel includes an **Index All** button to force a full re-index of everything if results ever seem off.
+The module settings panel includes an **Index All** button to force a full re-index of everything if results ever seem off, with a progress dialog that can be cancelled if things get stuck or take too long.
+
+---
+
+## Broken Links & Import Repair *(New in v2.1)*
+
+Links break: journals get deleted, files move, boards get imported into other worlds. Instead of failing silently, the board marks broken links where they live and gives each one a repair path:
+
+- Reference cells and document tabs show what the dead link pointed at, with a relink control
+- Pins with a missing journal get a red badge on the map; the pin dialog, preview, and gallery all show the missing state with a drop zone to relink
+- Faction members whose document is gone appear dimmed with a red outline; clicking one offers to remove it
+- Gallery folders and map images that fail to load show the old path and a browse button to relocate them
+
+On import, a link check dialog resolves every link before anything is written. Broken document links get relink suggestions matched by name and type from the destination world and loaded compendiums, with a one-click "relink all exact matches" option. Broken file paths that share a folder prefix can be remapped in one step, with the dialog re-checking the new paths live. Exports record document names to make those suggestions possible. Whatever is left imports as a labeled broken-link state and can be fixed later. I attempted to give a cleaner path rather than force broken links.
+
+> **Note:** exports made with module versions before v2.1 do not contain document names, so the link check can only show raw IDs for them and cannot offer relink suggestions. To get the full repair experience, update the module in the source world and export again. The new export records a name for every link that still resolves there.
 
 ---
 
@@ -137,6 +154,8 @@ https://github.com/ElemorSeru/lore-reference-board/releases/latest/download/modu
 
 Download the latest release zip, extract it into your `Data/modules/` directory, and restart Foundry.
 
+**After updating:** if things don't seem right, do a hard refresh (`Ctrl+F5`) in Foundry or just close and reload Foundry. The browser caches the module's internal files, and a normal reload can keep serving the previous version.
+
 ---
 
 ## Compatibility
@@ -158,7 +177,7 @@ All board data is stored in **world-scoped game settings**, not scene flags. Thi
 - Data is not lost when switching active scenes
 - All GMs in the same world share the same board data
 
-You can export and import the full board state (tabs, pins, cell links) from the module settings panel. This is useful for backups or moving a board between worlds. Links are stored by UUID and file path, so if the folder structure or document names differ in the destination world, those links will not load correctly.
+You can export and import the full board state (tabs, pins, cell links) from the module settings panel. This is useful for backups or moving a board between worlds. Links are stored by UUID and file path; the import link check (see above) repairs what it can, and anything else imports as a labeled broken-link state that can be relinked in place later.
 
 The board also remembers its window size and position between sessions. Each user stores their own position independently. If the window ever ends up off-screen or at an unusable size, there is a **Reset Window Position** button in the module settings panel that closes the board and clears the saved position.
 

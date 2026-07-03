@@ -1,3 +1,9 @@
+import { loreRefBoard_enrichJournalPage, loreRefBoard_getJournalPages, loreRefBoard_resolveJournalRef } from "./journal-helpers.js";
+import { loreRefBoard_loadTabs, loreRefBoard_saveTabs } from "./storage.js";
+import { _loreRefBoard_docTypeForExt, _loreRefBoard_isUrl, loreRefBoard_escapeHtml, loreRefBoard_normalizePath, loreRefBoard_pickDocFilePath, loreRefBoard_renderPdfTextLayer } from "./utils.js";
+
+const { DialogV2 } = foundry.applications.api;
+
 async function loreRefBoard_setupDocumentTab(app, html, tab) {
         const pane = html.find("#lr-doc-pane")[0];
         if (!pane) return;
@@ -6,12 +12,13 @@ async function loreRefBoard_setupDocumentTab(app, html, tab) {
         const docType = tab.docType ?? null;
         const docRef = tab.docRef  ?? null;
 
-        const saveDocToTab = async (newDocType, newDocRef) => {
+        const saveDocToTab = async (newDocType, newDocRef, newDocName = null) => {
             const all = await loreRefBoard_loadTabs();
             const idx = all.findIndex(t => t.id === tabId);
             if (idx === -1) return;
             all[idx].docType = newDocType;
             all[idx].docRef = newDocRef;
+            all[idx].docName = newDocName;
             await loreRefBoard_saveTabs(all);
         };
 
@@ -71,16 +78,19 @@ async function loreRefBoard_setupDocumentTab(app, html, tab) {
                 catch { ui.notifications.warn(game.i18n.localize("lore-reference-board.DocumentTab.DropReadFail")); return; }
 
                 let journalId = null;
+                let journalName = null;
                 if (data.type === "JournalEntry") {
                     const entry = await fromUuid(data.uuid ?? "").catch(() => null);
                     journalId = entry?.id ?? null;
+                    journalName = entry?.name ?? null;
                 } else if (data.type === "JournalEntryPage") {
                     const page = await fromUuid(data.uuid ?? "").catch(() => null);
                     journalId = page?.parent?.id ?? null;
+                    journalName = page?.parent?.name ?? null;
                 }
 
                 if (!journalId) { ui.notifications.warn(game.i18n.localize("lore-reference-board.DocumentTab.DropWarn")); return; }
-                await saveDocToTab("journal", journalId);
+                await saveDocToTab("journal", journalId, journalName);
                 await app.render();
             });
 
@@ -129,7 +139,7 @@ async function loreRefBoard_setupDocumentTab(app, html, tab) {
                 });
                 if (!entry) return;
 
-                await saveDocToTab("journal", entry.id);
+                await saveDocToTab("journal", entry.id, entry.name);
                 await app.render();
                 entry.sheet.render(true);
             });
@@ -170,18 +180,20 @@ async function loreRefBoard_setupDocumentTab(app, html, tab) {
 
         // STATE 2: Journal linked
         if (docType === "journal") {
-            let entry = game.journal.get(docRef);
-            if (!entry) {
-                try { entry = await fromUuid(`JournalEntry.${docRef}`); } catch { entry = null; }
-            }
+            const entry = await loreRefBoard_resolveJournalRef(docRef);
 
             if (!entry) {
+                const brokenName = tab.docName
+                    ? `<p class="lrt-doc-broken-name">${loreRefBoard_escapeHtml(tab.docName)}</p>`
+                    : "";
                 pane.innerHTML = `
                   <div class="lrt-doc-not-found">
                     <i class="fas fa-exclamation-triangle lrt-doc-warn-icon"></i>
                     <p>${game.i18n.localize("lore-reference-board.DocumentTab.NotFound")}</p>
+                    ${brokenName}
+                    <p class="lrt-doc-broken-ref">${loreRefBoard_escapeHtml(docRef ?? "")}</p>
                     <button type="button" class="lrt-doc-btn lrt-doc-btn--unlink" id="lrt-doc-unlink-${tabId}">
-                      <i class="fas fa-unlink"></i> ${game.i18n.localize("lore-reference-board.DocumentTab.Unlink")}
+                      <i class="fas fa-link"></i> ${game.i18n.localize("lore-reference-board.DocumentTab.Relink")}
                     </button>
                   </div>`;
                 pane.querySelector(`#lrt-doc-unlink-${tabId}`)?.addEventListener("click", async () => {
@@ -270,6 +282,7 @@ async function loreRefBoard_setupDocumentTab(app, html, tab) {
                 pane.innerHTML = `<div class="lrt-doc-not-found">
                     <i class="fas fa-exclamation-triangle lrt-doc-warn-icon"></i>
                     <p>${game.i18n.localize("lore-reference-board.DocumentTab.LoadFail")}</p>
+                    <p class="lrt-doc-broken-ref">${loreRefBoard_escapeHtml(docRef ?? "")}</p>
                     <button type="button" class="lrt-doc-btn lrt-doc-btn--unlink" id="lrt-doc-remove-${tabId}">
                       <i class="fas fa-times"></i> ${game.i18n.localize("lore-reference-board.DocumentTab.Remove")}
                     </button>
@@ -396,6 +409,7 @@ async function loreRefBoard_setupDocumentTab(app, html, tab) {
                     textDiv.className = "lrb-pdf-text-layer";
                     textDiv.dataset.pdfPage = n;
                     textDiv.style.cssText = `position:absolute;left:0;top:0;width:${viewport.width}px;height:${viewport.height}px;overflow:hidden;`;
+                    textDiv.style.setProperty("--scale-factor", String(viewport.scale));
                     const tc = await page.getTextContent();
                     await loreRefBoard_renderPdfTextLayer(textDiv, tc, viewport);
 
@@ -409,6 +423,7 @@ async function loreRefBoard_setupDocumentTab(app, html, tab) {
                     ph.innerHTML = "";
                     ph.appendChild(wrap);
                     rendered.add(n);
+                    ph.dispatchEvent(new CustomEvent("lrb-pdf-page-rendered", { bubbles: true, detail: { page: n } }));
                 } catch (err) {
                     console.warn("[lore-reference-board] PDF page render failed:", err);
                 } finally {
@@ -547,8 +562,11 @@ async function loreRefBoard_setupDocumentTab(app, html, tab) {
                 }
             }
 
-            // Jump to initPage after DOM settles
-            if (initPage > 1) setTimeout(() => lrb_scrollToPage(initPage), 80);
+            // render the jump point immediately instead of waiting for the lazy observer
+            if (initPage > 1) {
+                setTimeout(() => lrb_scrollToPage(initPage), 80);
+                setTimeout(() => lrb_renderPage(pageEls[initPage - 1]).catch(() => {}), 120);
+            }
 
             // Change / Remove
             pane.querySelector(`#lrt-doc-change-${tabId}`)?.addEventListener("click", async () => {
@@ -824,3 +842,5 @@ async function loreRefBoard_setupDocumentTab(app, html, tab) {
             return;
         }
     }
+
+export { loreRefBoard_setupDocumentTab };

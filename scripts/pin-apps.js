@@ -1,3 +1,8 @@
+import { loreRefBoard_enrichJournalPage, loreRefBoard_getJournalPages, loreRefBoard_wirePageNav, loreRefBoard_resolveJournalRef } from "./journal-helpers.js";
+import { loreRefBoard_getActiveNpcGenerator } from "./npc-generators.js";
+import { loreRefBoard_clearImageJournalLink, loreRefBoard_clearLoreForImage, loreRefBoard_getImageJournalMap, loreRefBoard_saveImageJournalLink, loreRefBoard_saveLoreForImage } from "./storage.js";
+import { loreRefBoard_escapeHtml } from "./utils.js";
+
 var { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 
 class LoreRefBoardPinImageViewer extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -287,17 +292,12 @@ class LoreRefBoardPinLoreApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
         if (!this._journalId) return { linked: false };
 
-        let entry = game.journal.get(this._journalId);
-        if (!entry) {
-            try {
-                entry = await fromUuid(`JournalEntry.${this._journalId}`);
-            } catch {
-                entry = null;
-            }
-        }
+        const entry = await loreRefBoard_resolveJournalRef(this._journalId);
 
         if (!entry) {
-            return { linked: false };
+            // broken link: bind the unlinked drop zone so a new journal can link
+            this._journalId = null;
+            return { linked: false, brokenJournal: true };
         }
 
         const pages = loreRefBoard_getJournalPages(entry);
@@ -478,8 +478,8 @@ class LoreRefBoardPinLoreApp extends HandlebarsApplicationMixin(ApplicationV2) {
         entry.sheet.render(true);
     }
 
-    _openJournalSheet() {
-        const entry = game.journal.get(this._journalId);
+    async _openJournalSheet() {
+        const entry = await loreRefBoard_resolveJournalRef(this._journalId);
         if (entry) {
             entry.sheet.render(true);
         } else {
@@ -489,6 +489,7 @@ class LoreRefBoardPinLoreApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     async _unlink() {
         const confirmed = await DialogV2.confirm({
+            classes: ["lore-rb-dialog"],
             window: { title: game.i18n.localize("lore-reference-board.Lore.UnlinkTitle") },
             content: `<p>${game.i18n.localize("lore-reference-board.Lore.UnlinkContent")}</p>`,
             rejectClose: false,
@@ -504,3 +505,5 @@ class LoreRefBoardPinLoreApp extends HandlebarsApplicationMixin(ApplicationV2) {
         await this.render();
     }
 }
+
+export { LoreRefBoardPinImageViewer };

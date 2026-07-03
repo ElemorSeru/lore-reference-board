@@ -1,3 +1,9 @@
+import { loreRefBoard_MODULE_SCOPE } from "./module-init.js";
+import { _loreRefBoard_getSetting, loreRefBoard_clearLoreForImages, loreRefBoard_collectPinImages, loreRefBoard_deleteFactionDataForTab, loreRefBoard_deletePinsForTab, loreRefBoard_getImageJournalMap, loreRefBoard_loadPinsForTab, loreRefBoard_loadTabs, loreRefBoard_removeFactionStandingCollapsed, loreRefBoard_saveTabs } from "./storage.js";
+import { loreRefBoard_escapeHtml } from "./utils.js";
+
+const { DialogV2 } = foundry.applications.api;
+
 function loreRefBoard_syncMapZoomBar(html, scale) {
     const pct = Math.round((scale ?? 1) * 100);
     const slider = html.find("#lr-zoom-slider")[0];
@@ -29,7 +35,7 @@ function loreRefBoard_applyTabRowLimit(app, html) {
     const tabsEl = html.find(".lr-tabs")[0];
     if (!tabsEl) return;
     if (maxRows > 0) {
-        tabsEl.style.maxHeight = `${maxRows * 36}px`;
+        tabsEl.style.maxHeight = `${maxRows * 41 - 1}px`;
         tabsEl.style.overflowY = "auto";
     } else {
         tabsEl.style.maxHeight = "";
@@ -219,6 +225,7 @@ function loreRefBoard_bindTabSettings(app, html) {
 
         if (res?.action === "delete") {
             const confirmed = await DialogV2.confirm({
+                classes: ["lore-rb-dialog"],
                 window: { title: game.i18n.localize("lore-reference-board.TabSettings.DeleteTitle") },
                 content: `<p>${game.i18n.format("lore-reference-board.TabSettings.DeleteContent", { name: loreRefBoard_escapeHtml(tab.name) })}</p>`,
                 rejectClose: false,
@@ -252,6 +259,7 @@ function loreRefBoard_bindTabSettings(app, html) {
         const imageChanged = newImg && newImg !== (tab.img ?? "");
         if (imageChanged) {
             const confirmed = await DialogV2.confirm({
+                classes: ["lore-rb-dialog"],
                 window: { title: game.i18n.localize("lore-reference-board.TabSettings.ReplaceMapTitle") },
                 content: `<p>${game.i18n.localize("lore-reference-board.TabSettings.ReplaceMapContent")}</p>`,
                 rejectClose: false,
@@ -272,3 +280,5 @@ function loreRefBoard_bindTabSettings(app, html) {
         await app.render();
     });
 }
+
+export { loreRefBoard_applyTabRowLimit, loreRefBoard_bindNewTab, loreRefBoard_bindTabSettings, loreRefBoard_bindTabStrip, loreRefBoard_bindToolbar, loreRefBoard_restoreWindowPos, loreRefBoard_syncMapZoomBar };

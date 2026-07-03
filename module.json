@@ -2,7 +2,7 @@
   "id": "lore-reference-board",
   "title": "GM Tools: Lore Reference Board",
   "description": "A GM aid for theater-of-the-mind campaigns with maps, pins, and galleries that inspired you.",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "compatibility": {
     "minimum": "13",
     "verified": "14"
@@ -15,6 +15,18 @@
     }
   ],
   "scripts": [
+    "scripts/libs/mammoth.browser.min.js",
+    "scripts/libs/pdf.min.js"
+  ],
+  "styles": [
+    "styles/mapboard.css",
+    "styles/pin-gallery.css",
+    "styles/pin-image-viewer.css",
+    "styles/pin-lore.css",
+    "styles/pin-dialog.css",
+    "styles/faction-board.css"
+  ],
+  "esmodules": [
     "scripts/module-init.js",
     "scripts/storage.js",
     "scripts/utils.js",
@@ -23,8 +35,6 @@
     "scripts/faction-circles.js",
     "scripts/faction-relations.js",
     "scripts/faction-standing.js",
-    "scripts/libs/mammoth.browser.min.js",
-    "scripts/libs/pdf.min.js",
     "scripts/search.js",
     "scripts/lrb-app-shell.js",
     "scripts/lrb-tab-image.js",
@@ -38,15 +48,6 @@
     "scripts/import-export.js",
     "scripts/controls.js"
   ],
-  "styles": [
-    "styles/mapboard.css",
-    "styles/pin-gallery.css",
-    "styles/pin-image-viewer.css",
-    "styles/pin-lore.css",
-    "styles/pin-dialog.css",
-    "styles/faction-board.css"
-  ],
-  "esmodules": [],
   "languages": [
     {
       "lang": "en",

@@ -23,6 +23,12 @@
     <!-- Unlinked state: drop zone -->
 
     <div class="plr-dropzone">
+        {{#if brokenJournal}}
+        <p class="plr-broken-note">
+            <i class="fas fa-exclamation-triangle"></i>
+            {{localize "lore-reference-board.Pin.JournalMissingHint"}}
+        </p>
+        {{/if}}
         <i class="fas fa-book plr-drop-icon"></i>
         <p class="plr-drop-primary">{{localize "lore-reference-board.Lore.DropPrimary"}}</p>
         <div class="plr-drop-or">{{localize "lore-reference-board.Lore.DropOr"}}</div>

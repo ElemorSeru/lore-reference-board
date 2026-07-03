@@ -50,6 +50,8 @@ This guide covers how to use every part of the Lore Reference Board. If somethin
 
 The board opens from the toolbar on the left side of the Foundry UI. Look for the Lore Reference Board button (the two theater masks button). Click it to open the window.
 
+The board can also be toggled with a keybinding, **Ctrl+B** by default. Rebind it under Game Settings > Configure Controls > Lore Reference Board. Both the toolbar button and the keybinding work whether or not a scene is active since not all system load default scenes.
+
 The window is resizable and can be maximized using the maximize button in the top-right corner of the toolbar. The board remembers your tabs and content across sessions as long as the world data is intact.
 
 ---
@@ -94,7 +96,7 @@ Each tab is tinted by its type so you can tell what kind of tab it is at a glanc
 | Reference | Purple |
 | Faction | Amber |
 
-The tint gets stronger depending on the tab's state. A faint tint for a normal tab, a slightly stronger tint once it's pinned, and the strongest tint (plus the blue underline) when it's the active tab.
+The tint gets stronger with state: faint on inactive tabs, stronger on hover, strongest on the active tab, which also gets an underline in its own type color. Each tab shows a small type icon next to its name, so the type stays readable without relying on color alone.
 
 ---
 
@@ -139,7 +141,7 @@ Inside the pin dialog, the right panel is the journal linking area.
 
 **To link a journal:**
 
-Drag a journal entry from the Foundry journal sidebar and drop it onto the drop zone in the right panel. The panel will update to show the journal name and render the first page of content below it.
+Drag a journal entry from the Foundry journal sidebar and drop it onto the drop zone in the right panel. Compendium journal entries work too, just drag them from an open compendium. The panel will update to show the journal name and render the first page of content below it.
 
 If the journal has multiple pages, a page navigation bar appears with previous and next arrow buttons and a page selector dropdown.
 
@@ -154,6 +156,10 @@ Click the Edit button in the linked state panel. This opens the journal sheet.
 **To unlink:**
 
 Click the Unlink button. You will be asked to confirm. The journal entry itself is not deleted.
+
+**If the linked journal is missing:**
+
+When a pin's journal no longer exists (deleted, or the pin was imported from another world), the pin shows a small red badge on the map. The pin dialog shows the stored journal name marked as missing, with Unlink available to reset it. The pin preview and gallery windows show the same warning with an active drop zone, so you can link a replacement directly from either.
 
 ---
 
@@ -179,6 +185,10 @@ Right-click any thumbnail in the gallery to remove it from the folder. The file 
 
 Left-clicking a thumbnail opens a larger preview of the image in a dialog. From there you have options to add specific lore for that image, copy the file path to clipboard, create a new scene using the image, or create the image as a Foundry token. If the Encounter Forge module is active, creating a token will first ask whether to create a blank actor or generate a full NPC with stats. The generator opens pre-loaded with this image as the portrait and token art.
 
+**Missing folders and journals**
+
+If a folder's path no longer exists, a warning icon appears next to the struck-through path; use the folder's import button to re-point it at a new location. If an image's linked journal is missing, its thumbnail shows a small warning icon. Open the image and link a new journal from the preview.
+
 ---
 
 ## Document Tabs
@@ -192,6 +202,8 @@ When the tab has nothing linked yet, you will see a drop zone with two ways to l
 3. **Select** load a website or html file stored locally into the tab. (Subject to iframe limitations and website security)
 
 Once something is loaded, a header bar appears at the top of the tab showing what is linked. You can use the Unlink button in that bar to disconnect it and return to the empty state.
+
+If a linked journal can no longer be found (deleted, or imported from another world), the tab shows the stored journal name and id with a **Choose New Document** button. If a linked file fails to load, the missing path is shown alongside the Remove button.
 
 ---
 
@@ -372,6 +384,10 @@ The Edit Cell window is the same as the Add Cell dialog with two differences:
 
 **To delete:** Click the Delete button. The cell is removed from the grid and the space it occupied becomes available again.
 
+**Broken links**
+
+If a cell's document no longer exists, the cell shows a warning with the name it was linked to (or the raw id for links created before names were stored). Use the pencil to relink; the edit dialog shows a "Previously linked" line with the old name so you know what you are replacing.
+
 ---
 
 ## Faction Tabs
@@ -425,6 +441,7 @@ Drag any Actor, Item, Journal Entry, or other supported Foundry document from a 
 - Click a token to open that document's sheet
 - Click the small remove (trashcan) button on a token to unlink it from the faction (the document itself is not deleted)
 - If there are more entities than fit in the circle, an overflow button appears. Click it to see the full list and open any of them
+- If a member's document no longer exists (deleted, or imported from another world), its token appears dimmed with a red outline. Clicking it offers to remove it from the faction
 
 ---
 
@@ -548,6 +565,8 @@ The search index is cached in localStorage so results are available immediately 
 
 While documents are being indexed in the background (especially large PDFs), a status bar at the top of the results list shows how many items are indexed versus still pending. Once all items are indexed the bar disappears.
 
+While a PDF indexes, the document tab or cell it belongs to shows a small progress badge with the current page count and a cancel button. Cancelling skips that document for the session; it stays fully usable and can be indexed later with Index All in the module settings.
+
 If results ever seem stale or incomplete, use the **Index All** button in the module settings panel to force a full re-index of all tabs and cells.
 
 ---
@@ -572,7 +591,7 @@ This is a per-client setting, so each GM can set their own preference independen
 
 Forces a full re-index of every document tab and reference cell. Use this if search results seem out of date after making changes outside of a normal session, or as a troubleshooting step if results look wrong.
 
-The process runs in the background. The status bar in the search panel will show progress while indexing is happening.
+A progress dialog shows how many items have been processed, with a Cancel button. Closing the dialog also cancels. Documents already indexed remain searchable either way.
 
 ---
 
@@ -580,11 +599,21 @@ The process runs in the background. The status bar in the search panel will show
 
 The module settings panel includes Import and Export buttons for the full board state.
 
-**Export** saves a JSON file containing all your tabs, all pin data, all cell links, and all gallery folder paths. Download this file and keep it somewhere safe as a backup.
+**Export** saves a JSON file into your world folder containing all tabs, pin data, cell links, faction data, and gallery folder paths. The export also records the display name of every linked document; the import link check uses those names to offer repairs.
 
-**Import** reads a previously exported JSON file and merges or replaces the current board state with the imported data.
+**Import** reads a previously exported JSON file and merges or replaces the current board state.
 
-One important thing to keep in mind: document links in cells and pins are stored by UUID and file path, not by copying the content. If you import a board into a different world that does not have the same actors, journals, or compendium packs, those links will show as broken until the matching documents exist in that world. File path links (PDFs, images, etc.) will also break if the file is not present at the same path in the new world's data directory.
+**The link check**
+
+Before anything is imported, the module resolves every document link and file path in the file. If everything resolves, the import proceeds directly. If links are broken, a link check dialog lists them by name and offers repairs:
+
+- If a document with the same name and type exists in the destination world or a loaded compendium, the row shows a **Relink** button, or a dropdown when there are several candidates (world folders and compendium names are shown to tell them apart). A **Relink all exact matches** button accepts every unambiguous suggestion at once.
+- If several broken file links share a folder prefix, a **Fix file paths** section appears. Enter or browse to the new location and the dialog re-checks the affected paths as you type, reporting how many the remap repairs.
+- The summary counts update as you accept fixes, and rows strike through as they are resolved. Fixes are applied to the imported data only when you confirm the import; Cancel discards everything, including accepted fixes.
+
+Anything still broken after the link check imports anyway and shows up as a labeled broken-link state on its tab (see the Broken links notes in the sections above), so it can be relinked later.
+
+> **Note:** exports made with module versions before v2.1 do not contain document names. Importing one of those files still works, but the link check can only show raw IDs for broken links and cannot offer relink suggestions. If you still have the source world, update the module there and export again. The new file records a name for every link that still resolves, and the link check uses those names to find matches.
 
 ---
 

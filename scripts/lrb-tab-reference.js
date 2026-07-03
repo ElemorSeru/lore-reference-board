@@ -1,3 +1,9 @@
+import { _loreRefBoard_renderRollTableHtml, loreRefBoard_enrichJournalPage, loreRefBoard_getJournalPages, loreRefBoard_wirePageNav } from "./journal-helpers.js";
+import { loreRefBoard_loadTabs, loreRefBoard_saveTabs } from "./storage.js";
+import { loreRefBoard_escapeHtml, loreRefBoard_normalizePath, loreRefBoard_pickRefFilePath, loreRefBoard_renderPdfTextLayer } from "./utils.js";
+
+const { DialogV2 } = foundry.applications.api;
+
 const loreRefBoard_REF_DOC_CFG = {
         Actor: { icon: "fa-user", badgeKey: "TypeBadgeActor", imgFn: d => d.prototypeToken?.texture?.src ?? d.img, buttons: ["open"] },
         Cards: { icon: "fa-layer-group",badgeKey: "TypeBadgeCards", imgFn: d => d.img, buttons: ["open", "shuffle", "deal"] },
@@ -102,6 +108,9 @@ async function loreRefBoard_setupReferenceTab(app, html, tab) {
             }
 
             if (!cell.docUuid || !doc) {
+                const brokenRef = cell.docUuid
+                    ? `<p class="lrt-ref-cell-error-ref" title="${loreRefBoard_escapeHtml(cell.docUuid)}">${loreRefBoard_escapeHtml(cell.linkName || cell.docUuid)}</p>`
+                    : "";
                 return `
                 <div class="lrt-ref-cell lrt-ref-cell--error" style="${gs}" data-cell-id="${cell.id}">
                   <div class="lrt-ref-cell-header">
@@ -112,6 +121,8 @@ async function loreRefBoard_setupReferenceTab(app, html, tab) {
                   </div>
                   <div class="lrt-ref-cell-body">
                     <p class="lrt-ref-cell-error-msg">${L("NotFound")}</p>
+                    ${brokenRef}
+                    <p class="lrt-ref-cell-error-hint">${L("RelinkHint")}</p>
                   </div>
                 </div>`;
             }
@@ -321,6 +332,7 @@ async function loreRefBoard_setupReferenceTab(app, html, tab) {
                                             textDiv.className = "lrb-pdf-text-layer";
                                             textDiv.dataset.pdfPage = n;
                                             textDiv.style.cssText = `position:absolute;left:0;top:0;width:${viewport.width}px;height:${viewport.height}px;overflow:hidden;`;
+                                            textDiv.style.setProperty("--scale-factor", String(viewport.scale));
                                             const tc = await page.getTextContent();
                                             await loreRefBoard_renderPdfTextLayer(textDiv, tc, viewport);
 
@@ -334,6 +346,7 @@ async function loreRefBoard_setupReferenceTab(app, html, tab) {
                                             ph.innerHTML = "";
                                             ph.appendChild(wrap);
                                             rendered.add(n);
+                                            ph.dispatchEvent(new CustomEvent("lrb-pdf-page-rendered", { bubbles: true, detail: { page: n } }));
                                         } catch (err) {
                                             console.warn("[lore-reference-board] Ref PDF page render failed:", err);
                                         } finally {
@@ -716,6 +729,7 @@ async function loreRefBoard_addRefCellDialog(app, tabId, startRow, startCol) {
 
         let pendingUuid = null;
         let pendingType = null;
+        let pendingName = null;
         let pendingFilePath = null;
         let pendingFileType = null;
         let picker = null;
@@ -785,7 +799,7 @@ async function loreRefBoard_addRefCellDialog(app, tabId, startRow, startCol) {
                 const rd = doc.documentName === "JournalEntryPage" ? doc.parent : doc;
                 const rt = rd?.documentName ?? null;
                 if (!rt || !loreRefBoard_REF_DOC_CFG[rt]) { ui.notifications.warn(L("DropWarn")); return; }
-                pendingUuid = rd.uuid; pendingType = rt;
+                pendingUuid = rd.uuid; pendingType = rt; pendingName = rd.name ?? null;
                 pendingFilePath = null; pendingFileType = null;
                 const fpathElDrop = document.getElementById(`lrt-rcd-fpath-${uid}`);
                 if (fpathElDrop) fpathElDrop.value = "";
@@ -807,7 +821,7 @@ async function loreRefBoard_addRefCellDialog(app, tabId, startRow, startCol) {
                 fpathEl.value = path;
                 pendingFilePath = path;
                 pendingFileType = type;
-                pendingUuid = null; pendingType = null;
+                pendingUuid = null; pendingType = null; pendingName = null;
                 dz.classList.remove("lrt-ref-dz--linked");
                 document.getElementById(`lrt-rcd-icon-${uid}`).className = "fas fa-link lrt-ref-dz-icon";
                 document.getElementById(`lrt-rcd-name-${uid}`).textContent = LG("DropToLink");
@@ -844,7 +858,7 @@ async function loreRefBoard_addRefCellDialog(app, tabId, startRow, startCol) {
 
         const newCell = pendingFilePath
             ? { id: foundry.utils.randomID(), row, col, rowSpan, colSpan, docType: "file", filePath: pendingFilePath, fileType: pendingFileType }
-            : { id: foundry.utils.randomID(), row, col, rowSpan, colSpan, docUuid: pendingUuid, docType: pendingType };
+            : { id: foundry.utils.randomID(), row, col, rowSpan, colSpan, docUuid: pendingUuid, docType: pendingType, linkName: pendingName };
         allTabs[idx].cells = [...cells, newCell];
         await loreRefBoard_saveTabs(allTabs);
         await app.render();
@@ -871,6 +885,7 @@ async function loreRefBoard_editRefCellDialog(app, tabId, cellId) {
 
         let pendingUuid = cell.docUuid ?? null;
         let pendingType = isFileCell ? null : (cell.docType ?? null);
+        let pendingName = cell.linkName ?? null;
         let pendingFilePath = isFileCell ? (cell.filePath ?? null) : null;
         let pendingFileType = isFileCell ? (cell.fileType ?? "txt") : null;
         let picker = null;
@@ -889,6 +904,7 @@ async function loreRefBoard_editRefCellDialog(app, tabId, cellId) {
               <i class="fas ${initCfg.icon} lrt-ref-dz-icon${initLinked ? " lrt-ref-dz-icon--linked" : ""}" id="lrt-rcd-icon-${uid}"></i>
               <p class="lrt-ref-dz-primary" id="lrt-rcd-name-${uid}">${initLinked ? loreRefBoard_escapeHtml(currentDoc.name ?? "") : LG("DropToLink")}</p>
               <p class="lrt-ref-dz-sub"    id="lrt-rcd-sub-${uid}">${initLinked ? loreRefBoard_escapeHtml(L(initCfg.badgeKey)) : L("DropSubtext")}</p>
+              ${(!initLinked && cell.docUuid) ? `<p class="lrt-ref-dz-prev">${loreRefBoard_escapeHtml(game.i18n.format("lore-reference-board.ReferenceTab.PreviouslyLinked", { name: cell.linkName || cell.docUuid }))}</p>` : ""}
             </div>
             <div class="lrt-ref-file-section">
               <div class="lrt-ref-file-divider">${LG("FileCellDivider")}</div>
@@ -950,7 +966,7 @@ async function loreRefBoard_editRefCellDialog(app, tabId, cellId) {
                 const rd = doc.documentName === "JournalEntryPage" ? doc.parent : doc;
                 const rt = rd?.documentName ?? null;
                 if (!rt || !loreRefBoard_REF_DOC_CFG[rt]) { ui.notifications.warn(L("DropWarn")); return; }
-                pendingUuid = rd.uuid; pendingType = rt;
+                pendingUuid = rd.uuid; pendingType = rt; pendingName = rd.name ?? null;
                 pendingFilePath = null; pendingFileType = null;
                 const fpathElDrop = document.getElementById(`lrt-rcd-fpath-${uid}`);
                 if (fpathElDrop) fpathElDrop.value = "";
@@ -972,7 +988,7 @@ async function loreRefBoard_editRefCellDialog(app, tabId, cellId) {
                 fpathEl.value = path;
                 pendingFilePath = path;
                 pendingFileType = type;
-                pendingUuid = null; pendingType = null;
+                pendingUuid = null; pendingType = null; pendingName = null;
                 dz.classList.remove("lrt-ref-dz--linked");
                 document.getElementById(`lrt-rcd-icon-${uid}`).className = "fas fa-link lrt-ref-dz-icon";
                 document.getElementById(`lrt-rcd-name-${uid}`).textContent = LG("DropToLink");
@@ -1012,9 +1028,11 @@ async function loreRefBoard_editRefCellDialog(app, tabId, cellId) {
             if (problem === "collision") { ui.notifications.warn(LG("CollisionError")); return; }
             const updatedCell = pendingFilePath
                 ? { id: cell.id, row, col, rowSpan, colSpan, docType: "file", filePath: pendingFilePath, fileType: pendingFileType }
-                : { id: cell.id, row, col, rowSpan, colSpan, docUuid: pendingUuid, docType: pendingType };
+                : { id: cell.id, row, col, rowSpan, colSpan, docUuid: pendingUuid, docType: pendingType, linkName: pendingName };
             allTabs[tabIdx].cells = cells.map(c => c.id === cellId ? updatedCell : c);
             await loreRefBoard_saveTabs(allTabs);
             await app.render();
         }
     }
+
+export { loreRefBoard_setupReferenceTab };
