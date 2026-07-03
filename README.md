@@ -102,6 +102,7 @@ A freeform relationship map for tracking factions, NPCs, and how they all feel a
 ---
 
 ## Search *(New in v2.0)*
+<img width="1876" height="1179" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/SearchWindow.png" />
 
 Click the magnifying glass button in the toolbar to open the search panel. The panel slides in and displays on the right side of the main board window and can be resized by dragging the divider (up to a point).
 
