@@ -1,3 +1,4 @@
+import { loreRefBoard_textEditorImpl } from "./compat.js";
 import { loreRefBoard_escapeHtml } from "./utils.js";
 
 function loreRefBoard_getJournalPages(entry) {
@@ -45,7 +46,7 @@ async function loreRefBoard_enrichJournalPage(page, entry) {
     if (page.type !== "text") {
         const iconMap = { map: "fa-map" };
         const icon = iconMap[page.type] ?? "fa-file";
-        const TE = foundry.applications?.ux?.TextEditor?.implementation ?? TextEditor;
+        const TE = loreRefBoard_textEditorImpl();
         const uuidLink = `@UUID[${page.uuid}]{${loreRefBoard_escapeHtml(page.name ?? "Open in Journal")}}`;
         let linkHtml = "";
         try { linkHtml = await TE.enrichHTML(uuidLink, { relativeTo: entry, rollData: {} }); }
@@ -61,7 +62,7 @@ async function loreRefBoard_enrichJournalPage(page, entry) {
         return '<p style="color:#888;font-style:italic;padding:8px 0">No content yet, click Edit to start writing.</p>';
     }
     try {
-        const TE = foundry.applications.ux?.TextEditor?.implementation ?? TextEditor;
+        const TE = loreRefBoard_textEditorImpl();
         return await TE.enrichHTML(raw, { relativeTo: entry, rollData: {} });
     } catch {
         return raw;
@@ -173,9 +174,10 @@ function _loreRefBoard_renderRollTableHtml(doc) {
             ? `<img class="lrt-rt-result-img" src="${loreRefBoard_escapeHtml(r.img)}" alt="" />`
             : "";
         const drawnClass = r.drawn ? " lrt-rt-row--drawn" : "";
+        const resultText = (r.name || r.description || r.text || "").replace(/<[^>]*>/g, "").trim();
         return `<tr class="lrt-rt-row${drawnClass}">
             <td class="lrt-rt-range">${loreRefBoard_escapeHtml(rangeStr)}</td>
-            <td class="lrt-rt-text"><span class="lrt-rt-text-inner">${imgHtml}${loreRefBoard_escapeHtml(r.name || r.description || "")}</span></td>
+            <td class="lrt-rt-text"><span class="lrt-rt-text-inner">${imgHtml}${loreRefBoard_escapeHtml(resultText)}</span></td>
         </tr>`;
     }).join("");
 

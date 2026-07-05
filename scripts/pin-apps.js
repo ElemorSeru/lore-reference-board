@@ -1,3 +1,4 @@
+import { loreRefBoard_openImagePopout } from "./compat.js";
 import { loreRefBoard_enrichJournalPage, loreRefBoard_getJournalPages, loreRefBoard_wirePageNav, loreRefBoard_resolveJournalRef } from "./journal-helpers.js";
 import { loreRefBoard_getActiveNpcGenerator } from "./npc-generators.js";
 import { loreRefBoard_clearImageJournalLink, loreRefBoard_clearLoreForImage, loreRefBoard_getImageJournalMap, loreRefBoard_saveImageJournalLink, loreRefBoard_saveLoreForImage } from "./storage.js";
@@ -133,7 +134,7 @@ class LoreRefBoardPinImageViewer extends HandlebarsApplicationMixin(ApplicationV
             uuid: null,
         });
 
-        new ImagePopout(this._src, { title: "" }).render(true);
+        loreRefBoard_openImagePopout(this._src, "");
     }
 
     _sendToChat() {

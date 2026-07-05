@@ -45,6 +45,7 @@ class LoreRefBoardApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     static DEFAULT_OPTIONS = {
         id: "lore-reference-board",
+        classes: ["lore-reference-board"],
         window: { title: "lore-reference-board.App.Title", resizable: true },
         position: { width: 1020, height: 680 },
     };

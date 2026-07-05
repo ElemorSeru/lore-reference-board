@@ -1,3 +1,4 @@
+import { loreRefBoard_bindSceneControlButton } from "./compat.js";
 import { _loreRefBoard_export, _loreRefBoard_import } from "./import-export.js";
 import { LoreRefBoardApp } from "./lrb-app.js";
 import { loreRefBoard_MODULE_SCOPE } from "./module-init.js";
@@ -98,20 +99,22 @@ Hooks.once("init", () => {
 });
 
 Hooks.on("renderSceneControls", (_app, html) => {
-    const rootEl = html instanceof HTMLElement ? html : html?.[0];
-    const btn = rootEl?.querySelector?.(`button.layer[data-control="${loreRefBoard_MODULE_SCOPE}"]`);
-    if (!btn || btn.dataset.lrbBound) return;
-    btn.dataset.lrbBound = "1";
-    btn.addEventListener("click", (ev) => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        _loreRefBoard_toggleBoard();
+    const allowed = !!game?.user?.isGM || game?.user?.role === CONST.USER_ROLES.ASSISTANT;
+    if (!allowed) return;
+    loreRefBoard_bindSceneControlButton(html, {
+        name: loreRefBoard_MODULE_SCOPE,
+        title: game.i18n.localize("lore-reference-board.App.Title"),
+        icon: "fas fa-theater-masks",
+        onPress: _loreRefBoard_toggleBoard,
     });
 });
 
 Hooks.on("getSceneControlButtons", (controls) => {
     const allowed = !!game?.user?.isGM || game?.user?.role === CONST.USER_ROLES.ASSISTANT;
     if (!allowed) return;
+
+    // v12 passes an array
+    if (Array.isArray(controls)) return;
 
     controls[loreRefBoard_MODULE_SCOPE] = {
         name: loreRefBoard_MODULE_SCOPE,

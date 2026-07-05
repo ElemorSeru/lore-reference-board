@@ -1,5 +1,6 @@
 /* design tokens - family palette shared with Macro Builder / Encounter Forge */
-#lore-reference-board {
+#lore-reference-board,
+.lore-reference-board {
     --lrb-bg:            #1e1e1e;   /* base surface */
     --lrb-bg-2:          #232323;   /* chrome (topbar, panels) */
     --lrb-bg-3:          #2a2a2a;   /* raised (inputs, active buttons) */
@@ -22,11 +23,15 @@
 /* Global box-sizing reset */
 #lore-reference-board *,
 #lore-reference-board *::before,
-#lore-reference-board *::after {
+#lore-reference-board *::after,
+.lore-reference-board *,
+.lore-reference-board *::before,
+.lore-reference-board *::after {
     box-sizing: border-box;
 }
 
-#lore-reference-board button {
+#lore-reference-board button,
+.lore-reference-board button {
     width: auto;
     display: inline-flex;
     align-items: center;
@@ -34,11 +39,303 @@
 }
 
 /* Lock the Foundry window to chosen dimensions when not maximized */
-#lore-reference-board .window-content {
+#lore-reference-board .window-content,
+.lore-reference-board .window-content {
     padding: 0;
     overflow: hidden;
     display: flex;
     flex-direction: column;
+}
+
+/* v12 doesn't have a core AppV2 theme so supply one */
+body.lrb-legacy-theme #lore-reference-board.application,
+body.lrb-legacy-theme .lore-reference-board.application {
+    background: var(--lrb-bg-2);
+    border: 1px solid var(--lrb-border);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.7);
+}
+
+body.lrb-legacy-theme #lore-reference-board .window-header,
+body.lrb-legacy-theme .lore-reference-board .window-header {
+    background: var(--lrb-bg-2);
+    border-bottom: 1px solid var(--lrb-border);
+}
+
+body.lrb-legacy-theme #lore-reference-board .window-header .window-title,
+body.lrb-legacy-theme .lore-reference-board .window-header .window-title {
+    color: var(--lrb-text);
+}
+
+body.lrb-legacy-theme #lore-reference-board .window-header button.header-control,
+body.lrb-legacy-theme .lore-reference-board .window-header button.header-control {
+    color: var(--lrb-text-muted);
+}
+
+body.lrb-legacy-theme #lore-reference-board .window-header button.header-control:hover,
+body.lrb-legacy-theme .lore-reference-board .window-header button.header-control:hover {
+    color: var(--lrb-text);
+}
+
+/* v12 legacy style.css styles. Restore each family's intended flat/colored look */
+body.lrb-legacy-theme .lr-tab {
+    background: color-mix(in srgb, var(--lr-tab-c) 8%, transparent);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+body.lrb-legacy-theme .lr-tab:hover {
+    background: color-mix(in srgb, var(--lr-tab-c) 14%, transparent);
+}
+body.lrb-legacy-theme .lr-tab.active {
+    background: color-mix(in srgb, var(--lr-tab-c) 18%, transparent);
+}
+body.lrb-legacy-theme .lr-action-btn {
+    background: transparent;
+    border: none;
+    border-radius: var(--lrb-radius);
+    box-shadow: none;
+}
+body.lrb-legacy-theme .lr-action-btn:hover {
+    background: var(--lrb-hover);
+}
+body.lrb-legacy-theme .lr-action-btn.active {
+    background: var(--lrb-bg-3);
+}
+body.lrb-legacy-theme .lr-search-close-btn {
+    background: none;
+    border: none;
+}
+body.lrb-legacy-theme .lr-search-close-btn:hover {
+    background: var(--lrb-hover);
+}
+body.lrb-legacy-theme .lr-search-collapse-btn {
+    background: var(--lrb-bg-3);
+    border: 1px solid var(--lrb-border);
+}
+body.lrb-legacy-theme .lr-search-collapse-btn:hover {
+    background: #383838;
+}
+body.lrb-legacy-theme .lrt-faction-standing-panel-close {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+}
+body.lrb-legacy-theme .lrt-faction-standing-panel-close:hover {
+    background: #2a2a2a;
+}
+body.lrb-legacy-theme .pg-icon-btn {
+    background: #3a3a3a;
+    border: 1px solid #555;
+    border-radius: 4px;
+}
+body.lrb-legacy-theme .pg-save-name-btn {
+    background: #2a3a2a;
+    border: 1px solid #4a6a4a;
+    border-radius: 4px;
+}
+body.lrb-legacy-theme .pgj-btn-edit {
+    background: #2a3f5a;
+    border: 1px solid #3a5a7a;
+    border-radius: 4px;
+}
+body.lrb-legacy-theme .pgj-btn-edit:hover {
+    background: #3a5a7a;
+}
+body.lrb-legacy-theme .pgj-btn-unlink {
+    background: #3a2a2a;
+    border: 1px solid #5a3a3a;
+    border-radius: 4px;
+}
+body.lrb-legacy-theme .pgj-btn-unlink:hover {
+    background: #5a3a3a;
+}
+body.lrb-legacy-theme .pgj-btn-create {
+    background: #2a3f2a;
+    border: 1px solid #4a6a4a;
+    border-radius: 5px;
+}
+body.lrb-legacy-theme .pgj-btn-create:hover {
+    background: #3a5a3a;
+}
+body.lrb-legacy-theme .piv-btn {
+    background: #3a3a3a;
+    border: 1px solid #555;
+    border-radius: 4px;
+}
+body.lrb-legacy-theme .piv-btn:hover {
+    background: #4a4a4a;
+}
+body.lrb-legacy-theme .piv-btn-token {
+    background: #2a3a4a;
+    border-color: #3a5a7a;
+}
+body.lrb-legacy-theme .piv-btn-token:hover {
+    background: #3a4a5a;
+}
+body.lrb-legacy-theme .piv-btn-scene {
+    background: #3a2a4a;
+    border-color: #5a3a7a;
+}
+body.lrb-legacy-theme .piv-btn-scene:hover {
+    background: #4a3a5a;
+}
+body.lrb-legacy-theme .piv-btn-lore {
+    background: #2a3a2a;
+    border-color: #4a6a4a;
+}
+body.lrb-legacy-theme .plr-btn-create {
+    background: #2a3f2a;
+    border: 1px solid #4a6a4a;
+    border-radius: 5px;
+}
+body.lrb-legacy-theme .plr-btn-create:hover {
+    background: #3a5a3a;
+}
+body.lrb-legacy-theme .plr-btn-edit {
+    background: #2a3f5a;
+    border: 1px solid #3a5a7a;
+    border-radius: 4px;
+}
+body.lrb-legacy-theme .plr-btn-edit:hover {
+    background: #3a5a7a;
+}
+body.lrb-legacy-theme .plr-btn-unlink {
+    background: #3a2a2a;
+    border: 1px solid #5a3a3a;
+    border-radius: 4px;
+}
+body.lrb-legacy-theme .plr-btn-unlink:hover {
+    background: #5a3a3a;
+}
+
+body.lrb-legacy-theme .lore-reference-board button,
+body.lrb-legacy-theme .lore-rb-dialog button,
+body.lrb-legacy-theme #lore-reference-board-gallery button,
+body.lrb-legacy-theme [id^="lore-image-viewer-"] button {
+    --button-focus-outline-color: transparent;
+}
+
+/* v12: restore the circular reference add button */
+body.lrb-legacy-theme .lrt-ref-add-btn {
+    background: #141e2e;
+    border: 1px solid #243550;
+    border-radius: 50%;
+    color: #3a6080;
+}
+body.lrb-legacy-theme .lrt-ref-add-btn:hover {
+    background: #1e3050;
+    border-color: #4a80aa;
+    color: #80b8e0;
+}
+
+/* v12: manage overflowing dialogs */
+body.lrb-legacy-theme .lore-rb-dialog .form-footer button,
+body.lrb-legacy-theme .lore-rb-dialog .dialog-buttons button {
+    min-width: 0;
+}
+
+/* v12: center icon buttons, keep tab icon spacing */
+body.lrb-legacy-theme .lr-action-btn > i,
+body.lrb-legacy-theme .lrt-ref-add-btn > i,
+body.lrb-legacy-theme .lr-search-close-btn > i,
+body.lrb-legacy-theme .lrt-faction-standing-panel-close > i,
+body.lrb-legacy-theme .pg-icon-btn > i {
+    margin-right: 0;
+}
+body.lrb-legacy-theme .lr-tab-type-icon,
+body.lrb-legacy-theme .lr-tab-pin-icon {
+    margin-right: 8px;
+}
+
+/* v12: pinning fixes */
+body.lrb-legacy-theme .lr-tab-pin-icon {
+    pointer-events: auto;
+}
+
+/* v12: reference cell buttons */
+body.lrb-legacy-theme .lrt-ref-cell-btn {
+    display: inline-flex;
+    border: 1px solid;
+    border-radius: 5px;
+    background: none;
+}
+body.lrb-legacy-theme .lrt-ref-cell-btn--open { background: #1a3050; border-color: #2a5080; color: #7ab0dc; }
+body.lrb-legacy-theme .lrt-ref-cell-btn--open:hover { background: #24406a; border-color: #4070a0; color: #a0d0f8; }
+body.lrb-legacy-theme .lrt-ref-cell-btn--exec { background: #1e3a1e; border-color: #2e5a2e; color: #7acc7a; }
+body.lrb-legacy-theme .lrt-ref-cell-btn--exec:hover { background: #285028; border-color: #407040; color: #a0e8a0; }
+body.lrb-legacy-theme .lrt-ref-cell-btn--roll { background: #3a2a10; border-color: #6a4a18; color: #dcaa50; }
+body.lrb-legacy-theme .lrt-ref-cell-btn--roll:hover { background: #503818; border-color: #8a6020; color: #f0cc70; }
+body.lrb-legacy-theme .lrt-ref-cell-btn--activate { background: #2a1a3a; border-color: #4a2a6a; color: #a070cc; }
+body.lrb-legacy-theme .lrt-ref-cell-btn--activate:hover { background: #3a2a50; border-color: #6a40a0; color: #c090f0; }
+body.lrb-legacy-theme .lrt-ref-cell-btn--shuffle { background: #102a2a; border-color: #1a5050; color: #50c0b8; }
+body.lrb-legacy-theme .lrt-ref-cell-btn--shuffle:hover { background: #183838; border-color: #287068; color: #70e0d8; }
+body.lrb-legacy-theme .lrt-ref-cell-btn--deal { background: #281030; border-color: #501860; color: #c060d0; }
+body.lrb-legacy-theme .lrt-ref-cell-btn--deal:hover { background: #381848; border-color: #702090; color: #e080f0; }
+body.lrb-legacy-theme .lrt-ref-cell-edit-btn { display: inline-flex; background: none; border: none; border-radius: 3px; color: #445566; }
+body.lrb-legacy-theme .lrt-ref-cell-edit-btn:hover { background: #1e3050; color: #88aacc; }
+body.lrb-legacy-theme .lrt-ref-hdr-btn { display: inline-flex; background: none; border: 1px solid #253a50; border-radius: 4px; color: #4a7090; }
+body.lrb-legacy-theme .lrt-ref-hdr-btn:hover { background: #1a3050; border-color: #3a6080; color: #90c0e0; }
+body.lrb-legacy-theme .lrt-ref-file-browse-btn { background: #121e2e; border: 1px solid #1e3a58; border-radius: 4px; color: #6090b8; }
+body.lrb-legacy-theme .lrt-ref-file-browse-btn:hover { background: #1a3050; border-color: #3a6090; color: #90c0e0; }
+
+/* v12: document tab buttons */
+body.lrb-legacy-theme .lrt-doc-create-btn,
+body.lrb-legacy-theme .lrt-doc-browse-btn {
+    background: #2a3f2a; border: 1px solid #4a6a4a; border-radius: 6px; color: #9dc;
+}
+body.lrb-legacy-theme .lrt-doc-create-btn:hover,
+body.lrb-legacy-theme .lrt-doc-browse-btn:hover {
+    background: #3a5a3a; border-color: #6a9a6a; color: #bef;
+}
+body.lrb-legacy-theme .lrt-doc-load-btn { background: #2a3f2a; border: 1px solid #4a6a4a; border-radius: 5px; color: #9dc; }
+body.lrb-legacy-theme .lrt-doc-load-btn:hover { background: #3a5a3a; border-color: #6a9a6a; color: #bef; }
+body.lrb-legacy-theme .lrt-doc-btn { display: inline-flex; border-radius: 4px; }
+body.lrb-legacy-theme .lrt-doc-btn--edit { background: #2a3a2a; border: 1px solid #4a6a4a; color: #9dc; }
+body.lrb-legacy-theme .lrt-doc-btn--edit:hover { background: #3a5a3a; color: #bef; }
+body.lrb-legacy-theme .lrt-doc-btn--unlink { background: #2a2a2a; border: 1px solid #555; color: #aaa; }
+body.lrb-legacy-theme .lrt-doc-btn--unlink:hover { background: #3a3a3a; color: #fff; }
+body.lrb-legacy-theme .lrt-doc-btn--open-url { background: #1e3040; border: 1px solid #3a6080; color: #7bcfff; }
+body.lrb-legacy-theme .lrt-doc-btn--open-url:hover { background: #2a4a60; border-color: #5a90b0; color: #aee8ff; }
+
+/* v12: import resolution dialog buttons */
+body.lrb-legacy-theme .lrb-ic-relink-all,
+body.lrb-legacy-theme .lrb-ic-suggest button {
+    background: #2a3a2a; border: 1px solid #4a6a4a; border-radius: 4px; color: #cfc;
+}
+body.lrb-legacy-theme .lore-rb-dialog .notes {
+    color: inherit;
+}
+
+body.lrb-legacy-theme .lrt-ref-cell,
+body.lrb-legacy-theme .lrt-ref-cell-content {
+    min-width: 0;
+}
+
+body.lrb-legacy-theme .lrt-rt-table,
+body.lrb-legacy-theme .lrt-ref-cell-content .lrt-rt-table {
+    margin: 0 0 6px;
+    background: none;
+    border-radius: 0;
+}
+body.lrb-legacy-theme .lrt-ref-cell-content .lrt-rt-table td,
+body.lrb-legacy-theme .lrt-ref-cell-content .lrt-rt-table th {
+    background: none;
+}
+body.lrb-legacy-theme .lrt-rt-range {
+    padding: 3px 10px 3px 2px;
+    width: 1%;
+}
+body.lrb-legacy-theme .lrt-rt-text {
+    padding: 3px 2px;
+}
+body.lrb-legacy-theme .lrt-rt-result-img {
+    width: 20px;
+    height: 20px;
+}
+
+body.lrb-legacy-theme .lrb-ic-list {
+    margin: 6px 0;
+    padding: 0 0 0 18px;
 }
 
 .lr-maximized {
@@ -448,7 +745,7 @@
     overflow: visible;
 }
 /* Outer window shell */
-.lore-rb-dialog.window-app {
+body.lrb-legacy-theme .lore-rb-dialog.application {
     background: #2a2a2a;
     border: 1px solid #3a3a3a;
     box-shadow: 0 4px 20px rgba(0,0,0,0.7);

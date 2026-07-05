@@ -554,7 +554,7 @@ function loreRefBoard_whenPdfPageReady(root, selector, targetPage, cb) {
         finish(root.querySelector(selector));
     };
     document.addEventListener("lrb-pdf-page-rendered", onRendered);
-    // safety nett to give up after 90 seconds so the listener never leaks
+    // safety net to give up after 90 seconds so the listener never leaks
     setTimeout(() => { if (!settled) finish(root.querySelector(selector)); }, 90000);
 }
 

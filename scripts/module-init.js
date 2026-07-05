@@ -1,3 +1,4 @@
+import { loreRefBoard_isLegacyTheme } from "./compat.js";
 import { loreRefBoard_clearSearchCache, loreRefBoard_forceIndexAll } from "./search.js";
 
 const { DialogV2 } = foundry.applications.api;
@@ -181,7 +182,9 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("ready", () => {
-    if (document.getElementById("lr-svg-filter-defs")) return; 
+    if (loreRefBoard_isLegacyTheme()) document.body.classList.add("lrb-legacy-theme");
+
+    if (document.getElementById("lr-svg-filter-defs")) return;
     const ns = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(ns, "svg");
     svg.id = "lr-svg-filter-defs";

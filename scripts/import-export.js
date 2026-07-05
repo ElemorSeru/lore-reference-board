@@ -1,3 +1,4 @@
+import { loreRefBoard_filePickerImpl } from "./compat.js";
 import { loreRefBoard_resolveJournalRef } from "./journal-helpers.js";
 import { loreRefBoard_DEFAULT_RELATIONSHIP_TYPES, loreRefBoard_DEFAULT_STANDING_TIERS, loreRefBoard_MODULE_SCOPE } from "./module-init.js";
 import { _loreRefBoard_flushPins, _loreRefBoard_getSetting, _loreRefBoard_invalidateFactionDataCache, _loreRefBoard_invalidatePinsCache, loreRefBoard_loadTabs } from "./storage.js";
@@ -31,7 +32,7 @@ async function _loreRefBoard_export() {
     const file = new File([JSON.stringify(enriched, null, 2)], filename, { type: "application/json" });
 
     try {
-        await FilePicker.upload("data", worldPath, file, { notify: false });
+        await loreRefBoard_filePickerImpl().upload("data", worldPath, file, { notify: false });
         ui.notifications.info(
             `${game.i18n.localize("lore-reference-board.ImportExport.ExportSuccess")} → ${worldPath}/${filename}`
         );
@@ -139,7 +140,7 @@ function _loreRefBoard_pickAndParseFile() {
     });
 }
 
-// VSalidates every payload link
+// Validates every payload link
 async function _loreRefBoard_validateImportLinks(d) {
     const L = key => game.i18n.localize(`lore-reference-board.ImportExport.${key}`);
     const F = (key, data) => game.i18n.format(`lore-reference-board.ImportExport.${key}`, data);
@@ -151,9 +152,10 @@ async function _loreRefBoard_validateImportLinks(d) {
     };
     const folderOk = async (p) => {
         if (!p) return true;
-        try { await FilePicker.browse("data", p); return true; } catch { }
+        const FP = loreRefBoard_filePickerImpl();
+        try { await FP.browse("data", p); return true; } catch { }
         // core Foundry assets
-        try { await FilePicker.browse("public", p); return true; } catch { return false; }
+        try { await FP.browse("public", p); return true; } catch { return false; }
     };
     const docOk = async (uuid) => {
         if (!uuid) return true;
@@ -477,7 +479,8 @@ async function _loreRefBoard_validateImportLinks(d) {
         oldIn?.addEventListener("input", queueRemap);
         newIn?.addEventListener("input", queueRemap);
         document.getElementById(`lrb-remap-browse-${uid}`)?.addEventListener("click", () => {
-            new FilePicker({
+            const FP = loreRefBoard_filePickerImpl();
+            new FP({
                 type: "folder",
                 callback: path => {
                     if (newIn) newIn.value = path.endsWith("/") ? path : `${path}/`;

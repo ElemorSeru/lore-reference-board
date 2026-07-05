@@ -1,3 +1,4 @@
+import { loreRefBoard_filePickerImpl } from "./compat.js";
 import { loreRefBoard_enrichJournalPage, loreRefBoard_getJournalPages, loreRefBoard_wirePageNav, loreRefBoard_resolveJournalRef } from "./journal-helpers.js";
 import { LoreRefBoardPinImageViewer } from "./pin-apps.js";
 import { loreRefBoard_clearLoreForImage, loreRefBoard_clearLoreForImages, loreRefBoard_getImageJournalMap, loreRefBoard_loadPinsForTab, loreRefBoard_savePinsForTab } from "./storage.js";
@@ -45,9 +46,10 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
         for (const f of this._gallery.folders) {
             if (!f.path || this._folderOk.has(f.path)) continue;
             let ok = false;
-            try { await FilePicker.browse("data", f.path); ok = true; } catch { }
-            // core Foundry assets are served from "public"
-            if (!ok) { try { await FilePicker.browse("public", f.path); ok = true; } catch { } }
+            const FP = loreRefBoard_filePickerImpl();
+            try { await FP.browse("data", f.path); ok = true; } catch { }
+            // core Foundry assets
+            if (!ok) { try { await FP.browse("public", f.path); ok = true; } catch { } }
             this._folderOk.set(f.path, ok);
         }
         const journalMap = loreRefBoard_getImageJournalMap()[this._pin.id] ?? {};
@@ -129,8 +131,7 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
             if (newFolder.path) {
                 const IMAGE_EXT = /\.(apng|avif|bmp|gif|jpe?g|png|svg|tiff?|webp)$/i;
                 try {
-                    // FilePicker is a global
-                    const browseResult = await foundry.applications.apps.FilePicker.implementation.browse(newFolder.source, newFolder.path);
+                    const browseResult = await loreRefBoard_filePickerImpl().browse(newFolder.source, newFolder.path);
                     const imgs = (browseResult.files ?? []).filter(f => IMAGE_EXT.test(f));
                     newFolder.images = imgs;
                     if (imgs.length) {
@@ -228,8 +229,7 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
 
             let browseResult;
             try {
-                // FilePicker is a global
-                browseResult = await foundry.applications.apps.FilePicker.implementation.browse(importSource, importPath);
+                browseResult = await loreRefBoard_filePickerImpl().browse(importSource, importPath);
             } catch (err) {
                 ui.notifications.error(
                     game.i18n.format("lore-reference-board.Gallery.ImportFailed", { path: importPath })
@@ -506,7 +506,8 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
     static _pickFolder(startPath = "", startSource = "data") {
         return new Promise((resolve) => {
             let resolved = false;
-            const fp = new (foundry.applications.apps.FilePicker.implementation)({
+            const FP = loreRefBoard_filePickerImpl();
+            const fp = new FP({
                 type: "folder",
                 current: startPath,
                 activeSource: startSource,

@@ -50,7 +50,7 @@ This guide covers how to use every part of the Lore Reference Board. If somethin
 
 The board opens from the toolbar on the left side of the Foundry UI. Look for the Lore Reference Board button (the two theater masks button). Click it to open the window.
 
-The board can also be toggled with a keybinding, **Ctrl+B** by default. Rebind it under Game Settings > Configure Controls > Lore Reference Board. Both the toolbar button and the keybinding work whether or not a scene is active since not all system load default scenes.
+The board can also be toggled with a keybinding, **Ctrl+B** by default. Rebind it under Game Settings > Configure Controls > Lore Reference Board. Both the toolbar button and the keybinding work whether or not a scene is active since not all systems load one by default.
 
 The window is resizable and can be maximized using the maximize button in the top-right corner of the toolbar. The board remembers your tabs and content across sessions as long as the world data is intact.
 

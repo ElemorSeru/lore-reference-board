@@ -4,7 +4,7 @@
   "description": "A GM aid for theater-of-the-mind campaigns with maps, pins, and galleries that inspired you.",
   "version": "2.1.0",
   "compatibility": {
-    "minimum": "13",
+    "minimum": "12.328",
     "verified": "14"
   },
   "authors": [
@@ -27,6 +27,7 @@
     "styles/faction-board.css"
   ],
   "esmodules": [
+    "scripts/compat.js",
     "scripts/module-init.js",
     "scripts/storage.js",
     "scripts/utils.js",

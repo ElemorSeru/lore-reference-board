@@ -1,13 +1,15 @@
 # Lore Reference Board
 
 [![Patreon](https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white)](https://patreon.com/Elemor)
-[![Foundry Version](https://img.shields.io/badge/Foundry-v13%20%7C%20v14-informational?style=for-the-badge)](https://foundryvtt.com)
+[![Foundry Version](https://img.shields.io/badge/Foundry-v12%20%7C%20v13%20%7C%20v14-informational?style=for-the-badge)](https://foundryvtt.com)
 [![Module Version](https://img.shields.io/badge/Version-2.1.0-success?style=for-the-badge)](https://github.com/ElemorSeru/lore-reference-board/releases/latest)
 <img alt="GitHub Downloads (all assets, latest release)" src="https://img.shields.io/github/downloads/ElemorSeru/lore-reference-board/latest/total">
 
 A system agnostic Foundry VTT module built for GMs who want an organized reference board that stores all your information as well as image references of your favorite art. Keep your maps, image references, documents, and world documents organized and accessible in one window that stays consistent no matter which scene or scenario you're running.
 
-Open the board from its scene controls button or with **Ctrl+B** (rebindable in Configure Controls). Neither requires an active scene (since not all systems load a default scene).
+Open the board from its scene controls button or with **Ctrl+B** (rebindable in Configure Controls). Neither requires an active scene.
+
+Supports Foundry v12 (again, but build 12.328 or later), v13, and v14 as of build 2.1.0.
 
 ---
 
@@ -102,7 +104,6 @@ A freeform relationship map for tracking factions, NPCs, and how they all feel a
 ---
 
 ## Search *(New in v2.0)*
-<img width="1876" height="1179" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/SearchWindow.png" />
 
 Click the magnifying glass button in the toolbar to open the search panel. The panel slides in and displays on the right side of the main board window and can be resized by dragging the divider (up to a point).
 

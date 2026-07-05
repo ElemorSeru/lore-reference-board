@@ -1,3 +1,5 @@
+import { loreRefBoard_filePickerImpl, loreRefBoard_getDragEventData } from "./compat.js";
+
 const loreRefBoard_escapeHtml = (s) =>
     String(s ?? "")
         .replaceAll("&", "&amp;")
@@ -37,7 +39,8 @@ async function loreRefBoard_fetchSvgData(url) {
 
 function loreRefBoard_pickImagePath(current = "modules/") {
     return new Promise((resolve) => {
-        new (foundry.applications.apps.FilePicker.implementation)({
+        const FP = loreRefBoard_filePickerImpl();
+        new FP({
             type: "image",
             current: current || "modules/",
             callback: (path) => resolve(path),
@@ -60,7 +63,8 @@ function _loreRefBoard_docTypeForExt(ext) {
 
 function loreRefBoard_pickDocFilePath(current = "modules/") {
     return new Promise((resolve) => {
-        new (foundry.applications.apps.FilePicker.implementation)({
+        const FP = loreRefBoard_filePickerImpl();
+        new FP({
             type: "any",
             current: current || "modules/",
             callback: (path) => resolve(path),
@@ -71,12 +75,16 @@ function loreRefBoard_pickDocFilePath(current = "modules/") {
 // Open FilePicker for Reference grid file cells,  only PDF, TXT, and Markdown.
 function loreRefBoard_pickRefFilePath(current = "modules/") {
     return new Promise((resolve) => {
-        new (foundry.applications.apps.FilePicker.implementation)({
+        const FP = loreRefBoard_filePickerImpl();
+        const fp = new FP({
             type: "any",
             extensions: [".pdf", ".txt", ".md"],
             current: current || "modules/",
             callback: (path) => resolve(path),
-        }).render(true);
+        });
+        // v13+ ignores the extensions option so assign the instance property
+        fp.extensions = [".pdf", ".txt", ".md"];
+        fp.render(true);
     });
 }
 
@@ -175,7 +183,7 @@ function loreRefBoard_getFactionDocIcon(doc) {
 
 async function loreRefBoard_resolveDroppedFactionEntity(event) {
     let data;
-    try { data = TextEditor.getDragEventData(event); }
+    try { data = loreRefBoard_getDragEventData(event); }
     catch { return null; }
 
     if (!data?.type || !loreRefBoard_FACTION_DOC_TYPES.has(data.type)) return null;
