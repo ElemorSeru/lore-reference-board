@@ -32,7 +32,7 @@ Tabs can be pinned to keep them grouped at the start of the tab bar (separated b
 Each tab is color-coded by type (blue for Image, coral for Document, purple for Reference, amber for Faction, green for Threads), so you can tell at a glance what kind of tab you are looking at.
 
 ### Image Tabs
-<img width="1788" height="1194" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/ImageTabWPins.png" />
+<img width="1676" height="1197" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/ImageTabWPins.png" />
 A full-view image viewer (mostly for maps of any kind, but can be any image you want to put references on) with placeable pins. The image supports pan and zoom via mouse wheel and drag. Each pin can be:
 
 - Given a title, description, color, and icon (from a default selectable icon set)
@@ -46,7 +46,8 @@ If the GM Tools: Encounter Forge module is active, creating a token offers a cho
 **Pin layers.** Pins on an image tab are organized into stackable layers, each with its own name and color. A dropdown in the image toolbar switches the active layer, or shows "All" layers at once with a small color badge on each pin. Add, rename, recolor, reorder, duplicate, and delete layers from the tab settings. New pins go on the active layer, which is useful for tracking variants of an area, splitting prep between GMs, or keeping different passes of a map apart. Older boards without layer data are upgraded automatically: each image tab gets a default layer and its existing pins move onto it if orphaned from older builds.
 
 **Using a scene as the image.** Instead of browsing for a file, an image tab can be based on one of your Foundry scenes, chosen from the world or a compendium. The board snapshots the scene's images and lets you cycle through them from a toolbar dropdown: the background, the foreground, and, on Foundry v14, each of the scene's levels. Pins share one fixed workspace across every image, so switching images never moves them. The tab settings offer Refresh (re-pull the scene) and Change or Reconnect (point the tab at a different or recreated scene). A scene-backed tab that lands in a world without that scene keeps working as a saved image list. See the wiki for the full detail on refreshing, reconnecting, and recreating scenes, and on how pins are kept or cleared when the image or scene changes.
-<img width="1678" height="1044" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinGallery.png" />
+<img width="1664" height="393" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/SceneAndPinLayersTools.png" />
+<img width="1677" height="1045" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinGallery.png" />
 
 <img width="480" height="809" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinImagePreview.png" />
 
@@ -106,17 +107,19 @@ A freeform relationship map for tracking factions, NPCs, and how they all feel a
 - Party Standing (handshake icon) opens a side panel listing every faction on all faction tabs with its current standing label
 
 ### Threads Tabs
-
+<img width="1662" height="1223" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/ThreadsTab.png" />
 A running list of everything moving in the campaign: open plot hooks and ticking progress meters, side by side in one filterable view instead of two separate tab types.
 
 Each row is one of two kinds:
 
 - **Thread row** - a plot hook or open question with a status (Seed / Active / Resolved / Abandoned), a description, an optional linked journal entry, and a dated note log you can expand inline without opening a row edit dialog
 - **Tracker row** - a current/max progress meter toward one or more named milestones, rendered as a **bar**, a **clock** (segmented dial), or a row of **pips**, whichever style fits the tracker. Bump progress with the +/- stepper directly on the row; no need to open the edit dialog just to advance a meter.
+<img width="1618" height="990" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/ThreadsMeters.png" />
 
 Rows can be grouped into folders, reordered by drag-and-drop, and filtered by status with the toolbar's filter chips. Resolved and abandoned rows dim rather than disappear, so you can still find them later. Editing, deleting, and folder deletion are available from each row's kebab (three-dot) menu.
 
 The same Threads list is also available per-pin from the pin gallery, as a toggle alongside the pin's linked journal, for tracking things specific to one location on the map.
+<img width="1671" height="1051" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/ThreadsInGallery.png" />
 
 ---
 
@@ -148,6 +151,7 @@ Links break: journals get deleted, files move, boards get imported into other wo
 - Scene image tabs keep working from their snapshot even when the source scene is missing; the tab settings offer a Reconnect control, and on import a scene of the same name can be suggested as a match
 
 On import, a link check dialog resolves every link before anything is written. Broken document links get relink suggestions matched by name and type from the destination world and loaded compendiums, with a one-click "relink all exact matches" option. Broken file paths that share a folder prefix can be remapped in one step, with the dialog re-checking the new paths live. Exports record document names to make those suggestions possible. Whatever is left imports as a labeled broken-link state and can be fixed later. I attempted to give a cleaner path rather than force broken links.
+<img width="767" height="649" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/ImportBoardLinkPanel.png" />
 
 > **Note:** exports made with module versions before v2.1 do not contain document names, so the link check can only show raw IDs for them and cannot offer relink suggestions. To get the full repair experience, update the module in the source world and export again. The new export records a name for every link that still resolves there.
 
