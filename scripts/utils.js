@@ -1,5 +1,7 @@
 import { loreRefBoard_filePickerImpl, loreRefBoard_getDragEventData } from "./compat.js";
 
+const { DialogV2 } = foundry.applications.api;
+
 const loreRefBoard_escapeHtml = (s) =>
     String(s ?? "")
         .replaceAll("&", "&amp;")
@@ -82,7 +84,6 @@ function loreRefBoard_pickRefFilePath(current = "modules/") {
             current: current || "modules/",
             callback: (path) => resolve(path),
         });
-        // v13+ ignores the extensions option so assign the instance property
         fp.extensions = [".pdf", ".txt", ".md"];
         fp.render(true);
     });
@@ -101,17 +102,21 @@ function loreRefBoard_normalizePath(raw) {
     return p;
 }
 
+function loreRefBoard_afterDialogRender(setupFn, maxTries = 60) {
+    let tries = 0;
+    const tick = () => { if (setupFn()) return; if (++tries < maxTries) requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+}
 
 function loreRefBoard_attachDialogValidation(anchorId, actionName, requiredIds) {
-    let tries = 0;
-    const tick = () => {
+    loreRefBoard_afterDialogRender(() => {
         const anchor = document.getElementById(anchorId);
-        if (!anchor) { if (++tries < 60) requestAnimationFrame(tick); return; }
+        if (!anchor) return false;
 
         const dialogEl = anchor.closest(".dialog, .app, [data-appid]");
         const btn = dialogEl?.querySelector(`[data-action="${CSS.escape(actionName)}"]`);
         const form = anchor.closest("form");
-        if (!btn || !form) { if (++tries < 60) requestAnimationFrame(tick); return; }
+        if (!btn || !form) return false;
 
         const inputs = requiredIds
             .map(id => form.elements[id] ?? document.getElementById(id))
@@ -126,8 +131,8 @@ function loreRefBoard_attachDialogValidation(anchorId, actionName, requiredIds) 
 
         update();
         inputs.forEach(el => el.addEventListener("input", update));
-    };
-    requestAnimationFrame(tick);
+        return true;
+    });
 }
 
 // Faction relationship lines
@@ -290,4 +295,43 @@ function loreRefBoard_highlightPdfTextLayer(textLayer, queryText) {
     mark(build(false));
 }
 
-export { _loreRefBoard_docTypeForExt, _loreRefBoard_isUrl, loreRefBoard_LINE_DASH, loreRefBoard_attachDialogValidation, loreRefBoard_computeImageRect, loreRefBoard_escapeHtml, loreRefBoard_fetchSvgData, loreRefBoard_highlightPdfTextLayer, loreRefBoard_isSvgIcon, loreRefBoard_lineDashArray, loreRefBoard_normalizePath, loreRefBoard_offsetLineEndpoints, loreRefBoard_parseRatingInput, loreRefBoard_pickDocFilePath, loreRefBoard_pickImagePath, loreRefBoard_pickRefFilePath, loreRefBoard_renderPdfTextLayer, loreRefBoard_resolveDroppedFactionEntity };
+// Keep/Clear/Cancel prompt for a source change.
+async function loreRefBoard_pinChangePrompt(title, bodyHtml) {
+    const result = await DialogV2.wait({
+        classes: ["lore-rb-dialog"],
+        window: { title },
+        content: bodyHtml,
+        buttons: [
+            { action: "keep", label: game.i18n.localize("lore-reference-board.Pin.KeepPins"), default: true, callback: () => "keep" },
+            { action: "clear", label: game.i18n.localize("lore-reference-board.Pin.ClearPins"), callback: () => "clear" },
+            { action: "cancel", label: game.i18n.localize("lore-reference-board.Common.Cancel") },
+        ],
+        rejectClose: false,
+    });
+    return (result === "keep" || result === "clear") ? result : "cancel";
+}
+
+// Shared panzoom scale zoom slider + label.
+function loreRefBoard_syncZoomBar(html, scale, sliderSel, labelSel) {
+    const pct = Math.round((scale ?? 1) * 100);
+    const slider = html.find(sliderSel)[0];
+    const label = html.find(labelSel)[0];
+    if (slider) slider.value = pct;
+    if (label) label.textContent = pct + "%";
+}
+
+// Lazy getPanzoom
+function loreRefBoard_bindZoomControls(html, getPanzoom, ids, sync) {
+    html.find(ids.zoomIn).off("click").on("click", () => { const pz = getPanzoom(); if (pz) pz.zoomIn({ step: 0.1 }); });
+    html.find(ids.zoomOut).off("click").on("click", () => { const pz = getPanzoom(); if (pz) pz.zoomOut({ step: 0.1 }); });
+    html.find(ids.reset).off("click").on("click", () => { const pz = getPanzoom(); if (pz) pz.reset(); });
+    html.find(ids.slider).off("input").on("input", (ev) => {
+        const pz = getPanzoom();
+        if (!pz) return;
+        const scale = Number(ev.currentTarget.value) / 100;
+        pz.zoom(scale, { animate: false });
+        sync(scale);
+    });
+}
+
+export { _loreRefBoard_docTypeForExt, _loreRefBoard_isUrl, loreRefBoard_LINE_DASH, loreRefBoard_afterDialogRender, loreRefBoard_attachDialogValidation, loreRefBoard_computeImageRect, loreRefBoard_escapeHtml, loreRefBoard_fetchSvgData, loreRefBoard_highlightPdfTextLayer, loreRefBoard_isSvgIcon, loreRefBoard_lineDashArray, loreRefBoard_normalizePath, loreRefBoard_offsetLineEndpoints, loreRefBoard_parseRatingInput, loreRefBoard_pickDocFilePath, loreRefBoard_pickImagePath, loreRefBoard_pickRefFilePath, loreRefBoard_pinChangePrompt, loreRefBoard_renderPdfTextLayer, loreRefBoard_bindZoomControls, loreRefBoard_resolveDroppedFactionEntity, loreRefBoard_syncZoomBar };

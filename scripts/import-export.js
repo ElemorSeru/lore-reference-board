@@ -1,8 +1,10 @@
 import { loreRefBoard_filePickerImpl } from "./compat.js";
 import { loreRefBoard_resolveJournalRef } from "./journal-helpers.js";
 import { loreRefBoard_DEFAULT_RELATIONSHIP_TYPES, loreRefBoard_DEFAULT_STANDING_TIERS, loreRefBoard_MODULE_SCOPE } from "./module-init.js";
-import { _loreRefBoard_flushPins, _loreRefBoard_getSetting, _loreRefBoard_invalidateFactionDataCache, _loreRefBoard_invalidatePinsCache, loreRefBoard_loadTabs } from "./storage.js";
-import { _loreRefBoard_isUrl, loreRefBoard_escapeHtml } from "./utils.js";
+import { _loreRefBoard_flushPins, _loreRefBoard_getSetting, loreRefBoard_loadTabs, loreRefBoard_saveFactionStandingTiers, loreRefBoard_saveRelationshipTypes, loreRefBoard_saveTabs, loreRefBoard_setFactionDataMap, loreRefBoard_setImageJournalMap, loreRefBoard_setImageLoreMap, loreRefBoard_setPinsMap, loreRefBoard_setThreadsDataMap } from "./storage.js";
+import { loreRefBoard_normalizeImageTabLayers } from "./pin-layers.js";
+import { loreRefBoard_resolveScene } from "./scene-source.js";
+import { _loreRefBoard_isUrl, loreRefBoard_afterDialogRender, loreRefBoard_escapeHtml } from "./utils.js";
 
 var { DialogV2 } = foundry.applications.api;
 
@@ -19,6 +21,7 @@ async function _loreRefBoard_export() {
         "image-lore": _loreRefBoard_getSetting("image-lore", {}),
         imageJournals: _loreRefBoard_getSetting("imageJournals", {}),
         factionBoardData: _loreRefBoard_getSetting("factionBoardData", {}),
+        threadsData: _loreRefBoard_getSetting("threadsData", {}),
         relationshipTypes: _loreRefBoard_getSetting("relationshipTypes", loreRefBoard_DEFAULT_RELATIONSHIP_TYPES),
         factionStandingTiers: _loreRefBoard_getSetting("factionStandingTiers", loreRefBoard_DEFAULT_STANDING_TIERS),
     };
@@ -34,7 +37,7 @@ async function _loreRefBoard_export() {
     try {
         await loreRefBoard_filePickerImpl().upload("data", worldPath, file, { notify: false });
         ui.notifications.info(
-            `${game.i18n.localize("lore-reference-board.ImportExport.ExportSuccess")} → ${worldPath}/${filename}`
+            `${game.i18n.localize("lore-reference-board.ImportExport.ExportSuccess")} (${worldPath}/${filename})`
         );
     } catch (err) {
         console.error("LoreReferenceBoard | Export failed:", err);
@@ -70,6 +73,24 @@ async function _loreRefBoard_enrichExportNames(d) {
                 const n = await journalName(pin.journal);
                 if (n) pin.journalName = n;
             }
+            for (const row of (Array.isArray(pin?.threads?.rows) ? pin.threads.rows : [])) {
+                for (const link of (Array.isArray(row?.links) ? row.links : [])) {
+                    if (link?.kind === "journal" && link.uuid && !link.label) {
+                        const n = await journalName(link.uuid);
+                        if (n) link.label = n;
+                    }
+                }
+            }
+        }
+    }
+    for (const threadsDoc of Object.values(d.threadsData ?? {})) {
+        for (const row of (Array.isArray(threadsDoc?.rows) ? threadsDoc.rows : [])) {
+            for (const link of (Array.isArray(row?.links) ? row.links : [])) {
+                if (link?.kind === "journal" && link.uuid && !link.label) {
+                    const n = await journalName(link.uuid);
+                    if (n) link.label = n;
+                }
+            }
         }
     }
 }
@@ -89,6 +110,11 @@ async function _loreRefBoard_import() {
         await _loreRefBoard_applyReplace(importData);
     } else {
         await _loreRefBoard_applyMerge(importData);
+    }
+
+    // Ensure every imported image tab carries at least one layer and no orphans
+    for (const t of await loreRefBoard_loadTabs()) {
+        if (t.type === "image") await loreRefBoard_normalizeImageTabLayers(t.id);
     }
 
     // Refresh the board window if it is already open.
@@ -177,6 +203,7 @@ async function _loreRefBoard_validateImportLinks(d) {
                 type: opts.type ?? null,
                 docType: opts.docType ?? null,
                 apply: opts.apply ?? null,
+                precomputed: opts.precomputed ?? null,
             });
         }
     };
@@ -185,7 +212,37 @@ async function _loreRefBoard_validateImportLinks(d) {
     const tabName = t => t?.name ?? t?.id ?? "?";
 
     for (const tab of tabs) {
-        if (tab.type === "image" && tab.img) {
+        if (tab.type === "image" && tab.imgSource === "scene" && Array.isArray(tab.sceneImages) && tab.sceneImages.length) {
+            const activeIdx = Math.min(Math.max(0, tab.sceneIndex ?? 0), tab.sceneImages.length - 1);
+            for (let i = 0; i < tab.sceneImages.length; i++) {
+                const im = tab.sceneImages[i];
+                if (!im?.src) continue;
+                const isActive = i === activeIdx;
+                await check(fileOk(im.src), "LinkTab", tabName(tab), im.src,
+                    { type: "file", apply: v => { im.src = v; if (isActive) tab.img = v; } });
+            }
+            if (tab.sceneName && !(await loreRefBoard_resolveScene(tab))) {
+                const sceneCands = game.scenes.filter(s => s.name === tab.sceneName)
+                    .map(s => ({ value: s.uuid, name: s.name, folder: s.folder?.name ?? "" }));
+                for (const pack of (game.packs ?? [])) {
+                    if (pack.documentName !== "Scene") continue;
+                    for (const e of pack.index) {
+                        if (e.name !== tab.sceneName) continue;
+                        sceneCands.push({ value: e.uuid ?? ("Compendium." + pack.collection + ".Scene." + e._id), name: e.name, folder: pack.title ?? pack.metadata?.label ?? "" });
+                    }
+                }
+                if (sceneCands.length) {
+                    await check(Promise.resolve(false), "LinkScene", tabName(tab), tab.sceneName,
+                        { label: tab.sceneName, type: "scene", precomputed: sceneCands,
+                          apply: (v, n) => {
+                              tab.sceneUuid = v;
+                              tab.sceneId = (typeof v === "string" && v.startsWith("Scene.")) ? v.slice(6) : null;
+                              tab.sceneSource = (typeof v === "string" && v.startsWith("Compendium.")) ? "compendium" : "world";
+                              if (n) tab.sceneName = n;
+                          } });
+                }
+            }
+        } else if (tab.type === "image" && tab.img) {
             await check(fileOk(tab.img), "LinkTab", tabName(tab), tab.img,
                 { type: "file", apply: v => { tab.img = v; } });
         } else if (tab.type === "document" && tab.docType && tab.docRef) {
@@ -223,6 +280,14 @@ async function _loreRefBoard_validateImportLinks(d) {
                         { type: "folder", apply: v => { folder.path = v; } });
                 }
             }
+            for (const row of (Array.isArray(pin?.threads?.rows) ? pin.threads.rows : [])) {
+                for (const link of (Array.isArray(row?.links) ? row.links : [])) {
+                    if (link?.kind === "journal" && link.uuid) {
+                        await check(journalOk(link.uuid), "LinkPin", pinName, link.uuid,
+                            { label: link.label, type: "journal", apply: (v, n) => { link.uuid = v; if (n) link.label = n; } });
+                    }
+                }
+            }
         }
     }
 
@@ -232,6 +297,18 @@ async function _loreRefBoard_validateImportLinks(d) {
             if (journalId) {
                 await check(journalOk(journalId), "LinkPinImage", src.split("/").pop(), journalId,
                     { type: "journal", apply: v => { pinMap[src] = v; } });
+            }
+        }
+    }
+
+    const threadsData = (d.threadsData && typeof d.threadsData === "object") ? d.threadsData : {};
+    for (const threadsDoc of Object.values(threadsData)) {
+        for (const row of (Array.isArray(threadsDoc?.rows) ? threadsDoc.rows : [])) {
+            for (const link of (Array.isArray(row?.links) ? row.links : [])) {
+                if (link?.kind === "journal" && link.uuid) {
+                    await check(journalOk(link.uuid), "LinkTab", row?.title ?? "?", link.uuid,
+                        { label: link.label, type: "journal", apply: (v, n) => { link.uuid = v; if (n) link.label = n; } });
+                }
             }
         }
     }
@@ -273,11 +350,13 @@ async function _loreRefBoard_validateImportLinks(d) {
     };
     for (const b of broken) {
         b.candidates = [];
-        if (b.label && b.apply) {
+        if (b.precomputed) {
+            b.candidates = b.precomputed;
+        } else if (b.label && b.apply) {
             if (b.type === "journal") {
                 b.candidates = [
                     ...game.journal.filter(j => j.name === b.label)
-                        .map(j => ({ value: j.id, name: j.name, folder: j.folder?.name ?? "" })),
+                        .map(j => ({ value: j.uuid, name: j.name, folder: j.folder?.name ?? "" })),
                     ...packCandidates("JournalEntry", b.label),
                 ];
             } else if (b.type === "uuid" && collections[b.docType]) {
@@ -490,9 +569,7 @@ async function _loreRefBoard_validateImportLinks(d) {
         });
         return true;
     };
-    let tries = 0;
-    const tick = () => { if (setup()) return; if (++tries < 60) requestAnimationFrame(tick); };
-    requestAnimationFrame(tick);
+    loreRefBoard_afterDialogRender(setup);
 
     const result = await DialogV2.wait({
         window: { title: L("ValidationTitle") },
@@ -537,15 +614,14 @@ function _loreRefBoard_askImportMode() {
 
 //Replace All,  overwrites all 
 async function _loreRefBoard_applyReplace(d) {
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "tabs", d.tabs ?? []);
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "pins", d.pins ?? {});
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "image-lore", d["image-lore"] ?? {});
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "imageJournals", d.imageJournals ?? {});
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "factionBoardData", d.factionBoardData ?? {});
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "relationshipTypes", Array.isArray(d.relationshipTypes) ? d.relationshipTypes : loreRefBoard_DEFAULT_RELATIONSHIP_TYPES);
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "factionStandingTiers", Array.isArray(d.factionStandingTiers) ? d.factionStandingTiers : loreRefBoard_DEFAULT_STANDING_TIERS);
-    _loreRefBoard_invalidatePinsCache();
-    _loreRefBoard_invalidateFactionDataCache();
+    await loreRefBoard_saveTabs(d.tabs ?? []);
+    await loreRefBoard_setPinsMap(d.pins ?? {});
+    await loreRefBoard_setImageLoreMap(d["image-lore"] ?? {});
+    await loreRefBoard_setImageJournalMap(d.imageJournals ?? {});
+    await loreRefBoard_setFactionDataMap(d.factionBoardData ?? {});
+    await loreRefBoard_setThreadsDataMap((d.threadsData && typeof d.threadsData === "object") ? d.threadsData : {});
+    await loreRefBoard_saveRelationshipTypes(Array.isArray(d.relationshipTypes) ? d.relationshipTypes : loreRefBoard_DEFAULT_RELATIONSHIP_TYPES);
+    await loreRefBoard_saveFactionStandingTiers(Array.isArray(d.factionStandingTiers) ? d.factionStandingTiers : loreRefBoard_DEFAULT_STANDING_TIERS);
 }
 
 async function _loreRefBoard_applyMerge(d) {
@@ -602,6 +678,16 @@ async function _loreRefBoard_applyMerge(d) {
         }
     }
 
+    // Older exports don't have a threadsData key so this loop is a no-op for them.
+    const importedThreadsData = (d.threadsData && typeof d.threadsData === "object") ? d.threadsData : {};
+    const existingThreadsData = _loreRefBoard_getSetting("threadsData", {});
+    const newThreadsData = { ...existingThreadsData };
+    for (const [oldTabId, newTabId] of Object.entries(tabIdMap)) {
+        if (importedThreadsData[oldTabId]) {
+            newThreadsData[newTabId] = importedThreadsData[oldTabId];
+        }
+    }
+
     // merge relationship types; existing types win on id conflicts
     const importedTypes = Array.isArray(d.relationshipTypes) ? d.relationshipTypes : [];
     const existingTypes = _loreRefBoard_getSetting("relationshipTypes", loreRefBoard_DEFAULT_RELATIONSHIP_TYPES);
@@ -610,14 +696,13 @@ async function _loreRefBoard_applyMerge(d) {
     for (const t of (Array.isArray(existingTypes) ? existingTypes : [])) { if (t?.id) typeMap.set(t.id, t); }
     const newTypes = Array.from(typeMap.values());
 
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "tabs", newTabs);
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "pins", newPins);
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "image-lore", newLore);
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "imageJournals", newJournals);
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "factionBoardData", newFactionData);
-    await game.settings.set(loreRefBoard_MODULE_SCOPE, "relationshipTypes", newTypes);
-    _loreRefBoard_invalidatePinsCache();
-    _loreRefBoard_invalidateFactionDataCache();
+    await loreRefBoard_saveTabs(newTabs);
+    await loreRefBoard_setPinsMap(newPins);
+    await loreRefBoard_setImageLoreMap(newLore);
+    await loreRefBoard_setImageJournalMap(newJournals);
+    await loreRefBoard_setFactionDataMap(newFactionData);
+    await loreRefBoard_setThreadsDataMap(newThreadsData);
+    await loreRefBoard_saveRelationshipTypes(newTypes);
 }
 
 // Inject Import / Export into Settings Panel

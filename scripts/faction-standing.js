@@ -1,6 +1,6 @@
 import { loreRefBoard_FACTION_CIRCLE_DEFAULT_COLOR, loreRefBoard_renderFactionCircles } from "./faction-circles.js";
 import { loreRefBoard_getFactionStandingCollapsed, loreRefBoard_getFactionStandingTiers, loreRefBoard_loadFactionDataForTab, loreRefBoard_loadTabs, loreRefBoard_saveFactionDataForTab, loreRefBoard_saveFactionStandingTiers, loreRefBoard_setFactionStandingCollapsed } from "./storage.js";
-import { loreRefBoard_escapeHtml, loreRefBoard_parseRatingInput } from "./utils.js";
+import { loreRefBoard_afterDialogRender, loreRefBoard_escapeHtml, loreRefBoard_parseRatingInput } from "./utils.js";
 
 var { DialogV2 } = foundry.applications.api;
 
@@ -181,9 +181,9 @@ function _loreRefBoard_factionStandingTierRowHtml(tier) {
     return `
       <div class="lrt-faction-standingtier-row" data-tierid="${loreRefBoard_escapeHtml(tier.id ?? "")}">
         <input type="text" name="label" value="${loreRefBoard_escapeHtml(tier.label ?? "")}" placeholder="${game.i18n.localize("lore-reference-board.Faction.StandingTiers.LabelPlaceholder")}" />
-        <input type="number" name="min" value="${tier.min ?? ""}" placeholder="-∞" />
+        <input type="number" name="min" value="${tier.min ?? ""}" placeholder="${game.i18n.localize("lore-reference-board.Faction.StandingTiers.MinPlaceholder")}" />
         <span class="lrt-faction-standingtier-to">${game.i18n.localize("lore-reference-board.Faction.StandingTiers.To")}</span>
-        <input type="number" name="max" value="${tier.max ?? ""}" placeholder="+∞" />
+        <input type="number" name="max" value="${tier.max ?? ""}" placeholder="${game.i18n.localize("lore-reference-board.Faction.StandingTiers.MaxPlaceholder")}" />
         <button type="button" class="lrt-faction-standingtier-remove" title="${game.i18n.localize("lore-reference-board.Faction.StandingTiers.BtnDeleteTier")}">
           <i class="fas fa-trash"></i>
         </button>
@@ -265,12 +265,11 @@ async function loreRefBoard_manageFactionStandingTiersDialog(app, html) {
         rejectClose: false,
     });
 
-    let _stTries = 0;
-    const _stSetup = () => {
+    loreRefBoard_afterDialogRender(() => {
         const listEl = document.getElementById(`lrt-st-list-${uid}`);
         const addBtn = document.getElementById(`lrt-st-add-${uid}`);
         const errorEl = document.getElementById(`lrt-st-error-${uid}`);
-        if (!listEl || !addBtn || !errorEl) { if (++_stTries < 60) requestAnimationFrame(_stSetup); return; }
+        if (!listEl || !addBtn || !errorEl) return false;
 
         const $ctx = $(listEl.closest("dialog") ?? listEl.parentElement);
 
@@ -305,8 +304,8 @@ async function loreRefBoard_manageFactionStandingTiersDialog(app, html) {
             _savedTiers = collected;
             saveBtn?.click();
         });
-    };
-    requestAnimationFrame(_stSetup);
+        return true;
+    });
 
     await _stPromise;
     const result = _savedTiers;

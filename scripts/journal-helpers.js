@@ -129,7 +129,7 @@ async function loreRefBoard_wirePageNav(contentEl, journalId) {
         nextBtn.disabled = (idx === pages.length - 1);
         selectEl.value = pages[idx].id;
         contentEl.innerHTML =
-            "<p style='color:#888;font-style:italic;padding:8px'>Loading…</p>";
+            "<p style='color:#888;font-style:italic;padding:8px'>Loading...</p>";
         contentEl.innerHTML = await loreRefBoard_enrichJournalPage(pages[idx], entry);
     };
 

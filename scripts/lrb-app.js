@@ -1,12 +1,15 @@
 import { loreRefBoard_setupFactionTab } from "./faction-canvas.js";
-import { loreRefBoard_applyTabRowLimit, loreRefBoard_bindNewTab, loreRefBoard_bindTabSettings, loreRefBoard_bindTabStrip, loreRefBoard_bindToolbar, loreRefBoard_restoreWindowPos } from "./lrb-app-shell.js";
-import { loreRefBoard_addDocumentTabDialog, loreRefBoard_addFactionTabDialog, loreRefBoard_addImageTabDialog, loreRefBoard_addReferenceTabDialog, loreRefBoard_addTabDialog, loreRefBoard_addTabTypeDialog, loreRefBoard_documentTabSettingsDialog, loreRefBoard_factionTabSettingsDialog, loreRefBoard_finishAddTab, loreRefBoard_referenceTabSettingsDialog, loreRefBoard_tabSettingsDialog, loreRefBoard_typeButtonsHtml } from "./lrb-tab-dialogs.js";
+import { loreRefBoard_applyTabRowLimit, loreRefBoard_bindLayerBar, loreRefBoard_bindNewTab, loreRefBoard_bindSceneBar, loreRefBoard_bindTabSettings, loreRefBoard_bindTabStrip, loreRefBoard_bindToolbar, loreRefBoard_restoreWindowPos } from "./lrb-app-shell.js";
+import { loreRefBoard_addDocumentTabDialog, loreRefBoard_addFactionTabDialog, loreRefBoard_addImageTabDialog, loreRefBoard_addReferenceTabDialog, loreRefBoard_addTabDialog, loreRefBoard_addTabTypeDialog, loreRefBoard_addThreadsTabDialog, loreRefBoard_documentTabSettingsDialog, loreRefBoard_factionTabSettingsDialog, loreRefBoard_finishAddTab, loreRefBoard_referenceTabSettingsDialog, loreRefBoard_tabSettingsDialog, loreRefBoard_threadsTabSettingsDialog, loreRefBoard_typeButtonsHtml } from "./lrb-tab-dialogs.js";
 import { loreRefBoard_setupDocumentTab } from "./lrb-tab-document.js";
 import { loreRefBoard_buildPinElement, loreRefBoard_pinDialog, loreRefBoard_renderPins, loreRefBoard_setupImageTab } from "./lrb-tab-image.js";
 import { loreRefBoard_setupReferenceTab } from "./lrb-tab-reference.js";
+import { loreRefBoard_setupThreadsTab } from "./lrb-tab-threads.js";
 import { loreRefBoard_MODULE_SCOPE } from "./module-init.js";
+import { loreRefBoard_LAYER_ALL, loreRefBoard_adoptOrphanPins, loreRefBoard_ensureTabLayers, loreRefBoard_resolveActiveLayerId } from "./pin-layers.js";
+import { loreRefBoard_sceneFrozenDims } from "./scene-source.js";
 import { loreRefBoard_setupSearchPanel } from "./search.js";
-import { loreRefBoard_loadTabs } from "./storage.js";
+import { loreRefBoard_loadTabs, loreRefBoard_saveTabs } from "./storage.js";
 import { loreRefBoard_escapeHtml } from "./utils.js";
 
 var { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
@@ -40,6 +43,19 @@ class LoreRefBoardApp extends HandlebarsApplicationMixin(ApplicationV2) {
         this.reorderMode = false;
         this._dragTabId = null;
 
+        this._faction = {
+            panzoom: null,
+            canvasWrapEl: null,
+            canvasViewportEl: null,
+            onCanvasPanStart: null,
+            onPanzoomZoom: null,
+            relMode: false,
+            relFirst: null,
+            standingPanelOpen: false,
+            uuidOk: null,
+            circleGeom: null,
+            relLines: null,
+        };
     }
 
 
@@ -58,6 +74,8 @@ class LoreRefBoardApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     async _prepareContext(options) {
         const tabs = await loreRefBoard_loadTabs();
+
+        this._cachedSceneFrozen = null;
 
         for (const t of tabs) {
             if (t.pinned === undefined) t.pinned = false;
@@ -79,6 +97,7 @@ class LoreRefBoardApp extends HandlebarsApplicationMixin(ApplicationV2) {
                 isDocumentTab: false,
                 isReferenceTab: false,
                 isFactionTab: false,
+                isThreadsTab: false,
             };
         }
 
@@ -86,6 +105,13 @@ class LoreRefBoardApp extends HandlebarsApplicationMixin(ApplicationV2) {
         if (!tabs.find((t) => t.id === this.activeTab)) this.activeTab = tabs[0].id;
 
         const currentTab = tabs.find(t => t.id === this.activeTab) ?? null;
+
+        // Self-heal: make sure every tab has a layer and pins aren't orphaned
+        if (currentTab?.type === "image") {
+            if (loreRefBoard_ensureTabLayers(currentTab)) await loreRefBoard_saveTabs(tabs);
+            await loreRefBoard_adoptOrphanPins(currentTab);
+        }
+
         this._cachedActiveTabImg = currentTab?.img ?? "";
         this._cachedCurrentTab = currentTab;
 
@@ -98,19 +124,56 @@ class LoreRefBoardApp extends HandlebarsApplicationMixin(ApplicationV2) {
         const isImageTab = currentTab?.type === "image";
         if (!isImageTab) this.placingPin = false;
 
+        let activeLayerId = null;
+        let layers = [];
+        if (isImageTab && currentTab) {
+            layers = Array.isArray(currentTab.layers) ? currentTab.layers : [];
+            activeLayerId = loreRefBoard_resolveActiveLayerId(currentTab);
+            // No placement while set to All
+            if (activeLayerId === loreRefBoard_LAYER_ALL) this.placingPin = false;
+        }
+        this._activeLayerId = activeLayerId;
+
+        const isSceneTab = isImageTab && currentTab?.imgSource === "scene"
+            && Array.isArray(currentTab.sceneImages) && currentTab.sceneImages.length > 0;
+        let sceneCtx = { isSceneTab: false };
+        if (isSceneTab) {
+            const imgs = currentTab.sceneImages;
+            const sIdx = Math.min(Math.max(0, currentTab.sceneIndex ?? 0), imgs.length - 1);
+            const frozen = loreRefBoard_sceneFrozenDims(imgs);
+            this._cachedSceneFrozen = (frozen.w > 0 && frozen.h > 0) ? frozen : null;
+            this._cachedActiveTabImg = imgs[sIdx]?.src ?? currentTab.img ?? "";
+            sceneCtx = {
+                isSceneTab: true,
+                sceneImages: imgs.map((im, i) => ({ label: im.label, index: i, isActive: i === sIdx })),
+                sceneActiveLabel: imgs[sIdx]?.label ?? "",
+                sceneImageCount: imgs.length,
+            };
+        }
+
         return {
             tabs: displayTabs,
             activeTab: this.activeTab,
             noTabs: false,
             isImageTab,
+            activeLayerId,
+            isAllLayer: activeLayerId === loreRefBoard_LAYER_ALL,
+            layers: layers.map(l => ({ id: l.id, name: l.name, color: l.color, isActive: l.id === activeLayerId })),
+            activeLayerName: activeLayerId === loreRefBoard_LAYER_ALL
+                ? game.i18n.localize("lore-reference-board.Layers.All")
+                : (layers.find(l => l.id === activeLayerId)?.name ?? ""),
+            activeLayerColor: (layers.find(l => l.id === activeLayerId)?.color) ?? "#3498db",
             isDocumentTab: currentTab?.type === "document",
             isReferenceTab: currentTab?.type === "reference",
             isFactionTab: currentTab?.type === "faction",
+            isThreadsTab: currentTab?.type === "threads",
+            ...sceneCtx,
             typeIcons: {
                 image: "fa-image",
                 document: "fa-file-lines",
                 reference: "fa-table-cells",
                 faction: "fa-people-group",
+                threads: "fa-timeline",
             },
         };
     }
@@ -151,6 +214,10 @@ class LoreRefBoardApp extends HandlebarsApplicationMixin(ApplicationV2) {
         return loreRefBoard_addFactionTabDialog(this);
     }
 
+    async _addThreadsTabDialog() {
+        return loreRefBoard_addThreadsTabDialog(this);
+    }
+
     async _tabSettingsDialog(tab) {
         return loreRefBoard_tabSettingsDialog(this, tab);
     }
@@ -161,6 +228,10 @@ class LoreRefBoardApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     async _factionTabSettingsDialog(tab) {
         return loreRefBoard_factionTabSettingsDialog(this, tab);
+    }
+
+    async _threadsTabSettingsDialog(tab) {
+        return loreRefBoard_threadsTabSettingsDialog(this, tab);
     }
 
     async _referenceTabSettingsDialog(tab) {
@@ -176,6 +247,8 @@ class LoreRefBoardApp extends HandlebarsApplicationMixin(ApplicationV2) {
         loreRefBoard_bindNewTab(this, html);
         loreRefBoard_bindToolbar(this, html);
         loreRefBoard_bindTabSettings(this, html);
+        loreRefBoard_bindLayerBar(this, html);
+        loreRefBoard_bindSceneBar(this, html);
         loreRefBoard_setupSearchPanel(this, this.element);
 
         const currentTab = this._cachedCurrentTab;
@@ -197,6 +270,12 @@ class LoreRefBoardApp extends HandlebarsApplicationMixin(ApplicationV2) {
             );
             return;
         }
+        if (currentTab?.type === "threads") {
+            this._setupThreadsTab(html, currentTab).catch(err =>
+                console.error("[lore-reference-board] _setupThreadsTab failed", err)
+            );
+            return;
+        }
         loreRefBoard_setupImageTab(this, html);
     }
 
@@ -208,6 +287,10 @@ class LoreRefBoardApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     async _setupReferenceTab(html, tab) {
         return loreRefBoard_setupReferenceTab(this, html, tab);
+    }
+
+    async _setupThreadsTab(html, tab) {
+        return loreRefBoard_setupThreadsTab(this, html, tab);
     }
 
 
@@ -255,7 +338,7 @@ class LoreRefBoardApp extends HandlebarsApplicationMixin(ApplicationV2) {
                         const form = btn.closest("dialog")?.querySelector("form")?.elements;
                         return {
                             handId: form?.targetHand?.value ?? null,
-                            count:  Math.max(1, parseInt(form?.dealCount?.value) || 1),
+                            count: Math.max(1, parseInt(form?.dealCount?.value) || 1),
                         };
                     },
                 },

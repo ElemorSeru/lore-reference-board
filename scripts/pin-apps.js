@@ -43,7 +43,7 @@ class LoreRefBoardPinImageViewer extends HandlebarsApplicationMixin(ApplicationV
         // Resolve image dimensions asynchronously
         const img = new Image();
         img.onload = () => {
-            html.find(".piv-dimensions").text(`${img.naturalWidth} × ${img.naturalHeight}`);
+            html.find(".piv-dimensions").text(`${img.naturalWidth} x ${img.naturalHeight}`);
         };
         img.onerror = () => {
             html.find(".piv-dimensions").text("unknown");
@@ -350,7 +350,7 @@ class LoreRefBoardPinLoreApp extends HandlebarsApplicationMixin(ApplicationV2) {
             html.find(".plr-btn-create").on("click", () => this._createNewJournal());
         }
 
-        this._registerUpdateHook();
+        await this._registerUpdateHook();
     }
 
     async _persistLink() {
@@ -370,16 +370,18 @@ class LoreRefBoardPinLoreApp extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     // Live update hook
-    _registerUpdateHook() {
+    async _registerUpdateHook() {
         if (this._updateHookId !== null) {
             Hooks.off("updateJournalEntryPage", this._updateHookId);
             this._updateHookId = null;
         }
         if (!this._journalId) return;
 
-        const watchedId = this._journalId;
+        const entry = await loreRefBoard_resolveJournalRef(this._journalId);
+        if (!entry) return;
+        const watchedUuid = entry.uuid;
         this._updateHookId = Hooks.on("updateJournalEntryPage", (page) => {
-            if (page.parent?.id === watchedId) this.render();
+            if (page.parent?.uuid === watchedUuid) this.render();
         });
     }
 
@@ -406,10 +408,10 @@ class LoreRefBoardPinLoreApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
         if (data.type === "JournalEntry") {
             const entry = await fromUuid(data.uuid ?? "").catch(() => null);
-            journalId = entry?.id ?? null;
+            journalId = entry?.uuid ?? null;
         } else if (data.type === "JournalEntryPage") {
             const page = await fromUuid(data.uuid ?? "").catch(() => null);
-            journalId = page?.parent?.id ?? null;
+            journalId = page?.parent?.uuid ?? null;
         }
 
         if (!journalId) {
@@ -473,7 +475,7 @@ class LoreRefBoardPinLoreApp extends HandlebarsApplicationMixin(ApplicationV2) {
         });
         if (!entry) return;
 
-        this._journalId = entry.id;
+        this._journalId = entry.uuid;
         await this._persistLink();
         await this.render();
         entry.sheet.render(true);

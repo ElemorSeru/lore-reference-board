@@ -1,8 +1,9 @@
 import { loreRefBoard_filePickerImpl } from "./compat.js";
 import { loreRefBoard_enrichJournalPage, loreRefBoard_getJournalPages, loreRefBoard_wirePageNav, loreRefBoard_resolveJournalRef } from "./journal-helpers.js";
 import { LoreRefBoardPinImageViewer } from "./pin-apps.js";
+import { loreRefBoard_setupThreadsView } from "./lrb-tab-threads.js";
 import { loreRefBoard_clearLoreForImage, loreRefBoard_clearLoreForImages, loreRefBoard_getImageJournalMap, loreRefBoard_loadPinsForTab, loreRefBoard_savePinsForTab } from "./storage.js";
-import { loreRefBoard_attachDialogValidation, loreRefBoard_escapeHtml, loreRefBoard_pickImagePath } from "./utils.js";
+import { loreRefBoard_afterDialogRender, loreRefBoard_attachDialogValidation, loreRefBoard_escapeHtml, loreRefBoard_pickImagePath } from "./utils.js";
 
 var { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 
@@ -55,9 +56,8 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
         const journalMap = loreRefBoard_getImageJournalMap()[this._pin.id] ?? {};
         const imgJournalOk = new Map();
         for (const jid of new Set(Object.values(journalMap).filter(Boolean))) {
-            let ok = !!game.journal.get(jid);
-            if (!ok) { try { ok = !!(await fromUuid(`JournalEntry.${jid}`)); } catch { } }
-            imgJournalOk.set(jid, ok);
+            const resolved = await loreRefBoard_resolveJournalRef(jid);
+            imgJournalOk.set(jid, !!resolved);
         }
         const galleryCtx = {
             galleryName: this._gallery.name,
@@ -108,6 +108,14 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
 
     async _onRender(context, options) {
         const html = $(this.element);
+
+        const pgBody = html.find(".pg-body")[0];
+        if (pgBody) {
+            if (this._galleryScrollTop) pgBody.scrollTop = this._galleryScrollTop;
+            pgBody.addEventListener("scroll", () => {
+                this._galleryScrollTop = pgBody.scrollTop;
+            }, { passive: true });
+        }
 
         //  Folder name (top field) 
         html.find("#pg-name").on("input", ev => {
@@ -339,7 +347,38 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
         }
 
         // Register live-update so the journal pane refreshes when the entry is edited
-        this._registerPinJournalUpdateHook();
+        await this._registerPinJournalUpdateHook();
+
+        // Right pane view toggle for Journal and Threads
+        this._rightView = this._rightView ?? "journal";
+        const rootEl = this.element;
+        const rightTabs = rootEl.querySelectorAll(".pg-right-toggle .lr-tab");
+        const applyRightView = () => {
+            const rightEl = rootEl.querySelector(".pg-right");
+            if (!rightEl) return;
+            rightEl.classList.toggle("pg-right--journal", this._rightView === "journal");
+            rightEl.classList.toggle("pg-right--threads", this._rightView === "threads");
+            rightTabs.forEach(b => b.classList.toggle("active", b.dataset.view === this._rightView));
+        };
+        applyRightView();
+        rightTabs.forEach(b => {
+            b.onclick = () => {
+                this._rightView = b.dataset.view;
+                applyRightView();
+            };
+        });
+
+        const threadsPane = html.find(".pg-threads-pane")[0];
+        if (threadsPane) {
+            const host = {
+                pane: threadsPane,
+                state: this,
+                load: () => this._loadPinThreads(),
+                save: (data) => this._savePinThreads(data),
+            };
+            host.requestRender = () => loreRefBoard_setupThreadsView(host);
+            await loreRefBoard_setupThreadsView(host);
+        }
     }
 
     async _save() {
@@ -357,6 +396,26 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
         this._pin = pins[idx];
 
         if (this._boardApp) await this._boardApp.renderPins(this._boardApp._htmlRef);
+    }
+
+    async _loadPinThreads() {
+        const t = this._pin?.threads;
+        return {
+            groups: Array.isArray(t?.groups) ? t.groups : [],
+            rows: Array.isArray(t?.rows) ? t.rows : [],
+        };
+    }
+
+    async _savePinThreads(data) {
+        const pins = await loreRefBoard_loadPinsForTab(this._tabId);
+        const idx = pins.findIndex(p => p.id === this._pin.id);
+        if (idx === -1) return;
+        pins[idx].threads = {
+            groups: Array.isArray(data?.groups) ? data.groups : [],
+            rows: Array.isArray(data?.rows) ? data.rows : [],
+        };
+        await loreRefBoard_savePinsForTab(this._tabId, pins);
+        this._pin = pins[idx];
     }
 
     // Pin journal pane helpers
@@ -388,11 +447,11 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
         let journalName = null;
         if (data.type === "JournalEntry") {
             const entry = await fromUuid(data.uuid ?? "").catch(() => null);
-            journalId = entry?.id ?? null;
+            journalId = entry?.uuid ?? null;
             journalName = entry?.name ?? null;
         } else if (data.type === "JournalEntryPage") {
             const page = await fromUuid(data.uuid ?? "").catch(() => null);
-            journalId = page?.parent?.id ?? null;
+            journalId = page?.parent?.uuid ?? null;
             journalName = page?.parent?.name ?? null;
         }
 
@@ -456,7 +515,7 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
         });
         if (!entry) return;
 
-        await this._saveJournal(entry.id, entry.name);
+        await this._saveJournal(entry.uuid, entry.name);
         await this.render();
         entry.sheet.render(true);
     }
@@ -482,15 +541,17 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
         await this.render();
     }
 
-    _registerPinJournalUpdateHook() {
+    async _registerPinJournalUpdateHook() {
         if (this._updateHookId !== null) {
             Hooks.off("updateJournalEntryPage", this._updateHookId);
             this._updateHookId = null;
         }
         if (!this._journalId) return;
-        const watchedId = this._journalId;
+        const entry = await loreRefBoard_resolveJournalRef(this._journalId);
+        if (!entry) return;
+        const watchedUuid = entry.uuid;
         this._updateHookId = Hooks.on("updateJournalEntryPage", (page) => {
-            if (page.parent?.id === watchedId) this.render();
+            if (page.parent?.uuid === watchedUuid) this.render();
         });
     }
 
@@ -612,10 +673,9 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
         });
 
         // Attach the folder picker to the Browse button.
-        let tries = 0;
-        const tick = () => {
+        loreRefBoard_afterDialogRender(() => {
             const btn = document.getElementById(browseBtnId);
-            if (!btn) { if (++tries < 60) requestAnimationFrame(tick); return; }
+            if (!btn) return false;
             btn.addEventListener("click", async () => {
                 const pathInput = document.getElementById(inputId);
                 const picked = await LoreRefBoardPinGalleryApp._pickFolder(
@@ -626,8 +686,8 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
                     if (pathInput) pathInput.value = picked.path;
                 }
             });
-        };
-        requestAnimationFrame(tick);
+            return true;
+        });
 
         let result;
         try { result = await waitPromise; } catch { return null; }

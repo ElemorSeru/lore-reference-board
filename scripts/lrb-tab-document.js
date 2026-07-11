@@ -81,11 +81,11 @@ async function loreRefBoard_setupDocumentTab(app, html, tab) {
                 let journalName = null;
                 if (data.type === "JournalEntry") {
                     const entry = await fromUuid(data.uuid ?? "").catch(() => null);
-                    journalId = entry?.id ?? null;
+                    journalId = entry?.uuid ?? null;
                     journalName = entry?.name ?? null;
                 } else if (data.type === "JournalEntryPage") {
                     const page = await fromUuid(data.uuid ?? "").catch(() => null);
-                    journalId = page?.parent?.id ?? null;
+                    journalId = page?.parent?.uuid ?? null;
                     journalName = page?.parent?.name ?? null;
                 }
 
@@ -139,7 +139,7 @@ async function loreRefBoard_setupDocumentTab(app, html, tab) {
                 });
                 if (!entry) return;
 
-                await saveDocToTab("journal", entry.id, entry.name);
+                await saveDocToTab("journal", entry.uuid, entry.name);
                 await app.render();
                 entry.sheet.render(true);
             });
@@ -250,7 +250,7 @@ async function loreRefBoard_setupDocumentTab(app, html, tab) {
 
             // Update when any page in this journal changes
             const hookId = Hooks.on("updateJournalEntryPage", async (updatedPage) => {
-                if (updatedPage.parent?.id !== docRef) return;
+                if (updatedPage.parent?.uuid !== entry.uuid) return;
                 if (updatedPage.id !== pages[currentPageIndex]?.id) return;
                 let enriched3;
                 try { enriched3 = await loreRefBoard_enrichJournalPage(updatedPage, entry); }
@@ -328,8 +328,8 @@ async function loreRefBoard_setupDocumentTab(app, html, tab) {
                     const bold = item.bold ? "font-weight:600;" : "";
                     const italic = item.italic ? "font-style:italic;" : "";
                     const caret = hasChildren
-                        ? `<span class="lrb-toc-caret" aria-hidden="true">▸</span>`
-                        : `<span class="lrb-toc-dot" aria-hidden="true">·</span>`;
+                        ? `<i class="fas fa-caret-right lrb-toc-caret" aria-hidden="true"></i>`
+                        : `<i class="fas fa-circle lrb-toc-dot" aria-hidden="true"></i>`;
                     const children = hasChildren
                         ? `<div class="lrb-toc-children">${lrb_tocItemsHtml(item.items, depth + 1)}</div>`
                         : "";
@@ -487,7 +487,7 @@ async function loreRefBoard_setupDocumentTab(app, html, tab) {
                         if (children?.classList.contains("lrb-toc-children")) {
                             const open = children.classList.toggle("lrb-toc-children--open");
                             const caret = item.querySelector(".lrb-toc-caret");
-                            if (caret) caret.textContent = open ? "▾" : "▸";
+                            if (caret) { caret.classList.toggle("fa-caret-down", open); caret.classList.toggle("fa-caret-right", !open); }
                         }
                         const dest = tocDestMap.get(item.dataset.tocId);
                         if (dest != null) {

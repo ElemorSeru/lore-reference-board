@@ -2,6 +2,10 @@ import { loreRefBoard_bindSceneControlButton } from "./compat.js";
 import { _loreRefBoard_export, _loreRefBoard_import } from "./import-export.js";
 import { LoreRefBoardApp } from "./lrb-app.js";
 import { loreRefBoard_MODULE_SCOPE } from "./module-init.js";
+import { _loreRefBoard_invalidatePinsCache } from "./storage.js";
+
+let _loreRefBoard_resyncTimer = null;
+let _loreRefBoard_resyncFull = false;
 
 Hooks.on("renderSettingsConfig", (_app, html) => {
     if (!game.user?.isGM) return;
@@ -139,6 +143,44 @@ Hooks.on("getSceneControlButtons", (controls) => {
         },
         activeTool: "main-window",
     };
+});
+
+// Tier 1: Changes on a shared board data, refresh so layer edits and pin changes appear live instead of on next open.
+Hooks.on("updateSetting", (setting) => {
+    const key = setting?.key ?? "";
+    const isPins = key === `${loreRefBoard_MODULE_SCOPE}.pins`;
+    const isTabs = key === `${loreRefBoard_MODULE_SCOPE}.tabs`;
+    if (!isPins && !isTabs) return;
+    if (isPins) _loreRefBoard_invalidatePinsCache();
+    if (isTabs) _loreRefBoard_resyncFull = true;
+    const board = game.loreReferenceBoardAppInstance;
+    if (!board?.rendered || board._pinDrag?.active) return;
+    clearTimeout(_loreRefBoard_resyncTimer);
+    _loreRefBoard_resyncTimer = setTimeout(() => {
+        const b = game.loreReferenceBoardAppInstance;
+        if (!b?.rendered || b._pinDrag?.active) return;
+        const full = _loreRefBoard_resyncFull;
+        _loreRefBoard_resyncFull = false;
+        if (!full && b._cachedCurrentTab?.type === "image") {
+            b.renderPins(b._htmlRef).catch(() => {});
+        } else {
+            b.render().catch(() => {});
+        }
+    }, 150);
+});
+
+// Tier 2: Show GM level users a heads-up toast when someone deletes a pin layer.
+Hooks.once("ready", () => {
+    game.socket?.on(`module.${loreRefBoard_MODULE_SCOPE}`, (data) => {
+        if (data?.t !== "layerDeleted") return;
+        const allowed = !!game?.user?.isGM || game?.user?.role === CONST.USER_ROLES.ASSISTANT;
+        if (!allowed) return;
+        ui.notifications.info(game.i18n.format("lore-reference-board.Layers.RemoteDeleted", {
+            by: data.by ?? "GM",
+            layer: data.layer ?? "",
+            tab: data.tab ?? "",
+        }));
+    });
 });
 
 console.log("[lore-reference-board] Load Complete");

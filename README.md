@@ -25,11 +25,11 @@ All data is stored world-scoped (not tied to any scene) so the board is always w
 
 ## Tab Types
 
-The board supports four types of tabs. You can have as many tabs as you need and mix types freely.
+The board supports five types of tabs. You can have as many tabs as you need and mix types freely.
 
 Tabs can be pinned to keep them grouped at the start of the tab bar (separated by a divider from the rest), and reordered via drag-and-drop using the reorder toggle in the toolbar.
 
-Each tab is color-coded by type (blue for Image, coral for Document, purple for Reference, amber for Faction), so you can tell at a glance what kind of tab you are looking at.
+Each tab is color-coded by type (blue for Image, coral for Document, purple for Reference, amber for Faction, green for Threads), so you can tell at a glance what kind of tab you are looking at.
 
 ### Image Tabs
 <img width="1788" height="1194" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/ImageTabWPins.png" />
@@ -42,6 +42,10 @@ A full-view image viewer (mostly for maps of any kind, but can be any image you 
 Clicking a pin opens a preview dialog to help you describe things. If a journal is linked, it renders the journal content on this screen with multi-page navigation. The preview window also allows you to add additional Journals/lore to the image, copy the image location to clipboard, create the image as a token, and create it as a scene.
 
 If the GM Tools: Encounter Forge module is active, creating a token offers a choice between a blank actor or a fully generated NPC (via Encounter Forge's generator, pre-loaded with the image as portrait and token).
+
+**Pin layers.** Pins on an image tab are organized into stackable layers, each with its own name and color. A dropdown in the image toolbar switches the active layer, or shows "All" layers at once with a small color badge on each pin. Add, rename, recolor, reorder, duplicate, and delete layers from the tab settings. New pins go on the active layer, which is useful for tracking variants of an area, splitting prep between GMs, or keeping different passes of a map apart. Older boards without layer data are upgraded automatically: each image tab gets a default layer and its existing pins move onto it if orphaned from older builds.
+
+**Using a scene as the image.** Instead of browsing for a file, an image tab can be based on one of your Foundry scenes, chosen from the world or a compendium. The board snapshots the scene's images and lets you cycle through them from a toolbar dropdown: the background, the foreground, and, on Foundry v14, each of the scene's levels. Pins share one fixed workspace across every image, so switching images never moves them. The tab settings offer Refresh (re-pull the scene) and Change or Reconnect (point the tab at a different or recreated scene). A scene-backed tab that lands in a world without that scene keeps working as a saved image list. See the wiki for the full detail on refreshing, reconnecting, and recreating scenes, and on how pins are kept or cleared when the image or scene changes.
 <img width="1678" height="1044" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinGallery.png" />
 
 <img width="480" height="809" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/PinImagePreview.png" />
@@ -101,9 +105,23 @@ A freeform relationship map for tracking factions, NPCs, and how they all feel a
 - Standing Tiers (sliders icon) lets you configure the rating ranges and labels used to describe a faction's standing. Initially built to be against players, but you can modify it to whatever makes sense for your campaign.
 - Party Standing (handshake icon) opens a side panel listing every faction on all faction tabs with its current standing label
 
+### Threads Tabs
+
+A running list of everything moving in the campaign: open plot hooks and ticking progress meters, side by side in one filterable view instead of two separate tab types.
+
+Each row is one of two kinds:
+
+- **Thread row** - a plot hook or open question with a status (Seed / Active / Resolved / Abandoned), a description, an optional linked journal entry, and a dated note log you can expand inline without opening a row edit dialog
+- **Tracker row** - a current/max progress meter toward one or more named milestones, rendered as a **bar**, a **clock** (segmented dial), or a row of **pips**, whichever style fits the tracker. Bump progress with the +/- stepper directly on the row; no need to open the edit dialog just to advance a meter.
+
+Rows can be grouped into folders, reordered by drag-and-drop, and filtered by status with the toolbar's filter chips. Resolved and abandoned rows dim rather than disappear, so you can still find them later. Editing, deleting, and folder deletion are available from each row's kebab (three-dot) menu.
+
+The same Threads list is also available per-pin from the pin gallery, as a toggle alongside the pin's linked journal, for tracking things specific to one location on the map.
+
 ---
 
 ## Search *(New in v2.0)*
+<img width="1876" height="1179" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/SearchWindow.png" />
 
 Click the magnifying glass button in the toolbar to open the search panel. The panel slides in and displays on the right side of the main board window and can be resized by dragging the divider (up to a point).
 
@@ -127,6 +145,7 @@ Links break: journals get deleted, files move, boards get imported into other wo
 - Pins with a missing journal get a red badge on the map; the pin dialog, preview, and gallery all show the missing state with a drop zone to relink
 - Faction members whose document is gone appear dimmed with a red outline; clicking one offers to remove it
 - Gallery folders and map images that fail to load show the old path and a browse button to relocate them
+- Scene image tabs keep working from their snapshot even when the source scene is missing; the tab settings offer a Reconnect control, and on import a scene of the same name can be suggested as a match
 
 On import, a link check dialog resolves every link before anything is written. Broken document links get relink suggestions matched by name and type from the destination world and loaded compendiums, with a one-click "relink all exact matches" option. Broken file paths that share a folder prefix can be remapped in one step, with the dialog re-checking the new paths live. Exports record document names to make those suggestions possible. Whatever is left imports as a labeled broken-link state and can be fixed later. I attempted to give a cleaner path rather than force broken links.
 
@@ -164,7 +183,7 @@ Download the latest release zip, extract it into your `Data/modules/` directory,
 
 | | |
 |---|---|
-| Foundry VTT | v13, v14 | (V12 ended on 1.2)
+| Foundry VTT | v12 (12.328+), v13, v14 |
 | Game Systems | System-agnostic (no system dependency) |
 
 The module is system-agnostic. It does not read or write any game system data and works with any system installed in Foundry.
@@ -179,7 +198,7 @@ All board data is stored in **world-scoped game settings**, not scene flags. Thi
 - Data is not lost when switching active scenes
 - All GMs in the same world share the same board data
 
-You can export and import the full board state (tabs, pins, cell links) from the module settings panel. This is useful for backups or moving a board between worlds. Links are stored by UUID and file path; the import link check (see above) repairs what it can, and anything else imports as a labeled broken-link state that can be relinked in place later.
+You can export and import the full board state (tabs, pins and their layers, cell links, faction data, and scene image snapshots) from the module settings panel. This is useful for backups or moving a board between worlds. Links are stored by UUID and file path; scene-backed tabs also store a snapshot of the scene's images plus a link. The import link check (see above) repairs what it can, and anything else imports as a labeled broken-link state that can be relinked in place later. Boards from before pin layers existed are upgraded on load and on import so no pins are lost.
 
 The board also remembers its window size and position between sessions. Each user stores their own position independently. If the window ever ends up off-screen or at an unusable size, there is a **Reset Window Position** button in the module settings panel that closes the board and clears the saved position.
 

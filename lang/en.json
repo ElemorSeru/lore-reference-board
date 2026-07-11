@@ -100,7 +100,10 @@
       "JournalMissingNamed": "{name} (missing)",
       "JournalMissingTitle": "Linked journal missing",
       "JournalMissingHint": "The previously linked journal can no longer be found. Link a new one below.",
-      "JournalMissingBadge": "Linked journal is missing - open the pin to relink."
+      "JournalMissingBadge": "Linked journal is missing - open the pin to relink.",
+      "KeepPins": "Keep Pins",
+      "ClearPins": "Clear Pins",
+      "KeepClearBody": "{count} pins on this tab. Keep them (positions unchanged) or clear them? Keep only lines up if it is the same map."
     },
     "AddTab": {
       "Title": "Add New Tab",
@@ -129,7 +132,11 @@
       "DocPathHint": "Supports PDF, TXT, and Markdown. Leave blank to drag a Journal or load an HTML or DOCX file after the tab opens.",
       "BrowseDoc": "Browse",
       "Hint": "Use Browse to pick an image or paste a path.",
-      "BtnAdd": "Add"
+      "BtnAdd": "Add",
+      "TypeThreads": "Threads",
+      "TypeThreadsDesc": "Plot threads and progress trackers",
+      "ThreadsTabTitle": "New Threads Tab",
+      "ThreadsNamePlaceholder": "Enter a name for this tab..."
     },
     "TabSettings": {
       "Title": "Tab Settings",
@@ -142,7 +149,15 @@
       "DeleteTitle": "Delete Tab",
       "DeleteContent": "<p><strong>Delete \"{name}\"?</strong></p><p>This will permanently remove the tab and ALL of its pins and reference data. This cannot be undone.</p>",
       "ReplaceMapTitle": "Replace Map Image?",
-      "ReplaceMapContent": "<p><strong>Changing the map image will delete all pins on this tab.</strong></p><p>This cannot be undone. Continue?</p>"
+      "ReplaceMapContent": "<p><strong>Changing the map image will delete all pins on this tab.</strong></p><p>This cannot be undone. Continue?</p>",
+      "SceneLinkedLabel": "Linked Scene",
+      "BtnRefreshScene": "Refresh from Scene",
+      "SceneHint": "Image selection and pins are stored on this tab. Refresh re-pulls the scene's current images without moving pins.",
+      "SceneUnlinkedLabel": "Scene (not in this world)",
+      "SceneUnlinkedHint": "This tab's scene isn't in this world, so it can't refresh. It still works as a saved image list - reconnect it to a scene here to restore refresh.",
+      "BtnReconnectScene": "Reconnect to Scene",
+      "BtnChangeScene": "Change Scene",
+      "ThreadsHint": "Use the toolbar inside this tab to add threads and trackers."
     },
     "ReferenceTab": {
       "DropText": "Drag any world or compendium entry here",
@@ -184,7 +199,7 @@
       "SpanNotSelected": "Please select a cell area first.",
       "DeleteCell": "Remove Cell",
       "FileCellDivider": "- or load a file -",
-      "FileCellInstruct": "Supported: PDF · TXT · Markdown",
+      "FileCellInstruct": "Supported: PDF, TXT, Markdown",
       "FileCellBrowse": "Browse",
       "FileCellPathPlaceholder": "Paste or enter file path...",
       "FileCellBadgePdf": "PDF",
@@ -273,7 +288,9 @@
         "ErrorLabelRequired": "Row {row}: enter a label.",
         "ErrorRangeRequired": "Row {row}: enter both a minimum and a maximum value.",
         "ErrorMinGreaterThanMax": "Row {row}: the minimum cannot be greater than the maximum.",
-        "ErrorGap": "Row {row}: ranges must be contiguous, with no gaps or overlaps."
+        "ErrorGap": "Row {row}: ranges must be contiguous, with no gaps or overlaps.",
+        "MinPlaceholder": "No min",
+        "MaxPlaceholder": "No max"
       }
     },
     "ImportExport": {
@@ -320,7 +337,8 @@
       "RemapNew": "New prefix",
       "RemapNewPlaceholder": "worlds/my-world/assets/",
       "RemapBrowse": "Browse for the new folder",
-      "RemapStatus": "Remap fixes {fixed} of {total} file links."
+      "RemapStatus": "Remap fixes {fixed} of {total} file links.",
+      "LinkScene": "Scene"
     },
     "Settings": {
       "MaxTabRows": {
@@ -341,9 +359,13 @@
         "Hint": "Force-index every document tab and reference cell now, so search results are complete immediately.",
         "Title": "Index All Sources",
         "Confirm": "Fetch and index every document tab and reference cell in this world? This may take a moment for large collections.",
-        "Running": "Indexing all sources…",
+        "Running": "Indexing all sources...",
         "Done": "All sources indexed.",
         "Cancelled": "Indexing cancelled. Already indexed documents remain searchable."
+      },
+      "AllowAssistantLayerDelete": {
+        "Name": "Allow Assistant GMs to delete Pin Layers",
+        "Hint": "When off, only full Game Masters can delete entire pin layers. Assistant GMs can still create, duplicate, rename, and reorder layers."
       }
     },
     "DocumentTab": {
@@ -352,7 +374,7 @@
       "CreateEntry": "Create New Journal Entry",
       "OrBrowse": "- or -",
       "LoadFileLabel": "Load a document file",
-      "SupportedTypes": "PDF · TXT · Markdown",
+      "SupportedTypes": "PDF, TXT, Markdown",
       "BrowseFile": "Browse Files",
       "PastePathHint": "- or paste a file path or web URL -",
       "PathPlaceholder": "data/worlds/file.html  or  https://example.com/page",
@@ -402,7 +424,9 @@
       "ImportNewFolderFailed": "Could not read \"{path}\". You can import images later via the folder import button.",
       "ImportFailed": "Could not read directory \"{path}\". Check the path and that the server can access it.",
       "FolderMissing": "Folder not found. Use the folder button to re-import from a new location.",
-      "ImageJournalMissing": "The journal linked to this image is missing. Open the image to relink."
+      "ImageJournalMissing": "The journal linked to this image is missing. Open the image to relink.",
+      "TabJournal": "Journal",
+      "TabThreads": "Threads"
     },
     "ImageViewer": {
       "WindowTitle": "Image Viewer",
@@ -456,7 +480,7 @@
       "PageLabel": "p. {page}",
       "PdfUnavailable": "PDF.js not available - cannot search PDF",
       "DocxUnavailable": "mammoth.js not available - cannot search DOCX",
-      "IndexingStatus": "Searching {indexed} sources ({pending} still indexing…)",
+      "IndexingStatus": "Searching {indexed} sources ({pending} still indexing...)",
       "CollapseAll": "Collapse All",
       "ExpandAll": "Expand All",
       "IndexingPages": "Indexing {done}/{total} pages",
@@ -471,6 +495,114 @@
     "ImageTab": {
       "Missing": "The map image for this tab could not be loaded.",
       "BtnLocate": "Locate Image"
+    },
+    "Layers": {
+      "All": "All",
+      "QuickAdd": "Add a new pin layer",
+      "SelectTitle": "Active pin layer",
+      "SectionTitle": "Pin Layers",
+      "AddLayer": "Add Layer",
+      "MinOneHint": "A tab must keep at least one Pin Layer. Add another layer before deleting this one.",
+      "RowColor": "Layer color",
+      "MoveUp": "Move up",
+      "MoveDown": "Move down",
+      "Duplicate": "Duplicate layer",
+      "Delete": "Delete layer",
+      "DeleteTitle": "Delete Pin Layer",
+      "DeleteConfirm": "Delete this layer along with its {pins} pin(s) and {images} gallery image(s)? This cannot be undone.",
+      "DeletePresence": "{count} other GM-level user(s) are online. Deleting this layer removes its pins for everyone.",
+      "RemoteDeleted": "{by} deleted pin layer \"{layer}\" from tab \"{tab}\".",
+      "PlaceNeedsLayer": "Select a specific pin layer before placing pins.",
+      "PlaceLayerGone": "That pin layer no longer exists. The pin was not placed."
+    },
+    "SceneSelect": {
+      "Title": "Select a Scene",
+      "Confirm": "Load Scene",
+      "BtnSelect": "Select from Scene",
+      "CycleTitle": "Scene image",
+      "Empty": "This world has no scenes.",
+      "Background": "Background",
+      "Foreground": "Foreground",
+      "LevelImageLabel": "{level} - {kind}",
+      "ImageCount": "{count} images",
+      "LinkedInfo": "Linked to scene: {name} ({count} images)",
+      "UnknownScene": "Unknown scene",
+      "SceneGone": "That scene no longer exists.",
+      "NoImages": "This scene has no background or foreground images to load.",
+      "Refreshed": "Scene refreshed - {count} images.",
+      "RefreshNoScene": "The linked scene was not found in this world.",
+      "RefreshFailed": "Could not refresh from the scene.",
+      "WorldGroup": "World Scenes",
+      "Reconnected": "Reconnected to scene: {name}",
+      "SourceWorld": "world",
+      "SourceCompendium": "compendium",
+      "ChangeTitle": "Change Scene",
+      "ChangeIntro": "Changing this tab to scene \"{name}\" ({source}).",
+      "ChangeCounts": "Currently {oldCount} images; the new scene has {newCount}.",
+      "ChangeUnverified": "The new scene's images did not load, so they cannot be verified against the current ones.",
+      "ChangePins": "{count} pins on this tab. Keep them (positions unchanged) or clear them? Keep only lines up if this is the same map.",
+      "SearchPlaceholder": "Search scenes...",
+      "ClearSearch": "Clear search",
+      "LegendWorld": "World scenes",
+      "LegendCompendium": "Compendium scenes"
+    },
+    "ThreadsTab": {
+      "Status": {
+        "seed": "Seed",
+        "active": "Active",
+        "resolved": "Resolved",
+        "abandoned": "Abandoned"
+      },
+      "Style": {
+        "bar": "Bar",
+        "clock": "Clock",
+        "pips": "Pips"
+      },
+      "FilterAll": "All",
+      "BtnNew": "New",
+      "NewPickTitle": "New Row",
+      "NewPickPrompt": "Add a plot thread or a progress tracker?",
+      "KindThread": "Thread",
+      "KindTracker": "Tracker",
+      "NewTitle": "New {kind}",
+      "EditTitle": "Edit {kind}",
+      "LabelTitle": "Title",
+      "LabelStatus": "Status",
+      "LabelDescription": "Description",
+      "LabelCurrent": "Current",
+      "LabelMax": "Max",
+      "LabelStyle": "Visual Style",
+      "LabelMilestones": "Milestones",
+      "BtnAddMilestone": "Add Milestone",
+      "MilestoneAtPlaceholder": "At",
+      "MilestoneLabelPlaceholder": "Label",
+      "BtnEdit": "Edit",
+      "BtnDelete": "Delete",
+      "BtnDecrement": "Decrease",
+      "BtnIncrement": "Increase",
+      "BtnAddNote": "Add Note",
+      "NoteAddPlaceholder": "Add a dated note...",
+      "DeleteTitle": "Delete Row",
+      "DeleteConfirm": "<p>Delete \"{name}\"? This cannot be undone.</p>",
+      "DropJournalHint": "Drag a Journal Entry here to link it",
+      "MissingJournal": "Linked journal missing",
+      "BtnUnlink": "Unlink",
+      "EmptyState": "Nothing here yet. Click New to add a thread or tracker.",
+      "MissingJournalNamed": "{name} (missing)",
+      "DropJournalPrimary": "Drag a Journal Entry here to link it.",
+      "BtnOpenJournal": "Open Journal",
+      "GroupEmpty": "No items in this folder.",
+      "DefaultFolderName": "New Folder",
+      "BtnNewFolder": "Folder",
+      "DeleteFolderTitle": "Delete Folder",
+      "DeleteFolderConfirm": "<p>Delete \"{name}\"? Its {count} item(s) will move back to the root list, not be deleted.</p>",
+      "GroupColorTitle": "Folder color",
+      "BtnCollapseAll": "Collapse All Folders",
+      "BtnExpandAll": "Expand All Folders",
+      "BtnRename": "Rename",
+      "BtnMore": "More actions",
+      "BtnFixLink": "Click to fix this broken link",
+      "BtnToggleNotes": "Show/hide notes"
     }
   }
 }

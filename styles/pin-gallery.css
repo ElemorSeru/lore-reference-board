@@ -487,3 +487,34 @@
   text-shadow: 0 0 3px #000, 0 0 3px #000;
   pointer-events: none;
 }
+
+/* Journal and Threads right-pane view toggle */
+.pg-right {
+    flex: 0 0 40%;
+    display: flex;
+    flex-direction: column;
+    background: #1e1e1e;
+    color: #ddd;
+    overflow: hidden;
+    min-width: 0;
+}
+.pg-right-toggle {
+    flex: 0 0 auto;
+}
+.pg-right-toggle .lr-tab {
+    flex: 1 1 0;
+    justify-content: center;
+}
+.pg-right .pg-journal-col {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+.pg-threads-col {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.pg-right--journal .pg-threads-col { display: none; }
+.pg-right--threads .pg-journal-col { display: none; }

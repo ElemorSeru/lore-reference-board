@@ -1,6 +1,6 @@
 import { _loreRefBoard_renderRollTableHtml, loreRefBoard_enrichJournalPage, loreRefBoard_getJournalPages, loreRefBoard_wirePageNav } from "./journal-helpers.js";
 import { loreRefBoard_loadTabs, loreRefBoard_saveTabs } from "./storage.js";
-import { loreRefBoard_escapeHtml, loreRefBoard_normalizePath, loreRefBoard_pickRefFilePath, loreRefBoard_renderPdfTextLayer } from "./utils.js";
+import { loreRefBoard_afterDialogRender, loreRefBoard_escapeHtml, loreRefBoard_normalizePath, loreRefBoard_pickRefFilePath, loreRefBoard_renderPdfTextLayer } from "./utils.js";
 
 const { DialogV2 } = foundry.applications.api;
 
@@ -260,8 +260,8 @@ async function loreRefBoard_setupReferenceTab(app, html, tab) {
                                             const bold = item.bold ? "font-weight:600;" : "";
                                             const italic = item.italic ? "font-style:italic;" : "";
                                             const caret = hasChildren
-                                                ? `<span class="lrb-toc-caret" aria-hidden="true">▸</span>`
-                                                : `<span class="lrb-toc-dot" aria-hidden="true">·</span>`;
+                                                ? `<i class="fas fa-caret-right lrb-toc-caret" aria-hidden="true"></i>`
+                                                : `<i class="fas fa-circle lrb-toc-dot" aria-hidden="true"></i>`;
                                             const children = hasChildren
                                                 ? `<div class="lrb-toc-children">${lrb_refTocItemsHtml(item.items, depth + 1)}</div>`
                                                 : "";
@@ -403,7 +403,7 @@ async function loreRefBoard_setupReferenceTab(app, html, tab) {
                                                 if (children?.classList.contains("lrb-toc-children")) {
                                                     const open = children.classList.toggle("lrb-toc-children--open");
                                                     const caret = item.querySelector(".lrb-toc-caret");
-                                                    if (caret) caret.textContent = open ? "▾" : "▸";
+                                                    if (caret) { caret.classList.toggle("fa-caret-down", open); caret.classList.toggle("fa-caret-right", !open); }
                                                 }
                                                 const dest = tocDestMap.get(item.dataset.tocId);
                                                 if (dest != null) {
@@ -630,7 +630,7 @@ function loreRefBoard_initSpanPicker(pickerEl, sizeEl, existingCells, initialRow
             if (!sizeEl) return;
             if (!sel) { sizeEl.textContent = ""; return; }
             const { colSpan: cs, rowSpan: rs } = sel;
-            sizeEl.textContent = `${cs} col${cs > 1 ? "s" : ""} × ${rs} row${rs > 1 ? "s" : ""}`;
+            sizeEl.textContent = `${cs} col${cs > 1 ? "s" : ""} x ${rs} row${rs > 1 ? "s" : ""}`;
         };
 
         const repaint = (hoverRow = null, hoverCol = null) => {
@@ -772,11 +772,10 @@ async function loreRefBoard_addRefCellDialog(app, tabId, startRow, startCol) {
             rejectClose: false,
         });
 
-        let _addSetupTries = 0;
-        const _addSetup = () => {
+        loreRefBoard_afterDialogRender(() => {
             const dz = document.getElementById(`lrt-rcd-dz-${uid}`);
             const pickerEl = document.getElementById(`lrt-span-picker-${uid}`);
-            if (!dz || !pickerEl) { if (++_addSetupTries < 60) requestAnimationFrame(_addSetup); return; }
+            if (!dz || !pickerEl) return false;
 
             picker = loreRefBoard_initSpanPicker(
                 pickerEl,
@@ -837,8 +836,8 @@ async function loreRefBoard_addRefCellDialog(app, tabId, startRow, startCol) {
                 const picked = await loreRefBoard_pickRefFilePath(fpathEl?.value || "modules/");
                 if (picked) applyFilePath(loreRefBoard_normalizePath(picked));
             });
-        };
-        requestAnimationFrame(_addSetup);
+            return true;
+        });
 
         const result = (await _addCellPromise) ?? "cancel";
 
@@ -939,11 +938,10 @@ async function loreRefBoard_editRefCellDialog(app, tabId, cellId) {
             rejectClose: false,
         });
 
-        let _editSetupTries = 0;
-        const _editSetup = () => {
+        loreRefBoard_afterDialogRender(() => {
             const dz = document.getElementById(`lrt-rcd-dz-${uid}`);
             const pickerEl = document.getElementById(`lrt-span-picker-${uid}`);
-            if (!dz || !pickerEl) { if (++_editSetupTries < 60) requestAnimationFrame(_editSetup); return; }
+            if (!dz || !pickerEl) return false;
 
             picker = loreRefBoard_initSpanPicker(
                 pickerEl,
@@ -1004,8 +1002,8 @@ async function loreRefBoard_editRefCellDialog(app, tabId, cellId) {
                 const picked = await loreRefBoard_pickRefFilePath(fpathEl?.value || "modules/");
                 if (picked) applyFilePath(loreRefBoard_normalizePath(picked));
             });
-        };
-        requestAnimationFrame(_editSetup);
+            return true;
+        });
 
         const result = (await _editCellPromise) ?? "cancel";
 

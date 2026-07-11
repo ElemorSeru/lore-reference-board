@@ -71,8 +71,19 @@
     </div>
 
 
-    <!-- RIGHT: Pin journal pane -->
-    <div class="pg-journal-col">
+    <!-- RIGHT: Pin journal/Threads view toggle -->
+    <div class="pg-right pg-right--journal">
+
+        <div class="lr-tabs pg-right-toggle">
+            <button type="button" class="lr-tab lr-tab--type-document active" data-view="journal">
+                <i class="fas fa-book-open lr-tab-type-icon"></i>{{localize "lore-reference-board.Gallery.TabJournal"}}
+            </button>
+            <button type="button" class="lr-tab lr-tab--type-threads" data-view="threads">
+                <i class="fas fa-timeline lr-tab-type-icon"></i>{{localize "lore-reference-board.Gallery.TabThreads"}}
+            </button>
+        </div>
+
+        <div class="pg-journal-col">
 
         {{#if journalLinked}}
         <!-- Linked state: journal header + enriched content -->
@@ -108,6 +119,12 @@
         </div>
 
         {{/if}}
+
+        </div>
+
+        <div class="pg-threads-col">
+            <div class="lrt-threads-pane pg-threads-pane"></div>
+        </div>
 
     </div>
 

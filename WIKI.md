@@ -8,6 +8,11 @@ This guide covers how to use every part of the Lore Reference Board. If somethin
 - [Managing Tabs](#managing-tabs)
   - [Tab Colors](#tab-colors)
 - [Image Tabs](#image-tabs)
+  - [Using a Scene as the Image](#using-a-scene-as-the-image)
+  - [Cycling Through Scene Images](#cycling-through-scene-images)
+  - [Refreshing, Reconnecting, and Recreating Scenes](#refreshing-reconnecting-and-recreating-scenes)
+  - [Changing the Image or Scene](#changing-the-image-or-scene)
+  - [Pin Layers](#pin-layers)
   - [Adding Pins](#adding-pins)
   - [Pin Icons](#pin-icons)
   - [Linking a Journal to a Pin](#linking-a-journal-to-a-pin)
@@ -32,6 +37,15 @@ This guide covers how to use every part of the Lore Reference Board. If somethin
   - [Relationship Types](#relationship-types)
   - [Standing Tiers](#standing-tiers)
   - [Party Standing Panel](#party-standing-panel)
+- [Threads Tabs](#threads-tabs)
+  - [Adding Thread and Tracker Rows](#adding-thread-and-tracker-rows)
+  - [Tracker Visual Styles](#tracker-visual-styles)
+  - [Filtering by Status](#filtering-by-status)
+  - [Notes Log](#notes-log)
+  - [Linking a Journal to a Thread](#linking-a-journal-to-a-thread)
+  - [Grouping Rows into Folders](#grouping-rows-into-folders)
+  - [Row Actions](#row-actions)
+  - [Threads in the Pin Gallery](#threads-in-the-pin-gallery)
 - [Search](#search)
   - [Opening the Search Panel](#opening-the-search-panel)
   - [How Search Works](#how-search-works)
@@ -68,8 +82,9 @@ Click the `+` button at the far right of the tab bar. A dialog will appear askin
 - **Document Tab** - For a single full-pane document or file
 - **Reference Tab** - For a grid-based dashboard of documents and game objects (Journals, Actors, Roll Tables, Macros, etc.)
 - **Faction Tab** - For a relationship map of factions, NPCs, and how they stand with each other and the party
+- **Threads Tab** - For a running list of plot hooks and progress trackers
 
-After selecting a type, a second dialog will ask for a name (and an image path if you selected the Image Tab type, along with an optional folder to pre-load). The name field must be filled before the Add button becomes active.
+After selecting a type, a second dialog will ask for a name (and, for an Image tab, an image path with a Browse button, or a **Select from Scene** option to base the tab on a Foundry scene instead of a file). The name field must be filled before the Add button becomes active.
 
 **Renaming or deleting a tab**
 
@@ -95,6 +110,7 @@ Each tab is tinted by its type so you can tell what kind of tab it is at a glanc
 | Document | Coral |
 | Reference | Purple |
 | Faction | Amber |
+| Threads | Green |
 
 The tint gets stronger with state: faint on inactive tabs, stronger on hover, strongest on the active tab, which also gets an underline in its own type color. Each tab shows a small type icon next to its name, so the type stays readable without relying on color alone.
 
@@ -111,9 +127,79 @@ An Image tab shows a single image that you can pan and zoom. It is designed for 
 - A zoom bar at the bottom of the tab shows a slider, the current zoom percentage, and a reset view button
 - Use the Reset button to return to the default view and zoom level
 
-**Replacing the image**
+### Using a Scene as the Image
 
-As a warning, if you change the image and have pins or galleries set up, changing the image will clear them. Open tab settings (use the settings icon in the toolbar). The image path field accepts a new path. Use the Browse button to pick from your Foundry data directory.
+When you create an Image tab you can either browse for an image file or click **Select from Scene** to base the tab on one of your Foundry scenes. The scene picker lists your scenes in groups: **World Scenes** first, then one group per Scene compendium you have installed. Each scene shows its thumbnail and name; click one to select it and confirm with **Load Scene**.
+
+Choosing a scene does not copy or change the scene. The board reads the scene's images, stores a snapshot of them on the tab, and keeps a link back to the scene. A world scene is linked by its world id; a compendium scene is linked by its compendium id, which stays valid across worlds (see below).
+
+You can switch or reconnect a scene-backed tab later from the tab settings, covered under [Refreshing, Reconnecting, and Recreating Scenes](#refreshing-reconnecting-and-recreating-scenes).
+
+---
+
+### Cycling Through Scene Images
+
+A scene can hold more than one image. Every scene has a background and, optionally, a foreground, and on Foundry v14 a scene can also have multiple **levels**, each with its own background and foreground. When a tab is based on a scene, a second dropdown appears in the image tab toolbar, to the left of the pin-layer bar, listing every image the scene provides: `Background`, `Foreground`, and, for a multi-level scene, one entry per level and slot (for example `Basement - Background`, `Basement - Foreground`, `Downstairs - Background`). Pick an entry to display that image.
+
+All of a scene's images share one fixed workspace, sized to the largest image, so **pins stay in exactly the same place no matter which image you are viewing**. This is intended for the levels or the foreground/background of the same map, which line up naturally. If a scene mixes images of genuinely different dimensions, the smaller ones are letterboxed inside the fixed workspace and pins stay put in that workspace.
+
+The dropdown reflects the images stored in the tab's snapshot, which is a point-in-time copy. If you edit the scene in Foundry (rename a level, add a floor, change a background), the tab does not change until you Refresh it via the available button.
+
+---
+
+### Refreshing, Reconnecting, and Recreating Scenes
+
+Scene tabs are built to survive being moved between worlds and computers. The core idea: the snapshot on the tab is enough to display and cycle images on its own, and the live scene link is only needed to pull fresh images. So the tab always works, whether or not its scene is present.
+
+The tab settings show one of two states, decided by whether the linked scene resolves in the current world:
+
+- **Linked (the scene is present).** You get a **Refresh from Scene** button and a **Change Scene** button. Refresh re-pulls the linked scene's current images and updates the dropdown, keeping your pins. 
+- **Not linked (the scene is not in this world).** The panel notes the scene is not in this world and gives you a **Reconnect to Scene** button instead of Refresh. The tab still works as a saved image list; reconnecting only restores the ability to refresh.
+
+**Reconnecting or changing the scene.** Both buttons open the same scene picker. When you pick a scene, the board decides whether it is the *same* scene you already had or a *different* one, and only asks about your pins when it is genuinely different:
+
+- If the picked scene matches the tab's stored scene by id, it is treated as the same scene and your pins are kept with no prompt to discard or save pins.
+- If the id does not match but the scene's **name and floor structure** match (the same level names and the same background/foreground layout), it is also treated as the same and pins are kept. This is what lets a recreated or shared scene reconnect cleanly: a friend's copy, or a scene you rebuilt after a drive failure, will have different file paths and a different id but the same floors, and the board gives it the benefit of the doubt.
+- Otherwise the scene is treated as a change and you are asked whether to **Keep** or **Clear** the pins (see [Changing the Image or Scene](#changing-the-image-or-scene)).
+
+**Why name and structure, not files.** A faithful recreation almost never has the same file paths, so matching on paths would defeat the purpose I was going for. Instead the board compares the floor names you typed and the background/foreground layout. Floor names are matched exactly as written and are not translated, so this holds up across languages. If the new scene's images fail to load at all, the board cannot verify them and will prompt you, noting that the images did not load so you can go fix the paths.
+
+**Cross-world identity.** A world scene's id changes when it is imported into another world, so a world-linked tab will not auto-resolve there even if "the same" scene is present; reconnect it by name using the picker. A **compendium** scene is different: its compendium id is stable across worlds, so a tab linked to a compendium scene keeps refreshing in any world that has the pack/compendium.
+
+Once you reconnect or change to a scene, that scene becomes the tab's current link. The board does not keep the previous scene's data; from that point everything verifies against the new scene so you can export and handle it from that new point in time.
+
+---
+
+### Changing the Image or Scene
+
+Changing what an image tab shows can affect its pins, so the board asks what to do with them rather than discarding them like in previous versions.
+
+- **Changing a file image** (in tab settings, by editing the image path): if the tab has pins, you are asked to **Keep Pins**, **Clear Pins**, or **Cancel**. Keep is the default because it I figured it's reversible; you can always delete pins afterward.
+- **Changing to a different scene** (via Change Scene or Reconnect, when the pick is judged as a real change): the same Keep / Clear / Cancel choice, shown with the new scene's name and source, how many images it has compared to the current tab, and the pin count. If the new scene's images could not be verified, a note says so.
+
+Clearing pins removes every pin on the tab along with its gallery lore and journal links, but leaves your pin layers in place. Keeping pins leaves them exactly where they are in the tab's workspace.
+
+---
+
+### Pin Layers
+
+Pins on an image tab live on **layers**. Every image tab has at least one layer (a default "Layer 1"), and each layer has a name and a color you can change later.
+
+**Selecting a layer.** The layer dropdown in the image toolbar picks the active layer, and new pins are placed on it. Choose **All** to see every layer's pins at once; in the All view, each pin shows a small color badge for the layer it belongs to, and pin placement is disabled until you pick a specific layer. A quick add-layer button sits next to the dropdown.
+
+**Managing layers.** Open the tab settings to manage layers. From there you can:
+
+- **Add** a layer
+- **Rename** a layer and change its **color**
+- **Reorder** layers up or down in the list
+- **Duplicate** a layer, which copies all of its pins (and their journal links) onto a new layer
+- **Delete** a layer, which also deletes the pins on it (a tab always keeps at least one layer, so the last one cannot be deleted)
+
+Deleting a layer asks for confirmation and tells you how many pins and gallery images it will remove. If other GMs are connected, the confirmation notes their presence and they get a heads-up notification when a layer is deleted.
+
+**Who can delete layers.** Full GMs can always delete layers. Assistant GMs can only delete layers if a GM enables **Allow Assistant Layer Delete** in the module settings.
+
+**Older boards.** Boards created or exported before layers existed are upgraded automatically, on load and on import: each image tab gets a "Layer 1" and any pins that had no layer are moved onto it, so nothing is lost.
 
 ---
 
@@ -505,6 +591,73 @@ Click **Party Standing** (handshake icon) to open a side panel listing every fac
 
 ---
 
+## Threads Tabs
+
+A Threads tab is a single list mixing two kinds of rows: open plot hooks and numeric, visual, progress trackers. Both share one filterable list so you can see everything currently moving in the campaign in one place, rather than hunting across separate tabs.
+
+---
+
+### Adding Thread and Tracker Rows
+
+Click the **+** button in the toolbar. You will be asked to choose a type of row first:
+
+- **Thread row** - a plot hook or open question. Gives it a title, a status, a description, and an optional linked journal entry.
+- **Tracker row** - a numeric visual progress meter. Gives it a title, a status, a current/max value, a visual style, and one or more named milestones.
+
+Both kinds are edited the same way later: click a row's **pencil** icon to reopen its edit dialog.
+
+---
+
+### Tracker Visual Styles
+
+Each tracker renders as one of three styles:
+
+- **Bar** - a linear meter with milestones listed beneath it
+- **Clock** - a segmented circular dial, one wedge per point of the max value, with reached milestones outlined
+- **Pips** - a row of small boxes, one per point of the max value, filled left to right
+
+Pick a style per tracker from its edit dialog. Whichever style is active, a +/- stepper sits directly on the row so you can bump progress without opening the edit dialog.
+
+---
+
+### Filtering by Status
+
+Every row, thread or tracker, has a status: **Seed**, **Active**, **Resolved**, or **Abandoned**. Use the filter chips in the toolbar to show only rows in a particular status. Resolved and abandoned rows dim rather than disappearing from the list, so you can still find them later.
+
+---
+
+### Notes Log
+
+Thread (Threads and Trackers) rows carry a dated note log. Click the note icon and caret in the bottom-right of a thread row to expand or collapse the log inline to the row. Add a new dated note from the expanded panel.
+
+---
+
+### Linking a Journal to a Thread
+
+Thread rows (not trackers) can link a single journal entry. Open the row's edit dialog via the **pencil**; the right side is a journal panel matching the pin gallery's journal pane. Drag a journal entry from the sidebar onto the drop zone, or click **Create Lore Entry** to create and link a new one. The linked journal renders inline with page navigation if it has multiple pages, and can be unlinked from the same panel.
+
+If a linked journal no longer resolves, the panel shows the stored name marked as missing with an active drop zone to relink it.
+
+---
+
+### Grouping Rows into Folders
+
+Rows can be grouped into named folders to keep related threads and trackers together. Drag rows and folders to reorder them. A folder can be renamed or deleted from its kebab (three-dot) menu.
+
+---
+
+### Row Actions
+
+Each row has a kebab (three-dot) menu on the right, offering **Edit** and **Delete**. Deleting a row asks for confirmation, with the confirming button.
+
+---
+
+### Threads in the Pin Gallery
+
+Every pin's gallery window also has its own Threads (Threads and Trackers) list, independent of any tab-level Threads tab. Use the toggle at the top-right of the gallery's panel to switch between the pin's linked journal and its Threads list, useful for tracking things specific to one location on the map.
+
+---
+
 ## Search
 
 ### Opening the Search Panel
@@ -599,7 +752,7 @@ A progress dialog shows how many items have been processed, with a Cancel button
 
 The module settings panel includes Import and Export buttons for the full board state.
 
-**Export** saves a JSON file into your world folder containing all tabs, pin data, cell links, faction data, and gallery folder paths. The export also records the display name of every linked document; the import link check uses those names to offer repairs.
+**Export** saves a JSON file into your world folder containing all tabs, pin data (including pin layers), cell links, faction data, gallery folder paths, and any scene links with their snapshotted image lists. The export also records the display name of every linked document; the import link check uses those names to offer repairs.
 
 **Import** reads a previously exported JSON file and merges or replaces the current board state.
 
@@ -609,11 +762,14 @@ Before anything is imported, the module resolves every document link and file pa
 
 - If a document with the same name and type exists in the destination world or a loaded compendium, the row shows a **Relink** button, or a dropdown when there are several candidates (world folders and compendium names are shown to tell them apart). A **Relink all exact matches** button accepts every unambiguous suggestion at once.
 - If several broken file links share a folder prefix, a **Fix file paths** section appears. Enter or browse to the new location and the dialog re-checks the affected paths as you type, reporting how many the remap repairs.
+- Scene image tabs are checked image by image, so a moved asset folder can be remapped in one step. If the tab's linked scene is not in the destination world but a scene of the same name is, the row offers to reconnect the tab to it. Either way the tab still works from its snapshot after import, and its scene can be reconnected later from the tab settings.
 - The summary counts update as you accept fixes, and rows strike through as they are resolved. Fixes are applied to the imported data only when you confirm the import; Cancel discards everything, including accepted fixes.
 
 Anything still broken after the link check imports anyway and shows up as a labeled broken-link state on its tab (see the Broken links notes in the sections above), so it can be relinked later.
 
 > **Note:** exports made with module versions before v2.1 do not contain document names. Importing one of those files still works, but the link check can only show raw IDs for broken links and cannot offer relink suggestions. If you still have the source world, update the module there and export again. The new file records a name for every link that still resolves, and the link check uses those names to find matches.
+
+> **Note:** Boards imported from before pin layers existed are upgraded automatically. Every image tab is given a default "Layer 1" and any pins without a layer are moved onto it, so no pins are lost.
 
 ---
 

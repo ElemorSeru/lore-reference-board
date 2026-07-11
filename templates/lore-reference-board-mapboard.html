@@ -53,6 +53,9 @@
             {{#if isDocumentTab}}
             <div id="lr-doc-pane" class="lrt-doc-pane"></div>
             {{else}}
+            {{#if isThreadsTab}}
+            <div id="lr-threads-pane" class="lrt-threads-pane"></div>
+            {{else}}
             {{#if isFactionTab}}
             <div class="lrt-faction-toolbar">
                 <button id="lrt-faction-add-circle" class="lr-action-btn" title="{{localize 'lore-reference-board.Faction.Toolbar.AddCircle'}}">
@@ -106,10 +109,57 @@
                 </div>
             </div>
             {{else}}
-            <div class="lrt-map-toolbar">
-                <button id="lr-toggle-pin" class="lr-action-btn" title="{{localize 'lore-reference-board.Toolbar.PlacePin'}}">
-                    <i class="fas fa-map-pin"></i>
-                </button>
+            <div class="lrt-map-toolbar" id="lrt-map-toolbar">
+                <div class="lrt-map-toolbar-row">
+                    <button id="lr-toggle-pin" class="lr-action-btn" title="{{localize 'lore-reference-board.Toolbar.PlacePin'}}" {{#if isAllLayer}}disabled{{/if}}>
+                        <i class="fas fa-map-pin"></i>
+                    </button>
+                    {{#if isSceneTab}}
+                    <div class="lrt-scene-bar">
+                        <i class="fas fa-clapperboard lrt-scene-bar-icon" title="{{localize 'lore-reference-board.SceneSelect.CycleTitle'}}"></i>
+                        <button type="button" class="lrt-scene-dd-btn" id="lrt-scene-dd-btn" aria-haspopup="listbox" aria-expanded="false" title="{{localize 'lore-reference-board.SceneSelect.CycleTitle'}}">
+                            <span class="lrt-scene-dd-label">{{sceneActiveLabel}}</span>
+                            <i class="fas fa-chevron-down lrt-scene-dd-caret"></i>
+                        </button>
+                    </div>
+                    {{/if}}
+                    <div class="lrt-layer-bar">
+                        <i class="fas fa-layer-group lrt-layer-bar-icon"></i>
+                        <button type="button" class="lrt-layer-dd-btn" id="lrt-layer-dd-btn" aria-haspopup="listbox" aria-expanded="false" title="{{localize 'lore-reference-board.Layers.SelectTitle'}}">
+                            {{#if isAllLayer}}
+                            <span class="lrt-layer-dd-sw lrt-layer-dd-sw--all"><i class="fas fa-layer-group"></i></span>
+                            {{else}}
+                            <span class="lrt-layer-dd-sw" style="background:{{activeLayerColor}}"></span>
+                            {{/if}}
+                            <span class="lrt-layer-dd-label">{{activeLayerName}}</span>
+                            <i class="fas fa-chevron-down lrt-layer-dd-caret"></i>
+                        </button>
+                        <button id="lrt-layer-add" class="lr-action-btn" title="{{localize 'lore-reference-board.Layers.QuickAdd'}}">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="lrt-layer-dd-menu" id="lrt-layer-dd-menu" role="listbox">
+                    {{#each layers}}
+                    <div class="lrt-layer-dd-opt {{#if this.isActive}}is-active{{/if}}" data-value="{{this.id}}" role="option">
+                        <span class="lrt-layer-dd-sw" style="background:{{this.color}}"></span>
+                        <span class="lrt-layer-dd-opt-label">{{this.name}}</span>
+                    </div>
+                    {{/each}}
+                    <div class="lrt-layer-dd-opt {{#if isAllLayer}}is-active{{/if}}" data-value="__all__" role="option">
+                        <span class="lrt-layer-dd-sw lrt-layer-dd-sw--all"><i class="fas fa-layer-group"></i></span>
+                        <span class="lrt-layer-dd-opt-label">{{localize 'lore-reference-board.Layers.All'}}</span>
+                    </div>
+                </div>
+                {{#if isSceneTab}}
+                <div class="lrt-scene-dd-menu" id="lrt-scene-dd-menu" role="listbox">
+                    {{#each sceneImages}}
+                    <div class="lrt-scene-dd-opt {{#if this.isActive}}is-active{{/if}}" data-index="{{this.index}}" role="option">
+                        <span class="lrt-scene-dd-opt-label">{{this.label}}</span>
+                    </div>
+                    {{/each}}
+                </div>
+                {{/if}}
             </div>
             <div id="lr-map-wrap">
                 <div id="lr-map-image"></div>
@@ -131,10 +181,11 @@
             {{/if}}
             {{/if}}
             {{/if}}
+            {{/if}}
         </div>
 
         <div id="lr-search-divider" class="lr-search-divider">
-            <span class="lr-search-divider-grip">···</span>
+            <span class="lr-search-divider-grip">...</span>
         </div>
 
         <div id="lr-search-panel" class="lr-search-panel">

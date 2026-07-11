@@ -1,15 +1,13 @@
 import { loreRefBoard_MODULE_SCOPE } from "./module-init.js";
-import { _loreRefBoard_getSetting, loreRefBoard_clearLoreForImages, loreRefBoard_collectPinImages, loreRefBoard_deleteFactionDataForTab, loreRefBoard_deletePinsForTab, loreRefBoard_getImageJournalMap, loreRefBoard_loadPinsForTab, loreRefBoard_loadTabs, loreRefBoard_removeFactionStandingCollapsed, loreRefBoard_saveTabs } from "./storage.js";
-import { loreRefBoard_escapeHtml } from "./utils.js";
+import { loreRefBoard_addLayer, loreRefBoard_setActiveLayerId } from "./pin-layers.js";
+import { loreRefBoard_setSceneImageIndex } from "./scene-source.js";
+import { _loreRefBoard_getSetting, loreRefBoard_clearAllPinsForTab, loreRefBoard_deleteTab, loreRefBoard_loadPinsForTab, loreRefBoard_loadTabs, loreRefBoard_saveTabs } from "./storage.js";
+import { loreRefBoard_bindZoomControls, loreRefBoard_escapeHtml, loreRefBoard_pinChangePrompt, loreRefBoard_syncZoomBar } from "./utils.js";
 
 const { DialogV2 } = foundry.applications.api;
 
 function loreRefBoard_syncMapZoomBar(html, scale) {
-    const pct = Math.round((scale ?? 1) * 100);
-    const slider = html.find("#lr-zoom-slider")[0];
-    const label = html.find("#lr-zoom-label")[0];
-    if (slider) slider.value = pct;
-    if (label) label.textContent = `${pct}%`;
+    loreRefBoard_syncZoomBar(html, scale, "#lr-zoom-slider", "#lr-zoom-label");
 }
 
 function loreRefBoard_restoreWindowPos(app) {
@@ -41,6 +39,7 @@ function loreRefBoard_applyTabRowLimit(app, html) {
         tabsEl.style.maxHeight = "";
         tabsEl.style.overflowY = "";
     }
+    tabsEl.scrollTop = app._tabStripScrollTop ?? 0;
 }
 
 function loreRefBoard_applyReorderMode(app, html) {
@@ -113,6 +112,7 @@ function loreRefBoard_bindTabStrip(app, html) {
     html.find(".lr-tab[data-tabid]").off("click").on("click", async (ev) => {
         const tabId = ev.currentTarget.dataset.tabid;
         if (!tabId || tabId === app.activeTab) return;
+        app._tabStripScrollTop = html.find(".lr-tabs")[0]?.scrollTop ?? 0;
         app.activeTab = tabId;
         await app.render();
     });
@@ -169,6 +169,7 @@ function loreRefBoard_bindNewTab(app, html) {
     bindType("doc", "document");
     bindType("ref", "reference");
     bindType("fac", "faction");
+    bindType("thr", "threads");
 }
 
 function loreRefBoard_bindToolbar(app, html) {
@@ -196,21 +197,92 @@ function loreRefBoard_bindToolbar(app, html) {
     });
     html.find("#lr-maximize").toggleClass("active", !!app._maximized);
 
-    html.find("#lr-reset-view").off("click").on("click", () => {
-        if (app._panzoom) app._panzoom.reset();
+    loreRefBoard_bindZoomControls(html, () => app._panzoom,
+        { zoomIn: "#lr-zoom-in", zoomOut: "#lr-zoom-out", reset: "#lr-reset-view", slider: "#lr-zoom-slider" },
+        (scale) => loreRefBoard_syncMapZoomBar(html, scale));
+}
+
+// Recomputed on each open so a resized window adapts.
+function loreRefBoard_sizeLayerMenu(html) {
+    const menu = html.find("#lrt-layer-dd-menu")[0];
+    if (!menu) return;
+    const MAX_ITEMS = 10;
+    const firstOpt = menu.querySelector(".lrt-layer-dd-opt");
+    const padTop = parseFloat(getComputedStyle(menu).paddingTop) || 0;
+    const rowH = firstOpt ? firstOpt.getBoundingClientRect().height + 2 : 30;
+    const tenItems = Math.ceil(rowH * MAX_ITEMS + padTop);
+
+    let cap = tenItems;
+    const viewport = html.find(".lr-map-viewport")[0];
+    if (viewport) {
+        const avail = viewport.getBoundingClientRect().bottom - menu.getBoundingClientRect().top - 12;
+        cap = Math.min(tenItems, avail);
+    }
+    menu.style.maxHeight = `${Math.max(80, Math.round(cap))}px`;
+}
+
+function loreRefBoard_bindLayerBar(app, html) {
+    const toolbar = html.find("#lrt-map-toolbar");
+    const btn = html.find("#lrt-layer-dd-btn");
+
+    btn.off("click").on("click", (ev) => {
+        ev.stopPropagation();
+        const opening = !toolbar.hasClass("lrt-dd-open");
+        toolbar.toggleClass("lrt-dd-open");
+        btn.attr("aria-expanded", opening ? "true" : "false");
+        if (opening) loreRefBoard_sizeLayerMenu(html);
     });
 
-    html.find("#lr-zoom-in").off("click").on("click", () => {
-        if (app._panzoom) app._panzoom.zoomIn({ step: 0.1 });
+    html.find("#lrt-layer-dd-menu .lrt-layer-dd-opt").off("click").on("click", async (ev) => {
+        ev.stopPropagation();
+        toolbar.removeClass("lrt-dd-open");
+        await loreRefBoard_setActiveLayerId(app.activeTab, ev.currentTarget.dataset.value);
+        await app.render();
     });
-    html.find("#lr-zoom-out").off("click").on("click", () => {
-        if (app._panzoom) app._panzoom.zoomOut({ step: 0.1 });
+
+    $(document).off("click.lrbLayerDD").on("click.lrbLayerDD", (ev) => {
+        if (!toolbar.length || !toolbar.hasClass("lrt-dd-open")) return;
+        if ($(ev.target).closest("#lrt-map-toolbar").length) return;
+        toolbar.removeClass("lrt-dd-open");
+        btn.attr("aria-expanded", "false");
     });
-    html.find("#lr-zoom-slider").off("input").on("input", (ev) => {
-        if (!app._panzoom) return;
-        const scale = Number(ev.currentTarget.value) / 100;
-        app._panzoom.zoom(scale, { animate: false });
-        loreRefBoard_syncMapZoomBar(html, scale);
+
+    html.find("#lrt-layer-add").off("click").on("click", async () => {
+        const newId = await loreRefBoard_addLayer(app.activeTab);
+        if (!newId) return;
+        await loreRefBoard_setActiveLayerId(app.activeTab, newId);
+        await app.render();
+    });
+}
+
+// Scene image dropdown: Swaps the displayed base image
+function loreRefBoard_bindSceneBar(app, html) {
+    const toolbar = html.find("#lrt-map-toolbar");
+    const btn = html.find("#lrt-scene-dd-btn");
+    if (!btn.length) return;
+
+    btn.off("click").on("click", (ev) => {
+        ev.stopPropagation();
+        const opening = !toolbar.hasClass("lrt-scene-dd-open");
+        toolbar.removeClass("lrt-dd-open");
+        toolbar.toggleClass("lrt-scene-dd-open");
+        btn.attr("aria-expanded", opening ? "true" : "false");
+    });
+
+    html.find("#lrt-scene-dd-menu .lrt-scene-dd-opt").off("click").on("click", async (ev) => {
+        ev.stopPropagation();
+        toolbar.removeClass("lrt-scene-dd-open");
+        const idx = Number(ev.currentTarget.dataset.index);
+        if (!Number.isFinite(idx)) return;
+        await loreRefBoard_setSceneImageIndex(app.activeTab, idx);
+        await app.render();
+    });
+
+    $(document).off("click.lrbSceneDD").on("click.lrbSceneDD", (ev) => {
+        if (!toolbar.length || !toolbar.hasClass("lrt-scene-dd-open")) return;
+        if ($(ev.target).closest("#lrt-map-toolbar").length) return;
+        toolbar.removeClass("lrt-scene-dd-open");
+        btn.attr("aria-expanded", "false");
     });
 }
 
@@ -232,21 +304,7 @@ function loreRefBoard_bindTabSettings(app, html) {
             });
             if (!confirmed) return;
 
-            const tabPins = await loreRefBoard_loadPinsForTab(app.activeTab);
-            await loreRefBoard_clearLoreForImages(tabPins.flatMap(p => loreRefBoard_collectPinImages(p)));
-            if (tabPins.length) {
-                const journalMap = loreRefBoard_getImageJournalMap();
-                const updatedMap = { ...journalMap };
-                for (const p of tabPins) delete updatedMap[p.id];
-                await game.settings.set(loreRefBoard_MODULE_SCOPE, "imageJournals", updatedMap);
-            }
-            await loreRefBoard_deletePinsForTab(app.activeTab);
-            if (tab.type === "faction") {
-                await loreRefBoard_deleteFactionDataForTab(app.activeTab);
-                await loreRefBoard_removeFactionStandingCollapsed(app.activeTab);
-            }
-            const remaining = (await loreRefBoard_loadTabs()).filter(t => t.id !== app.activeTab);
-            await loreRefBoard_saveTabs(remaining);
+            const remaining = await loreRefBoard_deleteTab(app.activeTab);
             app.activeTab = remaining[0]?.id ?? null;
             await app.render();
             return;
@@ -258,16 +316,12 @@ function loreRefBoard_bindTabSettings(app, html) {
 
         const imageChanged = newImg && newImg !== (tab.img ?? "");
         if (imageChanged) {
-            const confirmed = await DialogV2.confirm({
-                classes: ["lore-rb-dialog"],
-                window: { title: game.i18n.localize("lore-reference-board.TabSettings.ReplaceMapTitle") },
-                content: `<p>${game.i18n.localize("lore-reference-board.TabSettings.ReplaceMapContent")}</p>`,
-                rejectClose: false,
-            });
-            if (!confirmed) return;
-            const oldPins = await loreRefBoard_loadPinsForTab(app.activeTab);
-            await loreRefBoard_clearLoreForImages(oldPins.flatMap(p => loreRefBoard_collectPinImages(p)));
-            await loreRefBoard_deletePinsForTab(app.activeTab);
+            const pins = await loreRefBoard_loadPinsForTab(app.activeTab);
+            let body = `<p>${game.i18n.localize("lore-reference-board.TabSettings.ReplaceMapContent")}</p>`;
+            body += `<p>${game.i18n.format("lore-reference-board.Pin.KeepClearBody", { count: pins.length })}</p>`;
+            const choice = await loreRefBoard_pinChangePrompt(game.i18n.localize("lore-reference-board.TabSettings.ReplaceMapTitle"), body);
+            if (choice === "cancel") return;
+            if (choice === "clear") await loreRefBoard_clearAllPinsForTab(app.activeTab);
         }
 
         const latest = await loreRefBoard_loadTabs();
@@ -281,4 +335,4 @@ function loreRefBoard_bindTabSettings(app, html) {
     });
 }
 
-export { loreRefBoard_applyTabRowLimit, loreRefBoard_bindNewTab, loreRefBoard_bindTabSettings, loreRefBoard_bindTabStrip, loreRefBoard_bindToolbar, loreRefBoard_restoreWindowPos, loreRefBoard_syncMapZoomBar };
+export { loreRefBoard_applyTabRowLimit, loreRefBoard_bindLayerBar, loreRefBoard_bindNewTab, loreRefBoard_bindSceneBar, loreRefBoard_bindTabSettings, loreRefBoard_bindTabStrip, loreRefBoard_bindToolbar, loreRefBoard_restoreWindowPos, loreRefBoard_syncMapZoomBar };

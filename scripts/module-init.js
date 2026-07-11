@@ -143,9 +143,11 @@ Hooks.once("init", () => {
     game.settings.register(loreRefBoard_MODULE_SCOPE, "imageJournals", { name: "Image Journal Links", scope: "world", config: false, type: Object, default: {} });
     game.settings.register(loreRefBoard_MODULE_SCOPE, "tabViews", { name: "Tab Views (legacy)", scope: "world", config: false, type: Object, default: {} });
     game.settings.register(loreRefBoard_MODULE_SCOPE, "factionBoardData", { name: "Faction Board Data", scope: "world", config: false, type: Object, default: {} });
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "threadsData", { name: "Threads Tab Data", scope: "world", config: false, type: Object, default: {} });
     game.settings.register(loreRefBoard_MODULE_SCOPE, "relationshipTypes", { name: "Relationship Types", scope: "world", config: false, type: Object, default: loreRefBoard_DEFAULT_RELATIONSHIP_TYPES });
     game.settings.register(loreRefBoard_MODULE_SCOPE, "factionStandingTiers", { name: "Faction Standing Tiers", scope: "world", config: false, type: Object, default: loreRefBoard_DEFAULT_STANDING_TIERS });
     game.settings.register(loreRefBoard_MODULE_SCOPE, "factionStandingCollapsed", { name: "Faction Standing Collapsed", scope: "client", config: false, type: Object, default: {} });
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "activeLayers", { name: "Active Pin Layer Per Tab", scope: "client", config: false, type: Object, default: {} });
 
     // Maximum number of tab rows before the tab bar starts scrolling.
     game.settings.register(loreRefBoard_MODULE_SCOPE, "maxTabRows", {
@@ -156,6 +158,16 @@ Hooks.once("init", () => {
         type: Number,
         default: 4,
         range: { min: 0, max: 30, step: 1 },
+    });
+
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "allowAssistantLayerDelete", {
+        name: game.i18n.localize("lore-reference-board.Settings.AllowAssistantLayerDelete.Name"),
+        hint: game.i18n.localize("lore-reference-board.Settings.AllowAssistantLayerDelete.Hint"),
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
+        restricted: true,
     });
 
 
@@ -176,7 +188,7 @@ Hooks.once("init", () => {
         Hooks.on(hook, () => {
             const app = game.loreReferenceBoardAppInstance;
             app?._journalOkCache?.clear();
-            app?._factionUuidOk?.clear();
+            app?._faction.uuidOk?.clear();
         });
     }
 });

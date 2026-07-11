@@ -1,6 +1,6 @@
 import { loreRefBoard_FACTION_CIRCLE_DEFAULT_RADIUS } from "./faction-circles.js";
 import { loreRefBoard_loadFactionDataForTab, loreRefBoard_loadRelationshipTypes, loreRefBoard_saveFactionDataForTab, loreRefBoard_saveRelationshipTypes } from "./storage.js";
-import { loreRefBoard_LINE_DASH, loreRefBoard_escapeHtml, loreRefBoard_lineDashArray, loreRefBoard_offsetLineEndpoints } from "./utils.js";
+import { loreRefBoard_LINE_DASH, loreRefBoard_afterDialogRender, loreRefBoard_escapeHtml, loreRefBoard_lineDashArray, loreRefBoard_offsetLineEndpoints } from "./utils.js";
 
 const { DialogV2 } = foundry.applications.api;
 
@@ -33,11 +33,11 @@ async function loreRefBoard_renderFactionRelationships(app, html) {
     const types = await loreRefBoard_loadRelationshipTypes();
     const circles = data.circles;
 
-    app._factionCircleGeom = new Map();
+    app._faction.circleGeom = new Map();
     for (const c of circles) {
-        app._factionCircleGeom.set(c.id, { x: c.x, y: c.y, r: c.r ?? loreRefBoard_FACTION_CIRCLE_DEFAULT_RADIUS });
+        app._faction.circleGeom.set(c.id, { x: c.x, y: c.y, r: c.r ?? loreRefBoard_FACTION_CIRCLE_DEFAULT_RADIUS });
     }
-    app._factionRelLines = [];
+    app._faction.relLines = [];
 
     const groups = new Map();
     for (const rel of data.relationships) {
@@ -89,7 +89,7 @@ async function loreRefBoard_renderFactionRelationships(app, html) {
             g.appendChild(visible);
             svg.appendChild(g);
 
-            app._factionRelLines.push({ relId: rel.id, fromId: rel.from, toId: rel.to, index, total, hitEl: hit, visibleEl: visible });
+            app._faction.relLines.push({ relId: rel.id, fromId: rel.from, toId: rel.to, index, total, hitEl: hit, visibleEl: visible });
         });
     }
 
@@ -97,14 +97,14 @@ async function loreRefBoard_renderFactionRelationships(app, html) {
 }
 
 function _loreRefBoard_updateRelationshipLinesForCircle(app, circleId, newX, newY, newR) {
-    if (!app._factionCircleGeom || !app._factionRelLines) return;
-    app._factionCircleGeom.set(circleId, { x: newX, y: newY, r: newR });
+    if (!app._faction.circleGeom || !app._faction.relLines) return;
+    app._faction.circleGeom.set(circleId, { x: newX, y: newY, r: newR });
 
-    for (const line of app._factionRelLines) {
+    for (const line of app._faction.relLines) {
         if (line.fromId !== circleId && line.toId !== circleId) continue;
 
-        const from = app._factionCircleGeom.get(line.fromId);
-        const to = app._factionCircleGeom.get(line.toId);
+        const from = app._faction.circleGeom.get(line.fromId);
+        const to = app._faction.circleGeom.get(line.toId);
         if (!from || !to) continue;
 
         const e1 = _loreRefBoard_trimToFactionCircleEdge(from.x, from.y, from.r, to.x, to.y);
@@ -123,35 +123,35 @@ function _loreRefBoard_updateRelationshipLinesForCircle(app, circleId, newX, new
 }
 
 function loreRefBoard_toggleFactionRelationshipMode(app, html) {
-    app._factionRelMode = !app._factionRelMode;
-    app._factionRelFirst = null;
+    app._faction.relMode = !app._faction.relMode;
+    app._faction.relFirst = null;
     html.find(".lrt-faction-circle--rel-selected").removeClass("lrt-faction-circle--rel-selected");
-    html.find("#lrt-faction-add-relationship").toggleClass("active", app._factionRelMode);
-    html.find("#lrt-faction-canvas").toggleClass("lrt-faction-canvas--rel-mode", app._factionRelMode);
+    html.find("#lrt-faction-add-relationship").toggleClass("active", app._faction.relMode);
+    html.find("#lrt-faction-canvas").toggleClass("lrt-faction-canvas--rel-mode", app._faction.relMode);
 
-    if (app._factionRelMode) {
+    if (app._faction.relMode) {
         ui.notifications.info(game.i18n.localize("lore-reference-board.Faction.Relationship.ModeHint"));
     }
 }
 
 async function _loreRefBoard_handleCircleRelClick(app, html, circleId) {
-    if (!app._factionRelFirst) {
-        app._factionRelFirst = circleId;
+    if (!app._faction.relFirst) {
+        app._faction.relFirst = circleId;
         html.find(`.lrt-faction-circle[data-circleid="${circleId}"]`).addClass("lrt-faction-circle--rel-selected");
         return;
     }
 
-    if (app._factionRelFirst === circleId) {
+    if (app._faction.relFirst === circleId) {
         html.find(`.lrt-faction-circle[data-circleid="${circleId}"]`).removeClass("lrt-faction-circle--rel-selected");
-        app._factionRelFirst = null;
+        app._faction.relFirst = null;
         return;
     }
 
-    const fromId = app._factionRelFirst;
+    const fromId = app._faction.relFirst;
     const toId = circleId;
 
     html.find(".lrt-faction-circle--rel-selected").removeClass("lrt-faction-circle--rel-selected");
-    app._factionRelFirst = null;
+    app._faction.relFirst = null;
 
     const types = await loreRefBoard_loadRelationshipTypes();
     if (!types.length) {
@@ -309,10 +309,9 @@ async function loreRefBoard_manageFactionRelationshipTypesDialog(app, html) {
         rejectClose: false,
     });
 
-    let _rltTries = 0;
-    const _rltSetup = () => {
+    loreRefBoard_afterDialogRender(() => {
         const addBtn = document.querySelector(".lrt-faction-reltype-add");
-        if (!addBtn) { if (++_rltTries < 60) requestAnimationFrame(_rltSetup); return; }
+        if (!addBtn) return false;
         const $dlg = $(addBtn.closest("dialog"));
         const $list = $dlg.find(".lrt-faction-reltype-list");
         addBtn.addEventListener("click", () => {
@@ -323,8 +322,8 @@ async function loreRefBoard_manageFactionRelationshipTypesDialog(app, html) {
             const removeBtn = ev.target.closest(".lrt-faction-reltype-remove");
             if (removeBtn) $(removeBtn).closest(".lrt-faction-reltype-row").remove();
         });
-    };
-    requestAnimationFrame(_rltSetup);
+        return true;
+    });
 
     const result = (await _relTypePromise) ?? "cancel";
 

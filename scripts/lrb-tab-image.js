@@ -1,6 +1,7 @@
 import { loreRefBoard_enrichJournalPage, loreRefBoard_getJournalPages, loreRefBoard_wirePageNav, loreRefBoard_resolveJournalRef } from "./journal-helpers.js";
 import { loreRefBoard_syncMapZoomBar } from "./lrb-app-shell.js";
 import { LoreRefBoardPinGalleryApp } from "./pin-gallery-app.js";
+import { loreRefBoard_LAYER_ALL, loreRefBoard_layerExists } from "./pin-layers.js";
 import { loreRefBoard_clearAllImageJournalLinksForPin, loreRefBoard_clearLoreForImages, loreRefBoard_collectPinImages, loreRefBoard_loadPinsForTab, loreRefBoard_loadTabs, loreRefBoard_savePinsForTab, loreRefBoard_saveTabs } from "./storage.js";
 import { loreRefBoard_attachDialogValidation, loreRefBoard_computeImageRect, loreRefBoard_escapeHtml, loreRefBoard_fetchSvgData, loreRefBoard_isSvgIcon, loreRefBoard_pickImagePath } from "./utils.js";
 
@@ -297,11 +298,11 @@ async function loreRefBoard_pinDialog({ pin, isNew }) {
                 let journalName = null;
                 if (data.type === "JournalEntry") {
                     const entry = await fromUuid(data.uuid ?? "").catch(() => null);
-                    journalId = entry?.id ?? null;
+                    journalId = entry?.uuid ?? null;
                     journalName = entry?.name ?? null;
                 } else if (data.type === "JournalEntryPage") {
                     const page = await fromUuid(data.uuid ?? "").catch(() => null);
-                    journalId = page?.parent?.id ?? null;
+                    journalId = page?.parent?.uuid ?? null;
                     journalName = page?.parent?.name ?? null;
                 }
 
@@ -361,9 +362,9 @@ async function loreRefBoard_pinDialog({ pin, isNew }) {
                 });
                 if (!entry) return;
 
-                pinJournalId = entry.id;
+                pinJournalId = entry.uuid;
                 pinJournalName = entry.name ?? null;
-                await showLinked(entry.id);
+                await showLinked(entry.uuid);
                 entry.sheet.render(true);
             });
 
@@ -475,6 +476,8 @@ async function loreRefBoard_setupImageTab(app, html) {
             const pins = await loreRefBoard_loadPinsForTab(app.activeTab);
             const pin = pins.find(p => p.id === pinId);
             if (!pin) return;
+            const existingGallery = foundry.applications.instances.get("lore-reference-board-gallery");
+            if (existingGallery) await existingGallery.close();
             new LoreRefBoardPinGalleryApp({ pin, tabId: app.activeTab, boardApp: this }).render(true);
         });
 
@@ -483,13 +486,25 @@ async function loreRefBoard_setupImageTab(app, html) {
             if (!app.placingPin) return;
             if ($(ev.target).closest(".lr-pin").length) return;
 
+            const layerId = app._activeLayerId;
+            if (!layerId || layerId === loreRefBoard_LAYER_ALL) {
+                ui.notifications.warn(game.i18n.localize("lore-reference-board.Layers.PlaceNeedsLayer"));
+                return;
+            }
+
             const { xPct, yPct } = clientToMapPct(ev.clientX, ev.clientY);
             const res = await loreRefBoard_pinDialog({ pin: { xPct, yPct }, isNew: true });
             if (!res || res === "cancel") return;
             if (res?.action !== "save") return;
 
+            // Check the active layer since it could have been deleted between placement start and save.
+            if (!(await loreRefBoard_layerExists(app.activeTab, layerId))) {
+                ui.notifications.warn(game.i18n.localize("lore-reference-board.Layers.PlaceLayerGone"));
+                return;
+            }
+
             const pins = await loreRefBoard_loadPinsForTab(app.activeTab);
-            pins.push({ id: foundry.utils.randomID(), xPct, yPct, coordV: 1, ...res.data });
+            pins.push({ id: foundry.utils.randomID(), xPct, yPct, coordV: 1, layerId, ...res.data });
             await loreRefBoard_savePinsForTab(app.activeTab, pins);
             await loreRefBoard_renderPins(app, app._htmlRef);
         });
@@ -642,8 +657,14 @@ async function loreRefBoard_setupImageTab(app, html) {
             _img.src = _imgSrc;
             const _setupAfterDecode = () => {
                 if (_imgSrc !== app._cachedActiveTabImg) return;
-                app._imgNaturalW = _img.naturalWidth;
-                app._imgNaturalH = _img.naturalHeight;
+                const _frozen = app._cachedSceneFrozen;
+                if (_frozen && _frozen.w > 0 && _frozen.h > 0) {
+                    app._imgNaturalW = _frozen.w;
+                    app._imgNaturalH = _frozen.h;
+                } else {
+                    app._imgNaturalW = _img.naturalWidth;
+                    app._imgNaturalH = _img.naturalHeight;
+                }
                 app._naturalSizeImg = null;
                 html.find("#lr-map-image").css({
                     "background-image": `url('${_imgSrc}')`,
@@ -691,6 +712,10 @@ async function loreRefBoard_setupImageTab(app, html) {
                     const idx = all.findIndex(t => t.id === app.activeTab);
                     if (idx === -1) return;
                     all[idx].img = picked;
+                    if (all[idx].imgSource === "scene" && Array.isArray(all[idx].sceneImages) && all[idx].sceneImages.length) {
+                        const sIdx = Math.min(Math.max(0, all[idx].sceneIndex ?? 0), all[idx].sceneImages.length - 1);
+                        if (all[idx].sceneImages[sIdx]) all[idx].sceneImages[sIdx].src = picked;
+                    }
                     await loreRefBoard_saveTabs(all);
                     app._cachedActiveTabImg = picked;
                     await app.render();
@@ -707,7 +732,7 @@ async function loreRefBoard_setupImageTab(app, html) {
         }
 }
 
-async function loreRefBoard_buildPinElement(app, pin, zoom = 1, imgRect = null, containerW = 0, containerH = 0) {
+async function loreRefBoard_buildPinElement(app, pin, zoom = 1, imgRect = null, containerW = 0, containerH = 0, badgeColor = null) {
         const PIN_PX = 15;
         const $el = $(`<div class="lr-pin" data-pinid="${pin.id}"></div>`);
         let leftPx, topPx;
@@ -766,6 +791,12 @@ async function loreRefBoard_buildPinElement(app, pin, zoom = 1, imgRect = null, 
                 $el.attr("title", `${$el.attr("title")}\n${missing}`.trim());
             }
         }
+        if (badgeColor) {
+            const badge = document.createElement("span");
+            badge.className = "lr-pin-layer-badge";
+            badge.style.backgroundColor = badgeColor;
+            $el.append(badge);
+        }
         return $el;
     }
 
@@ -806,8 +837,13 @@ async function loreRefBoard_renderPins(app, html) {
         pinLayer.find(".lr-pin").remove();
 
         const zoom = app._panzoom?.getScale?.() ?? 1;
-        for (const pin of pins) {
-            pinLayer.append(await loreRefBoard_buildPinElement(app, pin, zoom, imgRect, containerW, containerH));
+        const activeLayerId = app._activeLayerId;
+        const showAll = !activeLayerId || activeLayerId === loreRefBoard_LAYER_ALL;
+        const visiblePins = showAll ? pins : pins.filter(p => p.layerId === activeLayerId);
+        const layerColors = new Map((app._cachedCurrentTab?.layers ?? []).map(l => [l.id, l.color]));
+        for (const pin of visiblePins) {
+            const badgeColor = showAll ? (layerColors.get(pin.layerId) ?? null) : null;
+            pinLayer.append(await loreRefBoard_buildPinElement(app, pin, zoom, imgRect, containerW, containerH, badgeColor));
         }
     }
 
