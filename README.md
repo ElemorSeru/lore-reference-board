@@ -2,7 +2,7 @@
 
 [![Patreon](https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white)](https://patreon.com/Elemor)
 [![Foundry Version](https://img.shields.io/badge/Foundry-v12%20%7C%20v13%20%7C%20v14-informational?style=for-the-badge)](https://foundryvtt.com)
-[![Module Version](https://img.shields.io/badge/Version-2.1.0-success?style=for-the-badge)](https://github.com/ElemorSeru/lore-reference-board/releases/latest)
+[![Module Version](https://img.shields.io/badge/Version-2.2.0-success?style=for-the-badge)](https://github.com/ElemorSeru/lore-reference-board/releases/latest)
 <img alt="GitHub Downloads (all assets, latest release)" src="https://img.shields.io/github/downloads/ElemorSeru/lore-reference-board/latest/total">
 
 A system agnostic Foundry VTT module built for GMs who want an organized reference board that stores all your information as well as image references of your favorite art. Keep your maps, image references, documents, and world documents organized and accessible in one window that stays consistent no matter which scene or scenario you're running.
