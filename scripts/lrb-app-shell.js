@@ -1,3 +1,4 @@
+import { LoreRefBoardCastDirectoryApp } from "./cast-directory-app.js";
 import { loreRefBoard_MODULE_SCOPE } from "./module-init.js";
 import { loreRefBoard_addLayer, loreRefBoard_setActiveLayerId } from "./pin-layers.js";
 import { loreRefBoard_setSceneImageIndex } from "./scene-source.js";
@@ -200,6 +201,10 @@ function loreRefBoard_bindToolbar(app, html) {
     loreRefBoard_bindZoomControls(html, () => app._panzoom,
         { zoomIn: "#lr-zoom-in", zoomOut: "#lr-zoom-out", reset: "#lr-reset-view", slider: "#lr-zoom-slider" },
         (scale) => loreRefBoard_syncMapZoomBar(html, scale));
+
+    html.find("#lr-cast-directory").off("click").on("click", () => {
+        LoreRefBoardCastDirectoryApp.open();
+    });
 }
 
 // Recomputed on each open so a resized window adapts.

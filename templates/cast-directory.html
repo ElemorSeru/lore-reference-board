@@ -1,0 +1,75 @@
+<div class="lrcd-layout{{#if hasSelection}} lrcd-has-selection{{/if}}">
+    <div class="lrcd-list-pane">
+        <div class="lrcd-list-header">
+            <span class="lrcd-list-title">{{localize "lore-reference-board.Cast.DirectoryTitle"}}</span>
+            <span class="lrcd-list-count">{{totalCount}}</span>
+        </div>
+        <div class="lrcd-body">
+            {{#unless hasEntries}}
+            <p class="lrcd-empty">{{localize "lore-reference-board.Cast.DirectoryEmpty"}}</p>
+            {{/unless}}
+
+            {{#each groups}}
+            <div class="lrcd-group{{#if this.collapsed}} lrcd-collapsed{{/if}}" data-key="{{this.key}}">
+                <div class="lrcd-group-header">
+                    <i class="fas fa-chevron-down lrcd-chevron"></i>
+                    <span class="lrcd-group-title{{#if this.orphaned}} lrcd-orphaned{{/if}}">{{this.title}}</span>
+                    <span class="lrcd-group-count">{{this.tiles.length}}</span>
+                </div>
+                <div class="lrcd-group-body">
+                    {{#each this.tiles}}
+                    <div class="lrcd-tile{{#if this.orphaned}} lrcd-tile--orphan{{/if}}{{#if this.selected}} lrcd-tile--selected{{/if}}"
+                         data-castid="{{this.castId}}"
+                         data-active="{{this.active}}"
+                         data-pinid="{{this.pinId}}"
+                         data-src="{{this.src}}"
+                         data-tabid="{{this.tabId}}">
+                        <div class="lrcd-tile-art" style="background-image:url('{{this.art}}')"></div>
+                        <div class="lrcd-tile-text">
+                            <div class="lrcd-tile-name">{{this.name}}</div>
+                            <div class="lrcd-tile-role">{{this.role}}</div>
+                        </div>
+                        <div class="lrcd-tile-menu lrt-threads-overflow">
+                            <button type="button" class="lr-action-btn lrcd-tile-menu-toggle" title="{{localize 'lore-reference-board.Cast.MoreOptions'}}">
+                                <i class="fas fa-ellipsis-vertical"></i>
+                            </button>
+                            <div class="lrt-threads-overflow-menu">
+                                {{#if this.tabId}}
+                                <div class="lrt-threads-overflow-item lrcd-tile-menu-item" data-act="open-preview" role="button" tabindex="0">
+                                    <i class="fas fa-image"></i> {{localize "lore-reference-board.Cast.OpenPinPreview"}}
+                                </div>
+                                {{/if}}
+                                <div class="lrt-threads-overflow-item lrcd-tile-menu-item" data-act="show-players" role="button" tabindex="0">
+                                    <i class="fas fa-eye"></i> {{localize "lore-reference-board.Cast.ShowPlayers"}}
+                                </div>
+                                <div class="lrt-threads-overflow-divider"></div>
+                                <div class="lrt-threads-overflow-item lrcd-tile-menu-item" data-act="delete" role="button" tabindex="0">
+                                    <i class="fas fa-trash"></i> {{localize "lore-reference-board.Cast.DeleteTitle"}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {{/each}}
+                </div>
+            </div>
+            {{/each}}
+        </div>
+    </div>
+
+    {{#if hasSelection}}
+    <div class="lrcd-detail-pane">
+        <div class="lrcd-detail-header">
+            <span class="lrcd-detail-title">{{selected.name}}</span>
+            <span class="lrcd-detail-role">{{selected.role}}</span>
+            <button type="button" class="lrcd-detail-close" title="{{localize 'lore-reference-board.Cast.CloseDetail'}}">
+                <i class="fas fa-xmark"></i>
+            </button>
+        </div>
+        <div class="lrcd-detail-body">
+            <div class="lrcd-detail-card" data-castid="{{selected.castId}}">
+                {{{selected.cardHtml}}}
+            </div>
+        </div>
+    </div>
+    {{/if}}
+</div>

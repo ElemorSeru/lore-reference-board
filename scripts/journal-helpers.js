@@ -7,13 +7,13 @@ function loreRefBoard_getJournalPages(entry) {
 
 async function loreRefBoard_enrichJournalPage(page, entry) {
     if (!page) {
-        return '<p style="color:#888;font-style:italic;padding:8px 0">No pages found.</p>';
+        return `<p style="color:#888;font-style:italic;padding:8px 0">${game.i18n.localize("lore-reference-board.JournalHelpers.NoPages")}</p>`;
     }
 
     if (page.type === "image") {
         const src = page.src ?? "";
         const caption = page.image?.caption ?? "";
-        if (!src) return '<p style="color:#888;font-style:italic;padding:8px 0">No image source set.</p>';
+        if (!src) return `<p style="color:#888;font-style:italic;padding:8px 0">${game.i18n.localize("lore-reference-board.JournalHelpers.NoImageSource")}</p>`;
         return `<div class="lrt-doc-image-page">
             <img class="lrt-doc-page-img" src="${loreRefBoard_escapeHtml(src)}" alt="${loreRefBoard_escapeHtml(page.name ?? "")}" />
             ${caption ? `<p class="lrt-doc-page-caption">${loreRefBoard_escapeHtml(caption)}</p>` : ""}
@@ -23,7 +23,7 @@ async function loreRefBoard_enrichJournalPage(page, entry) {
     // PDF pages in iframe
     if (page.type === "pdf") {
         const src = page.src ?? "";
-        if (!src) return '<p style="color:#888;font-style:italic;padding:8px 0">No PDF source set.</p>';
+        if (!src) return `<p style="color:#888;font-style:italic;padding:8px 0">${game.i18n.localize("lore-reference-board.JournalHelpers.NoPdfSource")}</p>`;
         return `<iframe src="${loreRefBoard_escapeHtml(src)}"
             style="width:100%;height:100%;min-height:400px;border:none;display:block"></iframe>`;
     }
@@ -31,7 +31,7 @@ async function loreRefBoard_enrichJournalPage(page, entry) {
     // Video pages in iframe
     if (page.type === "video") {
         const vsrc = page.src ?? page.video?.url ?? "";
-        if (!vsrc) return '<p style="color:#888;font-style:italic;padding:8px 0">No video source set.</p>';
+        if (!vsrc) return `<p style="color:#888;font-style:italic;padding:8px 0">${game.i18n.localize("lore-reference-board.JournalHelpers.NoVideoSource")}</p>`;
         const isExternal = /^https?:\/\//i.test(vsrc);
         if (isExternal) {
             return `<iframe src="${loreRefBoard_escapeHtml(vsrc)}" allowfullscreen
@@ -47,10 +47,10 @@ async function loreRefBoard_enrichJournalPage(page, entry) {
         const iconMap = { map: "fa-map" };
         const icon = iconMap[page.type] ?? "fa-file";
         const TE = loreRefBoard_textEditorImpl();
-        const uuidLink = `@UUID[${page.uuid}]{${loreRefBoard_escapeHtml(page.name ?? "Open in Journal")}}`;
+        const uuidLink = `@UUID[${page.uuid}]{${loreRefBoard_escapeHtml(page.name ?? game.i18n.localize("lore-reference-board.JournalHelpers.OpenInJournal"))}}`;
         let linkHtml = "";
         try { linkHtml = await TE.enrichHTML(uuidLink, { relativeTo: entry, rollData: {} }); }
-        catch { linkHtml = `<em style="font-size:11px">Open the full journal to view it.</em>`; }
+        catch { linkHtml = `<em style="font-size:11px">${game.i18n.localize("lore-reference-board.JournalHelpers.OpenFullJournal")}</em>`; }
         return `<div style="text-align:center;padding:24px 12px;color:#888">
             <i class="fas ${icon}" style="font-size:2em;display:block;margin-bottom:10px;color:#555"></i>
             <span style="font-style:italic">This page is type <strong>${loreRefBoard_escapeHtml(page.type)}</strong>.</span><br>
@@ -59,7 +59,7 @@ async function loreRefBoard_enrichJournalPage(page, entry) {
     }
     const raw = page.text?.content ?? "";
     if (!raw.trim()) {
-        return '<p style="color:#888;font-style:italic;padding:8px 0">No content yet, click Edit to start writing.</p>';
+        return `<p style="color:#888;font-style:italic;padding:8px 0">${game.i18n.localize("lore-reference-board.JournalHelpers.NoContent")}</p>`;
     }
     try {
         const TE = loreRefBoard_textEditorImpl();
@@ -84,20 +84,7 @@ async function loreRefBoard_resolveJournalRef(ref) {
 async function loreRefBoard_wirePageNav(contentEl, journalId) {
     if (!contentEl || !journalId) return;
 
-    let entry = null;
-
-    if (journalId.includes(".")) {
-        try { entry = await fromUuid(journalId); } catch { entry = null; }
-    }
-
-    // Fall back to bare ID lookup in the world journal collection.
-    if (!entry) entry = game.journal.get(journalId) ?? null;
-
-    // Construct a world UUID from a bare ID.
-    if (!entry) {
-        try { entry = await fromUuid(`JournalEntry.${journalId}`); } catch { entry = null; }
-    }
-
+    const entry = await loreRefBoard_resolveJournalRef(journalId);
     if (!entry) return;
 
     const pages = loreRefBoard_getJournalPages(entry);
@@ -107,13 +94,13 @@ async function loreRefBoard_wirePageNav(contentEl, journalId) {
     const nav = document.createElement("div");
     nav.className = "lrb-page-nav";
     nav.innerHTML = `
-        <button class="lrb-pg-prev" title="Previous page" disabled>&#8249;</button>
+        <button class="lrb-pg-prev" title="${game.i18n.localize("lore-reference-board.JournalHelpers.PrevPage")}" disabled>&#8249;</button>
         <select class="lrb-pg-select">
             ${pages.map((p, i) =>
                 `<option value="${loreRefBoard_escapeHtml(p.id)}">${i + 1}. ${loreRefBoard_escapeHtml(p.name)}</option>`
             ).join("")}
         </select>
-        <button class="lrb-pg-next" title="Next page">&#8250;</button>
+        <button class="lrb-pg-next" title="${game.i18n.localize("lore-reference-board.JournalHelpers.NextPage")}">&#8250;</button>
     `;
     contentEl.parentElement.insertBefore(nav, contentEl);
 
@@ -129,7 +116,7 @@ async function loreRefBoard_wirePageNav(contentEl, journalId) {
         nextBtn.disabled = (idx === pages.length - 1);
         selectEl.value = pages[idx].id;
         contentEl.innerHTML =
-            "<p style='color:#888;font-style:italic;padding:8px'>Loading...</p>";
+            `<p style='color:#888;font-style:italic;padding:8px'>${game.i18n.localize("lore-reference-board.Common.Loading")}</p>`;
         contentEl.innerHTML = await loreRefBoard_enrichJournalPage(pages[idx], entry);
     };
 
@@ -156,7 +143,7 @@ function _loreRefBoard_renderRollTableHtml(doc) {
     const desc = (doc.description ?? "").replace(/<[^>]*>/g, "").trim();
 
     if (!sorted.length) {
-        return '<p class="lrt-rt-empty">No results defined.</p>';
+        return `<p class="lrt-rt-empty">${game.i18n.localize("lore-reference-board.JournalHelpers.NoResultsDefined")}</p>`;
     }
 
     const formulaHtml = formula

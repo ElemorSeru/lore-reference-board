@@ -46,6 +46,12 @@ This guide covers how to use every part of the Lore Reference Board. If somethin
   - [Grouping Rows into Folders](#grouping-rows-into-folders)
   - [Row Actions](#row-actions)
   - [Threads in the Pin Gallery](#threads-in-the-pin-gallery)
+- [Cast Directory](#cast-directory)
+  - [Generating a Cast Card](#generating-a-cast-card)
+  - [Species and Naming Style](#species-and-naming-style)
+  - [Thematic Field Pools](#thematic-field-pools)
+  - [Rerolling and Undo](#rerolling-and-undo)
+  - [The Cast Directory Window](#the-cast-directory-window)
 - [Search](#search)
   - [Opening the Search Panel](#opening-the-search-panel)
   - [How Search Works](#how-search-works)
@@ -655,6 +661,48 @@ Each row has a kebab (three-dot) menu on the right, offering **Edit** and **Dele
 ### Threads in the Pin Gallery
 
 Every pin's gallery window also has its own Threads (Threads and Trackers) list, independent of any tab-level Threads tab. Use the toggle at the top-right of the gallery's panel to switch between the pin's linked journal and its Threads list, useful for tracking things specific to one location on the map.
+
+---
+
+## Cast Directory
+
+Create a custom or generate a quick NPC personality generator for the moment you need a name and a hook without stopping to improvise one. Cast cards are created from pin gallery images and collected in a browsable cast directory.
+
+---
+
+### Generating a Cast Card
+
+Open a pin's preview dialog (Image Tabs -> Pin -> Image gallery) and toggle **Cast** on via the top right button. This generates a card with a name, role, quote, quirks, voice, and hook on the front, and a secret, want, and free-form notes on the back. Click the card to flip between front and back.
+
+---
+
+### Species and Naming Style
+
+Every card has a **Species** and **Naming Style** dropdown. The species list adapts to the active game system:
+
+- **dnd5e & dnd4e** - the full species roster, including setting-specific ancestries from official sourcebooks
+- **pf2e & pf1e** - a matching roster built for Pathfinder, including several ancestries with no dnd5e equivalent (leshy, ratfolk, kitsune, catfolk, and more).
+- **Any other system** - a system-agnostic pool of common fantasy species, so the feature isn't unusable outside dnd and pf.
+
+Name, voice, and quirks are generated per species using that species' own naming convention and personality flavor. A handful of species use a naming mechanic instead of constructed syllables where it's truer to their concept: a kenku's name is a mimicked phrase picked up from somewhere, and a lizardfolk's is a deed name in the "Fights-Two-Bears" style. Species with no cultural basis for gendered naming (constructs like warforged and autognome) draw from one shared pool regardless of which naming style is picked.
+
+---
+
+### Thematic Field Pools
+
+Role, quote, hook, secret, and want are not tied to a single species each. They draw from one of eight thematic pools, matched to where that species most plausibly lives or operates: **civic**, **wild**, **aquatic**, **underground**, **planar**, **fey**, **undead**, and **construct**. A species can be tagged to more than one pool (an elf might pull from civic or fey, for example), and which pool is used is picked at random each time a field is generated, so a duergar and a triton don't end up sounding like they came from the same small town, and repeated generations for the same species still feel varied.
+
+---
+
+### Rerolling and Undo
+
+Each field has its own dice button to reroll just that field. The **Regenerate All** button (the larger dice icon in the card header) rerolls every field at once. If a regeneration wasn't what you wanted, the **Undo** button restores the card's previous generation (just one step).
+
+---
+
+### The Cast Directory Window
+
+Open the Cast Directory from the toolbar button in the main board window, or bind the **Open Cast Directory** keybinding (unbound by default) in Configure Controls. Cards are grouped by the pin or image they're linked to, with an "Orphaned" group for any that lost their link. Click a group header to collapse or expand it. Each card tile has a kebab (three-dot) menu to preview, delete, or show the card to players.
 
 ---
 

@@ -41,6 +41,73 @@
     flex-shrink: 0;
 }
 
+/* Cast toggle */
+.piv-cast-toggle-row {
+    display: flex;
+    justify-content: flex-end;
+    padding: 6px 16px;
+    background: #1e1e1e;
+    border-bottom: 1px solid #3a3a3a;
+    flex-shrink: 0;
+}
+
+.piv-cast-toggle {
+    padding: 4px 10px;
+    background: #3a3a3a;
+    border: 1px solid #555;
+    border-radius: 12px;
+    color: #ccc;
+    font-size: 11px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.piv-cast-toggle:hover {
+    background: #4a4a4a;
+    color: #fff;
+}
+
+.piv-cast-toggle.active {
+    background: #4a2a3a;
+    border-color: #d6588a;
+    color: #f0a9c4;
+}
+
+/* left column plus right cast panel */
+.piv-body {
+    flex: 1 1 auto;
+    display: flex;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.piv-main {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Cast panel beside the image */
+.piv-cast-panel {
+    flex: 0 0 320px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+    border-left: 1px solid #3a3a3a;
+    background: #232025;
+}
+
+/* Cast card host styled separately */
+.piv-cast-card-host {
+    flex: 1 1 auto;
+}
+
 /* Preview area */
 .piv-preview-wrap {
     flex: 1 1 auto;
@@ -60,6 +127,10 @@
     cursor: context-menu;
     user-select: none;
     -webkit-user-select: none;
+}
+
+.piv-preview-wrap.piv-cast-active .piv-preview {
+    border: 2px solid #d6588a;
 }
 
 /* Metadata */

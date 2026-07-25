@@ -2,7 +2,7 @@ import { loreRefBoard_filePickerImpl } from "./compat.js";
 import { loreRefBoard_enrichJournalPage, loreRefBoard_getJournalPages, loreRefBoard_wirePageNav, loreRefBoard_resolveJournalRef } from "./journal-helpers.js";
 import { LoreRefBoardPinImageViewer } from "./pin-apps.js";
 import { loreRefBoard_setupThreadsView } from "./lrb-tab-threads.js";
-import { loreRefBoard_clearLoreForImage, loreRefBoard_clearLoreForImages, loreRefBoard_getImageJournalMap, loreRefBoard_loadPinsForTab, loreRefBoard_savePinsForTab } from "./storage.js";
+import { loreRefBoard_clearLoreForImage, loreRefBoard_clearLoreForImages, loreRefBoard_getCastLinksMap, loreRefBoard_getImageJournalMap, loreRefBoard_loadCastDataMap, loreRefBoard_loadPinsForTab, loreRefBoard_savePinsForTab } from "./storage.js";
 import { loreRefBoard_afterDialogRender, loreRefBoard_attachDialogValidation, loreRefBoard_escapeHtml, loreRefBoard_pickImagePath } from "./utils.js";
 
 var { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
@@ -59,15 +59,24 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
             const resolved = await loreRefBoard_resolveJournalRef(jid);
             imgJournalOk.set(jid, !!resolved);
         }
+        const castLinksForPin = loreRefBoard_getCastLinksMap()[this._pin.id] ?? {};
+        const castDataMap = await loreRefBoard_loadCastDataMap();
         const galleryCtx = {
             galleryName: this._gallery.name,
             folders: this._gallery.folders.map(f => ({
                 ...f,
                 missing: !!f.path && this._folderOk.get(f.path) === false,
-                images: (f.images ?? []).map(src => ({
-                    src,
-                    brokenJournal: !!journalMap[src] && imgJournalOk.get(journalMap[src]) === false,
-                })),
+                images: (f.images ?? []).map(src => {
+                    const castLink = castLinksForPin[src];
+                    const castActive = !!castLink?.active;
+                    const castEntry = castActive ? castDataMap[castLink.castId] : null;
+                    return {
+                        src,
+                        brokenJournal: !!journalMap[src] && imgJournalOk.get(journalMap[src]) === false,
+                        castActive,
+                        castName: castEntry?.name || "",
+                    };
+                }),
             })),
         };
 
@@ -306,6 +315,7 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
                 folderPath: folder?.path ?? "",
                 pinId: this._pin.id,
                 tabId: this._tabId,
+                galleryApp: this,
             }).render(true);
         });
 

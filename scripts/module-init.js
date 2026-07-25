@@ -144,6 +144,9 @@ Hooks.once("init", () => {
     game.settings.register(loreRefBoard_MODULE_SCOPE, "tabViews", { name: "Tab Views (legacy)", scope: "world", config: false, type: Object, default: {} });
     game.settings.register(loreRefBoard_MODULE_SCOPE, "factionBoardData", { name: "Faction Board Data", scope: "world", config: false, type: Object, default: {} });
     game.settings.register(loreRefBoard_MODULE_SCOPE, "threadsData", { name: "Threads Tab Data", scope: "world", config: false, type: Object, default: {} });
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "castData", { name: "Cast Card Data", scope: "world", config: false, type: Object, default: {} });
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "castLinks", { name: "Cast Card Links", scope: "world", config: false, type: Object, default: {} });
+    game.settings.register(loreRefBoard_MODULE_SCOPE, "castDirectoryCollapsed", { name: "Cast Directory Collapsed Groups", scope: "client", config: false, type: Object, default: {} });
     game.settings.register(loreRefBoard_MODULE_SCOPE, "relationshipTypes", { name: "Relationship Types", scope: "world", config: false, type: Object, default: loreRefBoard_DEFAULT_RELATIONSHIP_TYPES });
     game.settings.register(loreRefBoard_MODULE_SCOPE, "factionStandingTiers", { name: "Faction Standing Tiers", scope: "world", config: false, type: Object, default: loreRefBoard_DEFAULT_STANDING_TIERS });
     game.settings.register(loreRefBoard_MODULE_SCOPE, "factionStandingCollapsed", { name: "Faction Standing Collapsed", scope: "client", config: false, type: Object, default: {} });

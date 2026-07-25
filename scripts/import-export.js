@@ -1,7 +1,7 @@
 import { loreRefBoard_filePickerImpl } from "./compat.js";
 import { loreRefBoard_resolveJournalRef } from "./journal-helpers.js";
 import { loreRefBoard_DEFAULT_RELATIONSHIP_TYPES, loreRefBoard_DEFAULT_STANDING_TIERS, loreRefBoard_MODULE_SCOPE } from "./module-init.js";
-import { _loreRefBoard_flushPins, _loreRefBoard_getSetting, loreRefBoard_loadTabs, loreRefBoard_saveFactionStandingTiers, loreRefBoard_saveRelationshipTypes, loreRefBoard_saveTabs, loreRefBoard_setFactionDataMap, loreRefBoard_setImageJournalMap, loreRefBoard_setImageLoreMap, loreRefBoard_setPinsMap, loreRefBoard_setThreadsDataMap } from "./storage.js";
+import { _loreRefBoard_flushPins, _loreRefBoard_getSetting, loreRefBoard_loadTabs, loreRefBoard_saveFactionStandingTiers, loreRefBoard_saveRelationshipTypes, loreRefBoard_saveTabs, loreRefBoard_setCastDataMap, loreRefBoard_setCastLinksMap, loreRefBoard_setFactionDataMap, loreRefBoard_setImageJournalMap, loreRefBoard_setImageLoreMap, loreRefBoard_setPinsMap, loreRefBoard_setThreadsDataMap } from "./storage.js";
 import { loreRefBoard_normalizeImageTabLayers } from "./pin-layers.js";
 import { loreRefBoard_resolveScene } from "./scene-source.js";
 import { _loreRefBoard_isUrl, loreRefBoard_afterDialogRender, loreRefBoard_escapeHtml } from "./utils.js";
@@ -22,6 +22,8 @@ async function _loreRefBoard_export() {
         imageJournals: _loreRefBoard_getSetting("imageJournals", {}),
         factionBoardData: _loreRefBoard_getSetting("factionBoardData", {}),
         threadsData: _loreRefBoard_getSetting("threadsData", {}),
+        castData: _loreRefBoard_getSetting("castData", {}),
+        castLinks: _loreRefBoard_getSetting("castLinks", {}),
         relationshipTypes: _loreRefBoard_getSetting("relationshipTypes", loreRefBoard_DEFAULT_RELATIONSHIP_TYPES),
         factionStandingTiers: _loreRefBoard_getSetting("factionStandingTiers", loreRefBoard_DEFAULT_STANDING_TIERS),
     };
@@ -612,7 +614,7 @@ function _loreRefBoard_askImportMode() {
     }).then(r => r ?? null);
 }
 
-//Replace All,  overwrites all 
+// Replace All, overwrites all
 async function _loreRefBoard_applyReplace(d) {
     await loreRefBoard_saveTabs(d.tabs ?? []);
     await loreRefBoard_setPinsMap(d.pins ?? {});
@@ -620,6 +622,8 @@ async function _loreRefBoard_applyReplace(d) {
     await loreRefBoard_setImageJournalMap(d.imageJournals ?? {});
     await loreRefBoard_setFactionDataMap(d.factionBoardData ?? {});
     await loreRefBoard_setThreadsDataMap((d.threadsData && typeof d.threadsData === "object") ? d.threadsData : {});
+    await loreRefBoard_setCastDataMap((d.castData && typeof d.castData === "object") ? d.castData : {});
+    await loreRefBoard_setCastLinksMap((d.castLinks && typeof d.castLinks === "object") ? d.castLinks : {});
     await loreRefBoard_saveRelationshipTypes(Array.isArray(d.relationshipTypes) ? d.relationshipTypes : loreRefBoard_DEFAULT_RELATIONSHIP_TYPES);
     await loreRefBoard_saveFactionStandingTiers(Array.isArray(d.factionStandingTiers) ? d.factionStandingTiers : loreRefBoard_DEFAULT_STANDING_TIERS);
 }
@@ -633,7 +637,7 @@ async function _loreRefBoard_applyMerge(d) {
     const existingJournals = _loreRefBoard_getSetting("imageJournals", {});
 
     const importedTabs = Array.isArray(d.tabs) ? d.tabs : [];
-    const importedPins = d.pins          ?? {};
+    const importedPins = d.pins ?? {};
     const importedJournals = d.imageJournals ?? {};
 
     const newTabs = [...existingTabs];
@@ -696,12 +700,29 @@ async function _loreRefBoard_applyMerge(d) {
     for (const t of (Array.isArray(existingTypes) ? existingTypes : [])) { if (t?.id) typeMap.set(t.id, t); }
     const newTypes = Array.from(typeMap.values());
 
+    // same remap treatment
+    const importedCastData = (d.castData && typeof d.castData === "object") ? d.castData : {};
+    const existingCastData = _loreRefBoard_getSetting("castData", {});
+    const newCastData = { ...existingCastData, ...importedCastData };
+
+    const importedCastLinks = (d.castLinks && typeof d.castLinks === "object") ? d.castLinks : {};
+    const existingCastLinks = _loreRefBoard_getSetting("castLinks", {});
+    const newCastLinks = { ...existingCastLinks };
+    for (const [oldPinId, bySrc] of Object.entries(importedCastLinks)) {
+        const newPinId = pinIdMap[oldPinId];
+        if (newPinId && !newCastLinks[newPinId]) {
+            newCastLinks[newPinId] = { ...bySrc };
+        }
+    }
+
     await loreRefBoard_saveTabs(newTabs);
     await loreRefBoard_setPinsMap(newPins);
     await loreRefBoard_setImageLoreMap(newLore);
     await loreRefBoard_setImageJournalMap(newJournals);
     await loreRefBoard_setFactionDataMap(newFactionData);
     await loreRefBoard_setThreadsDataMap(newThreadsData);
+    await loreRefBoard_setCastDataMap(newCastData);
+    await loreRefBoard_setCastLinksMap(newCastLinks);
     await loreRefBoard_saveRelationshipTypes(newTypes);
 }
 

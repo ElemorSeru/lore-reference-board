@@ -2,26 +2,27 @@
 #lore-reference-board,
 .lore-reference-board,
 #lore-reference-board-gallery,
+#lore-reference-board-cast-directory,
 .lrt-threads-pane,
 .lore-rb-dialog {
-    --lrb-bg:            #1e1e1e;   /* base surface */
-    --lrb-bg-2:          #232323;   /* chrome (topbar, panels) */
-    --lrb-bg-3:          #2a2a2a;   /* raised (inputs, active buttons) */
-    --lrb-content-bg:    #191919;   /* content well behind maps/panes */
-    --lrb-border:        #3a3a3a;
+    --lrb-bg: #1e1e1e;   /* base surface */
+    --lrb-bg-2: #232323;   /* chrome (topbar, panels) */
+    --lrb-bg-3: #2a2a2a;   /* raised (inputs, active buttons) */
+    --lrb-content-bg: #191919;   /* content well behind maps/panes */
+    --lrb-border: #3a3a3a;
     --lrb-border-strong: #4a4a4a;
-    --lrb-hover:         rgba(255, 255, 255, 0.06);
-    --lrb-text:          #dddddd;
-    --lrb-text-muted:    #999999;
-    --lrb-radius:        6px;
-    --lrb-transition:    0.15s ease;
-    --lrb-accent:        #2F92FD;   /* legacy blue: pinned divider, search, drag indicators */
-    --lrb-accent-dim:    rgba(47, 146, 253, 0.25);
-    --lrb-type-image:    #3498db;
+    --lrb-hover: rgba(255, 255, 255, 0.06);
+    --lrb-text: #dddddd;
+    --lrb-text-muted: #999999;
+    --lrb-radius: 6px;
+    --lrb-transition: 0.15s ease;
+    --lrb-accent: #2F92FD;   /* legacy blue: pinned divider, search, drag indicators */
+    --lrb-accent-dim: rgba(47, 146, 253, 0.25);
+    --lrb-type-image: #3498db;
     --lrb-type-document: #e07856;
-    --lrb-type-reference:#a678d8;
-    --lrb-type-faction:  #e8b84a;
-    --lrb-type-threads:  #4a9e6f;
+    --lrb-type-reference: #a678d8;
+    --lrb-type-faction: #e8b84a;
+    --lrb-type-threads: #4a9e6f;
 }
 
 /* Global box-sizing reset */
@@ -141,25 +142,31 @@ body.lrb-legacy-theme .pgj-btn-edit {
     background: #2a3f5a;
     border: 1px solid #3a5a7a;
     border-radius: 4px;
+    color: #9bd;
 }
 body.lrb-legacy-theme .pgj-btn-edit:hover {
     background: #3a5a7a;
+    color: #cef;
 }
 body.lrb-legacy-theme .pgj-btn-unlink {
     background: #3a2a2a;
     border: 1px solid #5a3a3a;
     border-radius: 4px;
+    color: #c99;
 }
 body.lrb-legacy-theme .pgj-btn-unlink:hover {
     background: #5a3a3a;
+    color: #fcc;
 }
 body.lrb-legacy-theme .pgj-btn-create {
     background: #2a3f2a;
     border: 1px solid #4a6a4a;
     border-radius: 5px;
+    color: #9dc;
 }
 body.lrb-legacy-theme .pgj-btn-create:hover {
     background: #3a5a3a;
+    color: #bef;
 }
 body.lrb-legacy-theme .piv-btn {
     background: #3a3a3a;
@@ -191,25 +198,112 @@ body.lrb-legacy-theme .plr-btn-create {
     background: #2a3f2a;
     border: 1px solid #4a6a4a;
     border-radius: 5px;
+    color: #9dc;
 }
 body.lrb-legacy-theme .plr-btn-create:hover {
     background: #3a5a3a;
+    color: #bef;
 }
 body.lrb-legacy-theme .plr-btn-edit {
     background: #2a3f5a;
     border: 1px solid #3a5a7a;
     border-radius: 4px;
+    color: #9bd;
 }
 body.lrb-legacy-theme .plr-btn-edit:hover {
     background: #3a5a7a;
+    color: #cef;
 }
 body.lrb-legacy-theme .plr-btn-unlink {
     background: #3a2a2a;
     border: 1px solid #5a3a3a;
     border-radius: 4px;
+    color: #c99;
 }
 body.lrb-legacy-theme .plr-btn-unlink:hover {
     background: #5a3a3a;
+    color: #fcc;
+}
+body.lrb-legacy-theme .pd-btn-create {
+    background: #2a3f2a;
+    border: 1px solid #4a6a4a;
+    border-radius: 5px;
+    color: #9dc;
+}
+body.lrb-legacy-theme .pd-btn-create:hover {
+    background: #3a5a3a;
+    color: #bef;
+}
+body.lrb-legacy-theme .pd-btn-edit {
+    background: #2a3f5a;
+    border: 1px solid #3a5a7a;
+    border-radius: 4px;
+    color: #9bd;
+}
+body.lrb-legacy-theme .pd-btn-edit:hover {
+    background: #3a5a7a;
+    color: #cef;
+}
+body.lrb-legacy-theme .pd-btn-unlink {
+    background: #3a2a2a;
+    border: 1px solid #5a3a3a;
+    border-radius: 4px;
+    color: #c99;
+}
+body.lrb-legacy-theme .pd-btn-unlink:hover {
+    background: #5a3a3a;
+    color: #fcc;
+}
+body.lrb-legacy-theme .lrt-faction-rating-btn {
+    border: none;
+    background: #333;
+    color: #ddd;
+}
+body.lrb-legacy-theme .lrt-faction-rating-btn:hover {
+    background: #2F92FD;
+    color: #111;
+}
+body.lrb-legacy-theme .lrt-faction-reltype-remove {
+    background: #333;
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: #999;
+}
+body.lrb-legacy-theme .lrt-faction-reltype-remove:hover {
+    color: #fdd;
+    border-color: #9a5a5a;
+    background: #3a2a2a;
+}
+body.lrb-legacy-theme .lrt-faction-reltype-add {
+    background: #333;
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: #ddd;
+}
+body.lrb-legacy-theme .lrt-faction-reltype-add:hover {
+    border-color: #2F92FD;
+    color: #fff;
+}
+body.lrb-legacy-theme .lrt-faction-standingtier-remove {
+    background: #333;
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: #999;
+}
+body.lrb-legacy-theme .lrt-faction-standingtier-remove:hover {
+    color: #fdd;
+    border-color: #9a5a5a;
+    background: #3a2a2a;
+}
+body.lrb-legacy-theme .lrt-faction-standingtier-add {
+    background: #333;
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: #ddd;
+}
+body.lrb-legacy-theme .lrt-faction-standingtier-add:hover {
+    border-color: #2F92FD;
+    color: #fff;
 }
 
 body.lrb-legacy-theme .lore-reference-board button,
@@ -3935,6 +4029,11 @@ mark.lr-hl {
 .lrt-threads-overflow-menu .lrt-threads-overflow-item:focus-visible {
     background: var(--lrb-bg-3);
     outline: none;
+}
+.lrt-threads-overflow-divider {
+    height: 1px;
+    background: var(--lrb-border);
+    margin: 4px 0;
 }
 
 .lrt-threads-list {

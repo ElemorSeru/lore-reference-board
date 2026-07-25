@@ -1,21 +1,54 @@
-import { loreRefBoard_openImagePopout } from "./compat.js";
+import { loreRefBoard_renderCastCard, loreRefBoard_wireCastCardEvents } from "./cast-card.js";
 import { loreRefBoard_enrichJournalPage, loreRefBoard_getJournalPages, loreRefBoard_wirePageNav, loreRefBoard_resolveJournalRef } from "./journal-helpers.js";
 import { loreRefBoard_getActiveNpcGenerator } from "./npc-generators.js";
-import { loreRefBoard_clearImageJournalLink, loreRefBoard_clearLoreForImage, loreRefBoard_getImageJournalMap, loreRefBoard_saveImageJournalLink, loreRefBoard_saveLoreForImage } from "./storage.js";
-import { loreRefBoard_escapeHtml } from "./utils.js";
+import { loreRefBoard_clearImageJournalLink, loreRefBoard_clearLoreForImage, loreRefBoard_getCastLinkForImage, loreRefBoard_getImageJournalMap, loreRefBoard_loadCastDataMap, loreRefBoard_saveCastEntry, loreRefBoard_saveImageJournalLink, loreRefBoard_saveLoreForImage, loreRefBoard_setCastLinkForImage } from "./storage.js";
+import { loreRefBoard_escapeHtml, loreRefBoard_showImageToPlayers } from "./utils.js";
 
 var { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 
+const loreRefBoard_PIV_BASE_WIDTH = 520;
+const loreRefBoard_PIV_CAST_PANEL_WIDTH = 320;
+
 class LoreRefBoardPinImageViewer extends HandlebarsApplicationMixin(ApplicationV2) {
 
-    constructor({ src, folderName, folderPath, pinId, tabId }, options = {}) {
+    constructor({ src, folderName, folderPath, pinId, tabId, galleryApp }, options = {}) {
         options.id = options.id ?? `lore-image-viewer-${foundry.utils.randomID()}`;
+
+        const castLink = pinId ? loreRefBoard_getCastLinkForImage(pinId, src) : null;
+        const castActiveInitially = !!castLink?.active;
+        options.position = {
+            ...(options.position ?? {}),
+            width: options.position?.width ?? (castActiveInitially
+                ? loreRefBoard_PIV_BASE_WIDTH + loreRefBoard_PIV_CAST_PANEL_WIDTH
+                : loreRefBoard_PIV_BASE_WIDTH),
+        };
+
         super(options);
         this._src = src;
         this._folderName = folderName ?? "";
         this._folderPath = folderPath ?? "";
         this._pinId = pinId ?? null;
         this._tabId = tabId ?? null;
+        this._galleryApp = galleryApp ?? null;
+        this._castShowBack = false;
+        this._widthBeforeCastPanel = castActiveInitially ? loreRefBoard_PIV_BASE_WIDTH : null;
+    }
+
+    _setCastPanelOpen(open) {
+        if (open) {
+            if (this._widthBeforeCastPanel != null) return;
+            this._widthBeforeCastPanel = this.position.width;
+            this.setPosition({ width: this.position.width + loreRefBoard_PIV_CAST_PANEL_WIDTH });
+        } else {
+            if (this._widthBeforeCastPanel == null) return;
+            this.setPosition({ width: this._widthBeforeCastPanel });
+            this._widthBeforeCastPanel = null;
+        }
+    }
+
+    // separate window needs a manual re-render to sync
+    async _refreshGallery() {
+        if (this._galleryApp?.rendered) await this._galleryApp.render();
     }
 
     get title() { return this._folderName || game.i18n.localize("lore-reference-board.ImageViewer.WindowTitle"); }
@@ -34,7 +67,24 @@ class LoreRefBoardPinImageViewer extends HandlebarsApplicationMixin(ApplicationV
         const locationFolder = this._src.includes("/")
             ? this._src.substring(0, this._src.lastIndexOf("/"))
             : this._src;
-        return { src: this._src, fileName, locationFolder };
+
+        let castActive = false;
+        let castEntry = null;
+        this._castId = null;
+        if (this._pinId) {
+            const link = loreRefBoard_getCastLinkForImage(this._pinId, this._src);
+            if (link?.active) {
+                const map = await loreRefBoard_loadCastDataMap();
+                castEntry = map[link.castId] ?? null;
+                castActive = !!castEntry;
+                if (castActive) this._castId = link.castId;
+            }
+        }
+        if (!castActive) this._castShowBack = false;
+
+        const castCardHtml = castActive ? loreRefBoard_renderCastCard(castEntry, { showBack: this._castShowBack }) : "";
+
+        return { src: this._src, fileName, locationFolder, castActive, castEntry, castCardHtml };
     }
 
     async _onRender(context, options) {
@@ -62,19 +112,82 @@ class LoreRefBoardPinImageViewer extends HandlebarsApplicationMixin(ApplicationV
         html.find(".piv-btn-clipboard").on("click", () => this._copyUrl());
         html.find(".piv-btn-token").on("click", () => this._createToken());
         html.find(".piv-btn-scene").on("click", () => this._createScene());
+
+        // Cast toggle
+        html.find(".piv-cast-toggle").on("click", () => this._onToggleCast());
+
+        if (context.castActive && this._castId) {
+            const hostEl = html.find(".piv-cast-card-host")[0];
+            loreRefBoard_wireCastCardEvents(hostEl, this._castId, {
+                onChange: async () => { await this.render(); await this._refreshGallery(); },
+                onFlip: () => { this._castShowBack = !this._castShowBack; this.render(); },
+            });
+        }
+    }
+
+    async _onToggleCast() {
+        if (!this._pinId) {
+            ui.notifications.warn(game.i18n.localize("lore-reference-board.Cast.NoPinWarning"));
+            return;
+        }
+
+        const link = loreRefBoard_getCastLinkForImage(this._pinId, this._src);
+
+        if (link?.active) {
+            await loreRefBoard_setCastLinkForImage(this._pinId, this._src, link.castId, false);
+            this._setCastPanelOpen(false);
+            await this.render();
+            await this._refreshGallery();
+            return;
+        }
+
+        if (link && !link.active) {
+            // resync to the existing linked card
+            await loreRefBoard_setCastLinkForImage(this._pinId, this._src, link.castId, true);
+            this._setCastPanelOpen(true);
+            await this.render();
+            await this._refreshGallery();
+            return;
+        }
+
+        const castId = foundry.utils.randomID();
+        const fileName = this._src.split("/").pop().replace(/\.[^.]+$/, "");
+        const entry = {
+            id: castId,
+            name: fileName,
+            role: "",
+            quote: "",
+            quirks: [],
+            voice: "",
+            hook: "",
+            portrait: null,
+            secret: "",
+            want: "",
+            notes: "",
+            species: "any",
+            namingStyle: "any",
+            previousGeneration: null,
+            originLabel: this._folderName ? `${this._folderName} / ${fileName}` : fileName,
+            sort: 0,
+            createdAt: Date.now(),
+        };
+        await loreRefBoard_saveCastEntry(castId, entry);
+        await loreRefBoard_setCastLinkForImage(this._pinId, this._src, castId, true);
+        this._setCastPanelOpen(true);
+        await this.render();
+        await this._refreshGallery();
     }
 
     // Context Menu
-
     _showContextMenu(x, y) {
         $(".piv-ctx-menu").remove();
 
         const menu = $(`
             <ul class="piv-ctx-menu">
-                <li class="piv-ctx-show"><i class="fas fa-eye"></i> Show Players</li>
-                <li class="piv-ctx-chat"><i class="fas fa-comments"></i> Send to Chat</li>
+                <li class="piv-ctx-show"><i class="fas fa-eye"></i> ${game.i18n.localize("lore-reference-board.ImageViewer.CtxMenuShowPlayers")}</li>
+                <li class="piv-ctx-chat"><i class="fas fa-comments"></i> ${game.i18n.localize("lore-reference-board.ImageViewer.CtxMenuSendToChat")}</li>
                 <li class="piv-ctx-divider"></li>
-                <li class="piv-ctx-copy"><i class="fas fa-link"></i> Copy URL</li>
+                <li class="piv-ctx-copy"><i class="fas fa-link"></i> ${game.i18n.localize("lore-reference-board.ImageViewer.CtxMenuCopyUrl")}</li>
             </ul>
         `);
 
@@ -85,7 +198,7 @@ class LoreRefBoardPinImageViewer extends HandlebarsApplicationMixin(ApplicationV
         const vh = window.innerHeight;
         menu.css({
             left: Math.min(x, vw - mw - 4) + "px",
-            top:  Math.min(y, vh - mh - 4) + "px",
+            top: Math.min(y, vh - mh - 4) + "px",
         });
 
         menu.find(".piv-ctx-show").on("click", () => { menu.remove(); this._showToPlayers(); });
@@ -128,13 +241,7 @@ class LoreRefBoardPinImageViewer extends HandlebarsApplicationMixin(ApplicationV
     }
 
     _showToPlayers() {
-        game.socket.emit("shareImage", {
-            image: this._src,
-            title: "",
-            uuid: null,
-        });
-
-        loreRefBoard_openImagePopout(this._src, "");
+        loreRefBoard_showImageToPlayers(this._src);
     }
 
     _sendToChat() {
@@ -243,7 +350,7 @@ class LoreRefBoardPinImageViewer extends HandlebarsApplicationMixin(ApplicationV
             img.onload = resolve;
             img.onerror = resolve;
         });
-        const width = img.naturalWidth  || 2000;
+        const width = img.naturalWidth || 2000;
         const height = img.naturalHeight || 2000;
 
         await Scene.create({

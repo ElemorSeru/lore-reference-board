@@ -31,7 +31,8 @@
       "OK": "OK",
       "Browse": "Browse",
       "Unlink": "Unlink",
-      "Close": "Close"
+      "Close": "Close",
+      "Loading": "Loading..."
     },
     "Pin": {
       "DialogTitleNew": "New Pin",
@@ -450,7 +451,10 @@
       "CreatedScene": "Created scene \"{name}\".",
       "GeneratorPrompt": "Would you like to create the actor with <strong>generated</strong> stats (via {module}) or as a <strong>blank</strong> actor?",
       "GeneratorGenerated": "Generate with Stats",
-      "GeneratorBlank": "Create Blank"
+      "GeneratorBlank": "Create Blank",
+      "CtxMenuShowPlayers": "Show Players",
+      "CtxMenuSendToChat": "Send to Chat",
+      "CtxMenuCopyUrl": "Copy URL"
     },
     "Lore": {
       "WindowTitle": "Image Lore",
@@ -490,6 +494,10 @@
       "ToggleBoard": {
         "Name": "Toggle Reference Board",
         "Hint": "Show or hide the Lore Reference Board window."
+      },
+      "OpenCastDirectory": {
+        "Name": "Open Cast Directory",
+        "Hint": "Open the Cast Directory, showing every Cast card across the board."
       }
     },
     "ImageTab": {
@@ -603,6 +611,61 @@
       "BtnMore": "More actions",
       "BtnFixLink": "Click to fix this broken link",
       "BtnToggleNotes": "Show/hide notes"
+    },
+    "Cast": {
+      "ToggleLabel": "Cast",
+      "ToggleTitle": "Turn this image into a Cast card",
+      "NoPinWarning": "This image isn't attached to a pin, so it can't become a Cast card.",
+      "FieldName": "Name",
+      "FieldRole": "Role",
+      "FieldQuote": "Quote",
+      "FieldQuirks": "Quirks",
+      "FieldVoice": "Voice",
+      "FieldHook": "Hook",
+      "FieldSecret": "Secret",
+      "FieldWant": "Want",
+      "FieldNotes": "Notes",
+      "Reroll": "Reroll this field",
+      "RegenAll": "Regenerate all",
+      "Undo": "Undo last regeneration",
+      "ShowFront": "Show Front",
+      "ShowBack": "Show Back",
+      "DirectoryTitle": "Cast Directory",
+      "DirectoryEmpty": "No Cast cards yet. Toggle an image in a Pin Gallery into a Cast card to see it here.",
+      "UnknownOrigin": "Unknown origin",
+      "DeleteTitle": "Delete Cast Card",
+      "DeleteLinkedConfirm": "This card is still linked to a pin image. Deleting it will also remove the Cast link from that image, reverting it to a plain reference image. Continue?",
+      "DeleteOrphanConfirm": "Delete this Cast card? This cannot be undone.",
+      "MoreOptions": "More options",
+      "OpenPinPreview": "Open Pin Preview",
+      "ShowPlayers": "Show Players",
+      "FieldSpecies": "Species",
+      "FieldNamingStyle": "Naming Style",
+      "SpeciesAny": "Any",
+      "NamingAny": "Any",
+      "NamingMasculine": "Masculine-leaning",
+      "NamingFeminine": "Feminine-leaning",
+      "NamingUnisex": "Unisex",
+      "CloseDetail": "Close"
+    },
+    "UpdateCheck": {
+      "Title": "Release Notes",
+      "Tooltip": "Update available: {version}",
+      "ViewHistory": "View full history on GitHub",
+      "NoNotes": "No release notes provided for this version.",
+      "Close": "Close"
+    },
+    "JournalHelpers": {
+      "NoPages": "No pages found.",
+      "NoImageSource": "No image source set.",
+      "NoPdfSource": "No PDF source set.",
+      "NoVideoSource": "No video source set.",
+      "NoContent": "No content yet, click Edit to start writing.",
+      "NoResultsDefined": "No results defined.",
+      "OpenInJournal": "Open in Journal",
+      "OpenFullJournal": "Open the full journal to view it.",
+      "PrevPage": "Previous page",
+      "NextPage": "Next page"
     }
   }
 }

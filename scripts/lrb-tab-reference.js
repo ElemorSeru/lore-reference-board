@@ -102,7 +102,7 @@ async function loreRefBoard_setupReferenceTab(app, html, tab) {
                     </button>
                   </div>
                   <div class="lrt-ref-cell-content lrt-ref-cell-content--file" data-cell-id="${cell.id}" data-file-type="${loreRefBoard_escapeHtml(fType)}">
-                    <p style="color:#555;font-style:italic;font-size:11px;padding:4px 0">Loading...</p>
+                    <p style="color:#555;font-style:italic;font-size:11px;padding:4px 0">${game.i18n.localize("lore-reference-board.Common.Loading")}</p>
                   </div>
                 </div>`;
             }
@@ -153,7 +153,7 @@ async function loreRefBoard_setupReferenceTab(app, html, tab) {
                     </button>
                   </div>
                   <div class="lrt-ref-cell-content" data-cell-id="${cell.id}" data-doc-type="${typeKey}">
-                    <p style="color:#555;font-style:italic;font-size:11px;padding:4px 0">Loading...</p>
+                    <p style="color:#555;font-style:italic;font-size:11px;padding:4px 0">${game.i18n.localize("lore-reference-board.Common.Loading")}</p>
                   </div>
                 </div>`;
             }

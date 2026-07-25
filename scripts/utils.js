@@ -1,4 +1,4 @@
-import { loreRefBoard_filePickerImpl, loreRefBoard_getDragEventData } from "./compat.js";
+import { loreRefBoard_filePickerImpl, loreRefBoard_getDragEventData, loreRefBoard_openImagePopout } from "./compat.js";
 
 const { DialogV2 } = foundry.applications.api;
 
@@ -11,6 +11,11 @@ const loreRefBoard_escapeHtml = (s) =>
         .replaceAll("'", "&#039;");
 
 const loreRefBoard_isSvgIcon = (icon) => typeof icon === "string" && icon.endsWith(".svg");
+
+function loreRefBoard_showImageToPlayers(src, title = "") {
+    game.socket.emit("shareImage", { image: src, title, uuid: null });
+    loreRefBoard_openImagePopout(src, title);
+}
 
 const _loreRefBoard_svgIconCache = new Map();
 
@@ -54,12 +59,12 @@ const loreRefBoard_IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "webp", "gif", "s
 
 function _loreRefBoard_docTypeForExt(ext) {
     const e = (ext ?? "").toLowerCase();
-    if (e === "pdf")               return "pdf";
-    if (e === "txt")               return "txt";
-    if (e === "md")                return "md";
+    if (e === "pdf") return "pdf";
+    if (e === "txt") return "txt";
+    if (e === "md") return "md";
     if (e === "html" || e === "htm") return "html";
-    if (e === "docx")              return "docx";
-    if (loreRefBoard_IMAGE_EXTS.has(e))    return "image";
+    if (e === "docx") return "docx";
+    if (loreRefBoard_IMAGE_EXTS.has(e)) return "image";
     return null;
 }
 
@@ -334,4 +339,4 @@ function loreRefBoard_bindZoomControls(html, getPanzoom, ids, sync) {
     });
 }
 
-export { _loreRefBoard_docTypeForExt, _loreRefBoard_isUrl, loreRefBoard_LINE_DASH, loreRefBoard_afterDialogRender, loreRefBoard_attachDialogValidation, loreRefBoard_computeImageRect, loreRefBoard_escapeHtml, loreRefBoard_fetchSvgData, loreRefBoard_highlightPdfTextLayer, loreRefBoard_isSvgIcon, loreRefBoard_lineDashArray, loreRefBoard_normalizePath, loreRefBoard_offsetLineEndpoints, loreRefBoard_parseRatingInput, loreRefBoard_pickDocFilePath, loreRefBoard_pickImagePath, loreRefBoard_pickRefFilePath, loreRefBoard_pinChangePrompt, loreRefBoard_renderPdfTextLayer, loreRefBoard_bindZoomControls, loreRefBoard_resolveDroppedFactionEntity, loreRefBoard_syncZoomBar };
+export { _loreRefBoard_docTypeForExt, _loreRefBoard_isUrl, loreRefBoard_LINE_DASH, loreRefBoard_afterDialogRender, loreRefBoard_attachDialogValidation, loreRefBoard_computeImageRect, loreRefBoard_escapeHtml, loreRefBoard_fetchSvgData, loreRefBoard_highlightPdfTextLayer, loreRefBoard_isSvgIcon, loreRefBoard_lineDashArray, loreRefBoard_normalizePath, loreRefBoard_offsetLineEndpoints, loreRefBoard_parseRatingInput, loreRefBoard_pickDocFilePath, loreRefBoard_pickImagePath, loreRefBoard_pickRefFilePath, loreRefBoard_pinChangePrompt, loreRefBoard_renderPdfTextLayer, loreRefBoard_bindZoomControls, loreRefBoard_resolveDroppedFactionEntity, loreRefBoard_showImageToPlayers, loreRefBoard_syncZoomBar };

@@ -123,6 +123,16 @@ The same Threads list is also available per-pin from the pin gallery, as a toggl
 
 ---
 
+## Cast Directory
+
+Create a custom or generate a quick NPC personality instead of improvising one on the spot. Toggle Cast on in a pin's preview dialog (Image Tabs -> Pin -> Image gallery) to generate a card: name, role, quote, quirks, voice, and hook on the front, secret, want, and free-form notes on the back. Reroll any single field with its dice button, regenerate the whole card at once, or undo back to the previous generation if you don't like the result.
+
+Every card has a Species and Naming Style picker. The species list adapts to the active game system: a full roster for dnd5e & dnd4e, a matching roster for pf2e & pf1e (including several ancestries with no dnd5e equivalent, aliased to a related species' data rather than duplicating content), and a system-agnostic pool of common fantasy species for anything else. Name, voice, and quirks are generated per species using that species' own naming convention and personality flavor (a kenku's name comes from a mimicked phrase, a lizardfolk's from a deed name, etc). Role, quote, hook, secret, and want draw from one of eight thematic pools (civic, wild, aquatic, underground, planar, fey, undead, construct) matched to a species' likely context, so a duergar and a triton don't end up sounding like they came from the same small town.
+
+All generated cards collect in the **Cast Directory**, grouped by the pin or image they're linked to. Open it from the toolbar button in the main board window, or bind the keybinding (unbound by default) in Configure Controls. Each card can be deleted, previewed, or shown to players from this Cast Directory.
+
+---
+
 ## Search *(New in v2.0)*
 <img width="1876" height="1179" alt="image" src="https://github.com/ElemorSeru/lore-reference-board/blob/master/assets/screenshots/SearchWindow.png" />
 

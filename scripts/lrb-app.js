@@ -9,7 +9,7 @@ import { loreRefBoard_MODULE_SCOPE } from "./module-init.js";
 import { loreRefBoard_LAYER_ALL, loreRefBoard_adoptOrphanPins, loreRefBoard_ensureTabLayers, loreRefBoard_resolveActiveLayerId } from "./pin-layers.js";
 import { loreRefBoard_sceneFrozenDims } from "./scene-source.js";
 import { loreRefBoard_setupSearchPanel } from "./search.js";
-import { loreRefBoard_loadTabs, loreRefBoard_saveTabs } from "./storage.js";
+import { loreRefBoard_loadCastDataMap, loreRefBoard_loadTabs, loreRefBoard_saveTabs } from "./storage.js";
 import { loreRefBoard_escapeHtml } from "./utils.js";
 
 var { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
@@ -74,6 +74,7 @@ class LoreRefBoardApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     async _prepareContext(options) {
         const tabs = await loreRefBoard_loadTabs();
+        const hasCastEntries = Object.keys(await loreRefBoard_loadCastDataMap()).length > 0;
 
         this._cachedSceneFrozen = null;
 
@@ -98,6 +99,7 @@ class LoreRefBoardApp extends HandlebarsApplicationMixin(ApplicationV2) {
                 isReferenceTab: false,
                 isFactionTab: false,
                 isThreadsTab: false,
+                hasCastEntries,
             };
         }
 
@@ -167,6 +169,7 @@ class LoreRefBoardApp extends HandlebarsApplicationMixin(ApplicationV2) {
             isReferenceTab: currentTab?.type === "reference",
             isFactionTab: currentTab?.type === "faction",
             isThreadsTab: currentTab?.type === "threads",
+            hasCastEntries,
             ...sceneCtx,
             typeIcons: {
                 image: "fa-image",

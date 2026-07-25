@@ -1,4 +1,5 @@
 import { loreRefBoard_bindSceneControlButton } from "./compat.js";
+import { LoreRefBoardCastDirectoryApp } from "./cast-directory-app.js";
 import { _loreRefBoard_export, _loreRefBoard_import } from "./import-export.js";
 import { LoreRefBoardApp } from "./lrb-app.js";
 import { loreRefBoard_MODULE_SCOPE } from "./module-init.js";
@@ -96,6 +97,19 @@ Hooks.once("init", () => {
             const allowed = !!game?.user?.isGM || game?.user?.role === CONST.USER_ROLES.ASSISTANT;
             if (!allowed) return false;
             _loreRefBoard_toggleBoard();
+            return true;
+        },
+        precedence: CONST.KEYBINDING_PRECEDENCE?.NORMAL ?? 0,
+    });
+
+    game.keybindings.register(loreRefBoard_MODULE_SCOPE, "openCastDirectory", {
+        name: "lore-reference-board.Keybindings.OpenCastDirectory.Name",
+        hint: "lore-reference-board.Keybindings.OpenCastDirectory.Hint",
+        editable: [],
+        onDown: () => {
+            const allowed = !!game?.user?.isGM || game?.user?.role === CONST.USER_ROLES.ASSISTANT;
+            if (!allowed) return false;
+            LoreRefBoardCastDirectoryApp.open();
             return true;
         },
         precedence: CONST.KEYBINDING_PRECEDENCE?.NORMAL ?? 0,

@@ -44,7 +44,7 @@
                 {{#if this.images.length}}
                 <div class="pg-thumb-grid">
                     {{#each this.images}}
-                    <div class="pg-thumb-wrap">
+                    <div class="pg-thumb-wrap{{#if this.castActive}} pg-cast-active{{/if}}">
                         <img class="pg-thumb"
                              src="{{this.src}}"
                              data-src="{{this.src}}"
@@ -53,6 +53,9 @@
                         {{#if this.brokenJournal}}
                         <i class="fas fa-exclamation-triangle pg-thumb-broken-badge"
                            title="{{localize 'lore-reference-board.Gallery.ImageJournalMissing'}}"></i>
+                        {{/if}}
+                        {{#if this.castActive}}
+                        <span class="pg-cast-nameplate">{{this.castName}}</span>
                         {{/if}}
                     </div>
                     {{/each}}

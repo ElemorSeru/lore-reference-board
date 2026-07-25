@@ -131,7 +131,7 @@ async function loreRefBoard_pinDialog({ pin, isNew }) {
                 </button>
               </div>
               <div class="pd-linked-content" id="${idJContent}">
-                <em style="color:#666;font-size:12px">Loading...</em>
+                <em style="color:#666;font-size:12px">${game.i18n.localize("lore-reference-board.Common.Loading")}</em>
               </div>
             </div>
 

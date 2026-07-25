@@ -154,6 +154,85 @@ async function loreRefBoard_clearAllImageJournalLinksForPin(pinId) {
     await game.settings.set(loreRefBoard_MODULE_SCOPE, "imageJournals", updated);
 }
 
+// collection of cast card data
+async function loreRefBoard_loadCastDataMap() {
+    const data = _loreRefBoard_getSetting("castData", {});
+    return (data && typeof data === "object") ? data : {};
+}
+
+async function loreRefBoard_setCastDataMap(map) {
+    await game.settings.set(loreRefBoard_MODULE_SCOPE, "castData", (map && typeof map === "object") ? map : {});
+}
+
+async function loreRefBoard_saveCastEntry(castId, entry) {
+    const map = await loreRefBoard_loadCastDataMap();
+    await game.settings.set(loreRefBoard_MODULE_SCOPE, "castData", { ...map, [castId]: entry });
+}
+
+async function loreRefBoard_deleteCastEntry(castId) {
+    const map = await loreRefBoard_loadCastDataMap();
+    if (!(castId in map)) return;
+    const updated = { ...map };
+    delete updated[castId];
+    await game.settings.set(loreRefBoard_MODULE_SCOPE, "castData", updated);
+}
+
+// cast card toggle
+function loreRefBoard_getCastLinksMap() {
+    try {
+        const data = game.settings.get(loreRefBoard_MODULE_SCOPE, "castLinks");
+        return (data && typeof data === "object") ? data : {};
+    } catch { return {}; }
+}
+
+async function loreRefBoard_setCastLinksMap(map) {
+    await game.settings.set(loreRefBoard_MODULE_SCOPE, "castLinks", (map && typeof map === "object") ? map : {});
+}
+
+function loreRefBoard_getCastLinkForImage(pinId, src) {
+    const map = loreRefBoard_getCastLinksMap();
+    return map[pinId]?.[src] ?? null;
+}
+
+async function loreRefBoard_setCastLinkForImage(pinId, src, castId, active) {
+    const map = loreRefBoard_getCastLinksMap();
+    const pinMap = map[pinId] ?? {};
+    await game.settings.set(loreRefBoard_MODULE_SCOPE, "castLinks", {
+        ...map,
+        [pinId]: { ...pinMap, [src]: { castId, active } },
+    });
+}
+
+async function loreRefBoard_clearCastLinksForPin(pinId) {
+    const map = loreRefBoard_getCastLinksMap();
+    if (!map[pinId]) return;
+    const updated = { ...map };
+    delete updated[pinId];
+    await game.settings.set(loreRefBoard_MODULE_SCOPE, "castLinks", updated);
+}
+
+async function loreRefBoard_clearCastLinkForImage(pinId, src) {
+    const map = loreRefBoard_getCastLinksMap();
+    if (!map[pinId]?.[src]) return;
+    const pinMap = { ...map[pinId] };
+    delete pinMap[src];
+    const updated = { ...map };
+    if (Object.keys(pinMap).length === 0) delete updated[pinId];
+    else updated[pinId] = pinMap;
+    await game.settings.set(loreRefBoard_MODULE_SCOPE, "castLinks", updated);
+}
+
+// Client scopred Cast Directory collapsed group
+function loreRefBoard_getCastDirectoryCollapsed() {
+    const map = _loreRefBoard_getSetting("castDirectoryCollapsed", {});
+    return (map && typeof map === "object") ? map : {};
+}
+
+async function loreRefBoard_setCastDirectoryCollapsed(map) {
+    await game.settings.set(loreRefBoard_MODULE_SCOPE, "castDirectoryCollapsed", (map && typeof map === "object") ? map : {});
+    return true;
+}
+
 // Faction Board Data
 function _loreRefBoard_emptyFactionData() {
     return { circles: [], relationships: [] };
@@ -294,7 +373,10 @@ async function loreRefBoard_clearAllPinsForTab(tabId) {
     const pins = await loreRefBoard_loadPinsForTab(tabId);
     if (pins.length) {
         await loreRefBoard_clearLoreForImages(pins.flatMap(p => loreRefBoard_collectPinImages(p)));
-        for (const p of pins) await loreRefBoard_clearAllImageJournalLinksForPin(p.id);
+        for (const p of pins) {
+            await loreRefBoard_clearAllImageJournalLinksForPin(p.id);
+            await loreRefBoard_clearCastLinksForPin(p.id);
+        }
     }
     await loreRefBoard_deletePinsForTab(tabId);
 }
@@ -317,4 +399,4 @@ async function loreRefBoard_deleteTab(tabId) {
     return remaining;
 }
 
-export { _loreRefBoard_flushPins, _loreRefBoard_getSetting, _loreRefBoard_invalidateFactionDataCache, _loreRefBoard_invalidatePinsCache, _loreRefBoard_invalidateThreadsDataCache, loreRefBoard_clearAllImageJournalLinksForPin, loreRefBoard_clearAllPinsForTab, loreRefBoard_clearImageJournalLink, loreRefBoard_clearLoreForImage, loreRefBoard_clearLoreForImages, loreRefBoard_collectPinImages, loreRefBoard_deleteFactionDataForTab, loreRefBoard_deletePinsForTab, loreRefBoard_deleteTab, loreRefBoard_deleteThreadsDataForTab, loreRefBoard_getFactionStandingCollapsed, loreRefBoard_getFactionStandingTiers, loreRefBoard_getImageJournalMap, loreRefBoard_loadFactionDataForTab, loreRefBoard_loadPinsForTab, loreRefBoard_loadRelationshipTypes, loreRefBoard_loadTabs, loreRefBoard_loadThreadsForTab, loreRefBoard_removeFactionStandingCollapsed, loreRefBoard_saveFactionDataForTab, loreRefBoard_saveFactionStandingTiers, loreRefBoard_saveImageJournalLink, loreRefBoard_saveLoreForImage, loreRefBoard_savePinsForTab, loreRefBoard_saveThreadsForTab, loreRefBoard_setFactionDataMap, loreRefBoard_setImageJournalMap, loreRefBoard_setImageLoreMap, loreRefBoard_setPinsMap, loreRefBoard_setThreadsDataMap, loreRefBoard_saveRelationshipTypes, loreRefBoard_saveTabs, loreRefBoard_setFactionStandingCollapsed };
+export { _loreRefBoard_flushPins, _loreRefBoard_getSetting, _loreRefBoard_invalidateFactionDataCache, _loreRefBoard_invalidatePinsCache, _loreRefBoard_invalidateThreadsDataCache, loreRefBoard_clearAllImageJournalLinksForPin, loreRefBoard_clearAllPinsForTab, loreRefBoard_clearCastLinkForImage, loreRefBoard_clearCastLinksForPin, loreRefBoard_clearImageJournalLink, loreRefBoard_clearLoreForImage, loreRefBoard_clearLoreForImages, loreRefBoard_collectPinImages, loreRefBoard_deleteCastEntry, loreRefBoard_deleteFactionDataForTab, loreRefBoard_deletePinsForTab, loreRefBoard_deleteTab, loreRefBoard_deleteThreadsDataForTab, loreRefBoard_getCastDirectoryCollapsed, loreRefBoard_getCastLinkForImage, loreRefBoard_getCastLinksMap, loreRefBoard_getFactionStandingCollapsed, loreRefBoard_getFactionStandingTiers, loreRefBoard_getImageJournalMap, loreRefBoard_loadCastDataMap, loreRefBoard_loadFactionDataForTab, loreRefBoard_loadPinsForTab, loreRefBoard_loadRelationshipTypes, loreRefBoard_loadTabs, loreRefBoard_loadThreadsForTab, loreRefBoard_removeFactionStandingCollapsed, loreRefBoard_saveCastEntry, loreRefBoard_saveFactionDataForTab, loreRefBoard_saveFactionStandingTiers, loreRefBoard_saveImageJournalLink, loreRefBoard_saveLoreForImage, loreRefBoard_savePinsForTab, loreRefBoard_saveThreadsForTab, loreRefBoard_setCastDataMap, loreRefBoard_setCastDirectoryCollapsed, loreRefBoard_setCastLinkForImage, loreRefBoard_setCastLinksMap, loreRefBoard_setFactionDataMap, loreRefBoard_setImageJournalMap, loreRefBoard_setImageLoreMap, loreRefBoard_setPinsMap, loreRefBoard_setThreadsDataMap, loreRefBoard_saveRelationshipTypes, loreRefBoard_saveTabs, loreRefBoard_setFactionStandingCollapsed };
