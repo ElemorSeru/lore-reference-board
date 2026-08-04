@@ -607,10 +607,11 @@
       "GroupColorTitle": "Folder color",
       "BtnCollapseAll": "Collapse All Folders",
       "BtnExpandAll": "Expand All Folders",
-      "BtnRename": "Rename",
       "BtnMore": "More actions",
       "BtnFixLink": "Click to fix this broken link",
-      "BtnToggleNotes": "Show/hide notes"
+      "BtnToggleNotes": "Show/hide notes",
+      "GroupCountFiltered": "{shown} of {total}",
+      "BtnRename": "Rename"
     },
     "Cast": {
       "ToggleLabel": "Cast",

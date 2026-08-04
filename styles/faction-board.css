@@ -83,7 +83,7 @@
     z-index: 2;
 }
 
-.lrt-faction-zoom-slider {
+.application .window-content .lrt-faction-zoom-slider {
     width: 120px;
     height: 4px;
     margin: 0;
@@ -93,18 +93,18 @@
     appearance: none;
 }
 
-.lrt-faction-zoom-slider:focus {
+.application .window-content .lrt-faction-zoom-slider:focus {
     outline: none;
 }
 
-.lrt-faction-zoom-slider::-webkit-slider-runnable-track {
+.application .window-content .lrt-faction-zoom-slider::-webkit-slider-runnable-track {
     height: 4px;
     background: #333;
     border: 1px solid #555;
     border-radius: 2px;
 }
 
-.lrt-faction-zoom-slider::-webkit-slider-thumb {
+.application .window-content .lrt-faction-zoom-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     width: 14px;
     height: 14px;
@@ -115,14 +115,14 @@
     cursor: pointer;
 }
 
-.lrt-faction-zoom-slider::-moz-range-track {
+.application .window-content .lrt-faction-zoom-slider::-moz-range-track {
     height: 4px;
     background: #333;
     border: 1px solid #555;
     border-radius: 2px;
 }
 
-.lrt-faction-zoom-slider::-moz-range-thumb {
+.application .window-content .lrt-faction-zoom-slider::-moz-range-thumb {
     width: 14px;
     height: 14px;
     background: #2F92FD;
@@ -184,7 +184,7 @@
     gap: 2px;
 }
 
-.lrt-faction-standing-panel-close {
+.application .lrt-faction-standing-panel-close {
     width: 24px;
     height: 24px;
     display: flex;
@@ -198,7 +198,7 @@
     transition: background 0.15s, color 0.15s;
 }
 
-.lrt-faction-standing-panel-close:hover {
+.application .lrt-faction-standing-panel-close:hover {
     background: #2a2a2a;
     color: #fff;
 }
@@ -369,7 +369,7 @@
     padding: 2px 4px;
 }
 
-.lrt-faction-rating-btn {
+.application .lrt-faction-rating-btn {
     width: 36px !important;
     height: 26px;
     flex: 0 0 auto !important;
@@ -388,7 +388,7 @@
     padding: 0;
 }
 
-.lrt-faction-rating-btn:hover {
+.application .lrt-faction-rating-btn:hover {
     background: #2F92FD;
     color: #111;
 }
@@ -557,8 +557,8 @@
     white-space: nowrap;
 }
 
-.lrt-faction-entity-row-open,
-.lrt-faction-entity-row-remove {
+.application .lrt-faction-entity-row-open,
+.application .lrt-faction-entity-row-remove {
     flex: 0 0 auto;
     width: 24px;
     height: 24px;
@@ -572,8 +572,8 @@
     cursor: pointer;
 }
 
-.lrt-faction-entity-row-open:hover,
-.lrt-faction-entity-row-remove:hover {
+.application .lrt-faction-entity-row-open:hover,
+.application .lrt-faction-entity-row-remove:hover {
     background: #2F92FD;
     color: #111;
 }
@@ -633,7 +633,7 @@
     width: 120px;
 }
 
-.lrt-faction-reltype-remove {
+.application .lrt-faction-reltype-remove {
     flex: 0 0 auto;
     width: 30px;
     height: 30px;
@@ -647,13 +647,13 @@
     cursor: pointer;
 }
 
-.lrt-faction-reltype-remove:hover {
+.application .lrt-faction-reltype-remove:hover {
     color: #fdd;
     border-color: #9a5a5a;
     background: #3a2a2a;
 }
 
-.lrt-faction-reltype-add {
+.application .lrt-faction-reltype-add {
     width: 100%;
     height: 32px;
     display: flex;
@@ -669,7 +669,7 @@
     font-size: 13px;
 }
 
-.lrt-faction-reltype-add:hover {
+.application .lrt-faction-reltype-add:hover {
     border-color: #2F92FD;
     color: #fff;
 }
@@ -712,7 +712,7 @@
     font-size: 12px;
 }
 
-.lrt-faction-standingtier-remove {
+.application .lrt-faction-standingtier-remove {
     flex: 0 0 auto;
     width: 30px;
     height: 30px;
@@ -726,13 +726,13 @@
     cursor: pointer;
 }
 
-.lrt-faction-standingtier-remove:hover {
+.application .lrt-faction-standingtier-remove:hover {
     color: #fdd;
     border-color: #9a5a5a;
     background: #3a2a2a;
 }
 
-.lrt-faction-standingtier-add {
+.application .lrt-faction-standingtier-add {
     width: 100%;
     height: 32px;
     display: flex;
@@ -749,12 +749,12 @@
     margin-bottom: 10px;
 }
 
-.lrt-faction-standingtier-add:hover {
+.application .lrt-faction-standingtier-add:hover {
     border-color: #2F92FD;
     color: #fff;
 }
 
-.lrt-faction-standingtier-error {
+.application .lrt-faction-standingtier-error {
     color: #ff8080;
     font-size: 12px;
     margin: 0;

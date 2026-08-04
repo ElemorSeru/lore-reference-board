@@ -136,7 +136,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
 
     controls[loreRefBoard_MODULE_SCOPE] = {
         name: loreRefBoard_MODULE_SCOPE,
-        title: "Lore Reference Board",
+        title: game.i18n.localize(`${loreRefBoard_MODULE_SCOPE}.App.Title`),
         icon: "fas fa-theater-masks",
         visible: true,
         button: true,
@@ -148,7 +148,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
         tools: {
             "main-window": {
                 name: "main-window",
-                title: "Lore Reference Board",
+                title: game.i18n.localize(`${loreRefBoard_MODULE_SCOPE}.App.Title`),
                 icon: "fas fa-images",
                 button: true,
                 order: 1,

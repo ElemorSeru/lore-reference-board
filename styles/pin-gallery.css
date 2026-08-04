@@ -84,7 +84,7 @@
     white-space: nowrap;
 }
 
-.pg-name-input {
+.application .window-content .pg-name-input {
     flex: 1 1 120px;
     min-width: 0;
     padding: 6px 10px;
@@ -97,12 +97,12 @@
     box-sizing: border-box;
 }
 
-    .pg-name-input:focus {
+    .application .window-content .pg-name-input:focus {
         border-color: #888;
     }
 
-/* Shared icon button style */
-.pg-icon-btn {
+                              
+.application .pg-icon-btn {
     width: 32px !important;
     height: 32px;
     display: flex;
@@ -124,7 +124,7 @@
     line-height: 1;
 }
 
-    .pg-icon-btn:hover {
+    .application .pg-icon-btn:hover {
         background: #4a4a4a;
         color: #fff;
     }
@@ -211,16 +211,16 @@
     display: block;
 }
 
-.pg-empty-folder,
-.pg-no-folders {
+.application .pg-empty-folder,
+.application .pg-no-folders {
     color: #666;
     font-size: 12px;
     font-style: italic;
     margin: 4px 0 0;
 }
 
-/* Save Name button */
-.pg-save-name-btn {
+                      
+.application .pg-save-name-btn {
     padding: 5px 12px;
     width: auto;
     background: #2a3a2a;
@@ -237,7 +237,7 @@
     transition: background 0.15s, color 0.15s;
 }
 
-    .pg-save-name-btn:hover {
+    .application .pg-save-name-btn:hover {
         background: #3a5a3a;
         border-color: #6a9a6a;
         color: #dfd;
@@ -283,8 +283,8 @@
     text-overflow: ellipsis;
 }
 
-.pgj-btn-edit,
-.pgj-btn-unlink {
+.application .pgj-btn-edit,
+.application .pgj-btn-unlink {
     padding: 5px 12px;
     width: auto;
     font-size: 12px;
@@ -297,24 +297,24 @@
     transition: background 0.15s, color 0.15s;
 }
 
-.pgj-btn-edit {
+.application .pgj-btn-edit {
     background: #2a3f5a;
     border: 1px solid #3a5a7a;
     color: #9bd;
 }
 
-.pgj-btn-edit:hover {
+.application .pgj-btn-edit:hover {
     background: #3a5a7a;
     color: #cef;
 }
 
-.pgj-btn-unlink {
+.application .pgj-btn-unlink {
     background: #3a2a2a;
     border: 1px solid #5a3a3a;
     color: #c99;
 }
 
-.pgj-btn-unlink:hover {
+.application .pgj-btn-unlink:hover {
     background: #5a3a3a;
     color: #fcc;
 }
@@ -426,7 +426,7 @@
     transition: color 0.18s;
 }
 
-.pgj-drop-primary {
+.application .pgj-drop-primary {
     font-size: 13px;
     color: #888;
     margin: 0 0 18px;
@@ -440,7 +440,7 @@
     margin-bottom: 16px;
 }
 
-.pgj-btn-create {
+.application .pgj-btn-create {
     padding: 10px 28px;
     width: auto;
     background: #2a3f2a;
@@ -455,7 +455,7 @@
     transition: background 0.15s, color 0.15s;
 }
 
-.pgj-btn-create:hover {
+.application .pgj-btn-create:hover {
     background: #3a5a3a;
     color: #bef;
 }

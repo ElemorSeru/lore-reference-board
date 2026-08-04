@@ -53,9 +53,9 @@
 
 .piv-cast-toggle {
     padding: 4px 10px;
-    background: #3a3a3a;
-    border: 1px solid #555;
-    border-radius: 12px;
+    background: #2a2a2a;
+    border: 1px solid #4a4a4a;
+    border-radius: 3px;
     color: #ccc;
     font-size: 11px;
     cursor: pointer;
@@ -174,7 +174,7 @@
     border-top: 1px solid #444;
 }
 
-.piv-btn {
+.application .piv-btn {
     flex: 1 1 80px;
     min-width: 0;
     padding: 7px 6px;
@@ -192,28 +192,28 @@
     white-space: nowrap;
 }
 
-.piv-btn:hover {
+.application .piv-btn:hover {
     background: #4a4a4a;
     color: #fff;
 }
 
-.piv-btn-token {
+.application .piv-btn-token {
     background: #2a3a4a;
     border-color: #3a5a7a;
     color: #9bd;
 }
 
-.piv-btn-token:hover {
+.application .piv-btn-token:hover {
     background: #3a4a5a;
 }
 
-.piv-btn-scene {
+.application .piv-btn-scene {
     background: #3a2a4a;
     border-color: #5a3a7a;
     color: #b9d;
 }
 
-.piv-btn-scene:hover {
+.application .piv-btn-scene:hover {
     background: #4a3a5a;
 }
 

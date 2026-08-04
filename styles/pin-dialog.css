@@ -150,7 +150,7 @@
     transition: color 0.18s;
 }
 
-.pd-drop-primary {
+.application .pd-drop-primary {
     font-size: 12px;
     color: #888;
     margin: 0 0 14px;
@@ -164,7 +164,7 @@
     margin-bottom: 12px;
 }
 
-.pd-btn-create {
+.application .pd-btn-create {
     padding: 7px 18px;
     background: #2a3f2a;
     border: 1px solid #4a6a4a;
@@ -178,7 +178,7 @@
     transition: background 0.15s, color 0.15s;
 }
 
-.pd-btn-create:hover {
+.application .pd-btn-create:hover {
     background: #3a5a3a;
     color: #bef;
 }
@@ -219,8 +219,8 @@
     text-overflow: ellipsis;
 }
 
-.pd-btn-edit,
-.pd-btn-unlink {
+.application .pd-btn-edit,
+.application .pd-btn-unlink {
     padding: 3px 9px;
     font-size: 11px;
     border-radius: 4px;
@@ -232,24 +232,24 @@
     transition: background 0.15s, color 0.15s;
 }
 
-.pd-btn-edit {
+.application .pd-btn-edit {
     background: #2a3f5a;
     border: 1px solid #3a5a7a;
     color: #9bd;
 }
 
-.pd-btn-edit:hover {
+.application .pd-btn-edit:hover {
     background: #3a5a7a;
     color: #cef;
 }
 
-.pd-btn-unlink {
+.application .pd-btn-unlink {
     background: #3a2a2a;
     border: 1px solid #5a3a3a;
     color: #c99;
 }
 
-.pd-btn-unlink:hover {
+.application .pd-btn-unlink:hover {
     background: #5a3a3a;
     color: #fcc;
 }

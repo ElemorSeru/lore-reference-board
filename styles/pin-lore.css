@@ -61,8 +61,8 @@
     text-overflow: ellipsis;
 }
 
-.plr-btn-edit,
-.plr-btn-unlink {
+.application .plr-btn-edit,
+.application .plr-btn-unlink {
     padding: 5px 12px;
     width: auto;
     font-size: 12px;
@@ -75,24 +75,24 @@
     transition: background 0.15s, color 0.15s;
 }
 
-.plr-btn-edit {
+.application .plr-btn-edit {
     background: #2a3f5a;
     border: 1px solid #3a5a7a;
     color: #9bd;
 }
 
-.plr-btn-edit:hover {
+.application .plr-btn-edit:hover {
     background: #3a5a7a;
     color: #cef;
 }
 
-.plr-btn-unlink {
+.application .plr-btn-unlink {
     background: #3a2a2a;
     border: 1px solid #5a3a3a;
     color: #c99;
 }
 
-.plr-btn-unlink:hover {
+.application .plr-btn-unlink:hover {
     background: #5a3a3a;
     color: #fcc;
 }
@@ -205,8 +205,8 @@
     transition: color 0.18s;
 }
 
-/* Main instructional text */
-.plr-drop-primary {
+                             
+.application .plr-drop-primary {
     font-size: 13px;
     color: #888;
     margin: 0 0 20px;
@@ -221,8 +221,8 @@
     margin-bottom: 18px;
 }
 
-/* Create button */
-.plr-btn-create {
+                   
+.application .plr-btn-create {
     padding: 10px 28px;
     width: auto;
     background: #2a3f2a;
@@ -237,26 +237,26 @@
     transition: background 0.15s, color 0.15s;
 }
 
-.plr-btn-create:hover {
+.application .plr-btn-create:hover {
     background: #3a5a3a;
     color: #bef;
 }
 
-/* Lore button */
-.piv-btn-lore {
+                 
+.application .piv-btn-lore {
     background: #2a3a2a;
     border-color: #4a6a4a;
     color: #9dc;
 }
 
-.piv-btn-lore:hover {
+.application .piv-btn-lore:hover {
     background: #3a5a3a;
     color: #bef;
 }
 
 
-/* broken journal link note */
-.plr-broken-note {
+                              
+.application .plr-broken-note {
   color: #c17e7e;
   font-size: 12px;
   margin: 0 0 8px;

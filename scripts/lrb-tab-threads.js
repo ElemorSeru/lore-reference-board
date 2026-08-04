@@ -191,7 +191,8 @@ async function loreRefBoard_setupThreadsView(host) {
             <button type="button" class="lr-action-btn" data-act="row-menu-toggle" title="${esc(L("BtnMore"))}"><i class="fas fa-ellipsis-vertical"></i></button>
             <div class="lrt-threads-overflow-menu">
               <div class="lrt-threads-overflow-item" data-act="edit" role="button" tabindex="0"><i class="fas fa-pencil-alt"></i> ${esc(L("BtnEdit"))}</div>
-              <div class="lrt-threads-overflow-item" data-act="delete" role="button" tabindex="0"><i class="fas fa-trash"></i> ${esc(L("BtnDelete"))}</div>
+              <div class="lrt-threads-overflow-divider"></div>
+              <div class="lrt-threads-overflow-item is-danger" data-act="delete" role="button" tabindex="0"><i class="fas fa-trash"></i> ${esc(L("BtnDelete"))}</div>
             </div>
           </div>`;
         const notesToggleHtml = `
@@ -235,26 +236,31 @@ async function loreRefBoard_setupThreadsView(host) {
           </div>`;
     };
 
-    const groupSectionHtml = async (g, childRows) => {
+    const groupSectionHtml = async (g, childRows, totalCount) => {
         const collapsed = st._threadsGroupCollapsed.has(g.id);
         const renaming = st._threadsGroupRenamingId === g.id;
+        const countLabel = childRows.length === totalCount
+            ? String(totalCount)
+            : F("GroupCountFiltered", { shown: childRows.length, total: totalCount });
         const childHtml = collapsed ? "" : (childRows.length
             ? (await Promise.all(childRows.map(rowHtml))).join("")
             : `<p class="lrt-threads-group-empty">${esc(L("GroupEmpty"))}</p>`);
         const nameHtml = renaming
             ? `<input type="text" class="lrt-threads-group-name" draggable="false" value="${esc(g.name)}" />`
-            : `<span class="lrt-threads-group-name-label">${esc(g.name)}</span>
-               <button type="button" class="lr-action-btn" data-act="group-rename-toggle" title="${esc(L("BtnRename"))}"><i class="fas fa-pencil-alt"></i></button>`;
+            : `<span class="lrt-threads-group-name-label">${esc(g.name)}</span>`;
         return `
           <div class="lrt-threads-group${collapsed ? " is-collapsed" : ""}" data-group-id="${g.id}" draggable="true" style="--lrt-group-color:${esc(g.color)}">
             <div class="lrt-threads-group-header">
               <i class="fas fa-chevron-down lrt-threads-group-caret" data-act="group-toggle"></i>
               <input type="color" class="lrt-threads-group-color" draggable="false" value="${esc(g.color)}" title="${esc(L("GroupColorTitle"))}" />
               ${nameHtml}
+              <span class="lrt-threads-group-count">${esc(countLabel)}</span>
               <div class="lrt-threads-overflow" data-act="group-menu">
                 <button type="button" class="lr-action-btn" data-act="group-menu-toggle" title="${esc(L("BtnMore"))}"><i class="fas fa-ellipsis-vertical"></i></button>
                 <div class="lrt-threads-overflow-menu">
-                  <div class="lrt-threads-overflow-item" data-act="group-delete" role="button" tabindex="0"><i class="fas fa-trash"></i> ${esc(L("BtnDelete"))}</div>
+                  <div class="lrt-threads-overflow-item" data-act="group-rename-toggle" role="button" tabindex="0"><i class="fas fa-pencil-alt"></i> ${esc(L("BtnRename"))}</div>
+                  <div class="lrt-threads-overflow-divider"></div>
+                  <div class="lrt-threads-overflow-item is-danger" data-act="group-delete" role="button" tabindex="0"><i class="fas fa-trash"></i> ${esc(L("BtnDelete"))}</div>
                 </div>
               </div>
             </div>
@@ -273,8 +279,9 @@ async function loreRefBoard_setupThreadsView(host) {
     const bodyParts = [];
     for (const item of buildTopLevelItems()) {
         if (item.type === "group") {
-            const childRows = rows.filter(r => r.groupId === item.group.id && matchesFilter(r)).sort((a, b) => a.sort - b.sort);
-            bodyParts.push(await groupSectionHtml(item.group, childRows));
+            const inGroup = rows.filter(r => r.groupId === item.group.id);
+            const childRows = inGroup.filter(matchesFilter).sort((a, b) => a.sort - b.sort);
+            bodyParts.push(await groupSectionHtml(item.group, childRows, inGroup.length));
         } else if (matchesFilter(item.row)) {
             bodyParts.push(await rowHtml(item.row));
         }
@@ -603,11 +610,22 @@ async function loreRefBoard_setupThreadsView(host) {
         const g = groups.find(x => x.id === groupId);
         if (!g) return;
 
-        groupEl.querySelector('[data-act="group-toggle"]')?.addEventListener("click", async (ev) => {
-            ev.stopPropagation();
+        const toggleGroupCollapsed = async () => {
             if (st._threadsGroupCollapsed.has(groupId)) st._threadsGroupCollapsed.delete(groupId);
             else st._threadsGroupCollapsed.add(groupId);
             await rerender();
+        };
+
+        groupEl.querySelector('[data-act="group-toggle"]')?.addEventListener("click", async (ev) => {
+            ev.stopPropagation();
+            await toggleGroupCollapsed();
+        });
+
+        groupEl.querySelector(".lrt-threads-group-header")?.addEventListener("dblclick", async (ev) => {
+            if (ev.target.closest('input, button, select, textarea, .lrt-threads-overflow, [data-act="group-toggle"]')) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            await toggleGroupCollapsed();
         });
 
         groupEl.querySelector('[data-act="group-rename-toggle"]')?.addEventListener("click", async (ev) => {
@@ -684,6 +702,13 @@ async function loreRefBoard_setupThreadsView(host) {
         notesToggleEl?.addEventListener("click", (ev) => { ev.stopPropagation(); toggleNotesExpand(); });
         notesToggleEl?.addEventListener("keydown", (ev) => {
             if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); ev.stopPropagation(); toggleNotesExpand(); }
+        });
+
+        rowEl.querySelector(".lrt-threads-row-top")?.addEventListener("dblclick", (ev) => {
+            if (ev.target.closest('input, button, select, textarea, .lrt-threads-overflow')) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            toggleNotesExpand();
         });
 
         const rowMenu = rowEl.querySelector('[data-act="row-menu"]');
