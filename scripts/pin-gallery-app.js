@@ -42,7 +42,7 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
     };
 
     async _prepareContext(_options = {}) {
-        //  Gallery (left pane) 
+        // Gallery (left pane)
         this._folderOk ??= new Map();
         for (const f of this._gallery.folders) {
             if (!f.path || this._folderOk.has(f.path)) continue;
@@ -80,7 +80,7 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
             })),
         };
 
-        //  Pin journal (right pane) 
+        // Pin journal (right pane)
         if (this._journalId === undefined) {
             this._journalId = this._pin.journal || null;
         }
@@ -126,12 +126,12 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
             }, { passive: true });
         }
 
-        //  Folder name (top field) 
+        // Folder name (top field)
         html.find("#pg-name").on("input", ev => {
             this._gallery.name = ev.target.value;
         });
 
-        //  Add folder button 
+        // Add folder button
         html.find("#pg-add-folder").on("click", async () => {
             const name = await LoreRefBoardPinGalleryApp._promptText(game.i18n.localize("lore-reference-board.Gallery.NewFolderTitle"), game.i18n.localize("lore-reference-board.Gallery.FolderNamePrompt"));
             if (!name) return;
@@ -173,7 +173,7 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
             await this.render();
         });
 
-        //  Per-folder rename/delete
+        // Per-folder rename/delete
         html.find(".pg-folder-rename").on("click", async ev => {
             const folderId = $(ev.currentTarget).closest(".pg-folder-section").data("folderid");
             const folder = this._gallery.folders.find(f => f.id === folderId);
@@ -206,7 +206,7 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
             }
         });
 
-        //  Per-folder path edit 
+        // Per-folder path edit
         html.find(".pg-folder-path").on("click", async ev => {
             const folderId = $(ev.currentTarget).closest(".pg-folder-section").data("folderid");
             const folder = this._gallery.folders.find(f => f.id === folderId);
@@ -219,7 +219,7 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
             await this.render();
         });
 
-        //  Add single image to folder
+        // Add single image to folder
         html.find(".pg-folder-add-images").on("click", async ev => {
             const folderId = $(ev.currentTarget).closest(".pg-folder-section").data("folderid");
             const folder = this._gallery.folders.find(f => f.id === folderId);
@@ -231,7 +231,7 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
             await this.render();
         });
 
-        //  Import all images from the folder's path
+        // Import all images from the folder's path
         html.find(".pg-folder-import").on("click", async ev => {
             const folderId = $(ev.currentTarget).closest(".pg-folder-section").data("folderid");
             const folder = this._gallery.folders.find(f => f.id === folderId);
@@ -283,7 +283,7 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
             await this.render();
         });
 
-        //  Remove image (right-click)
+        // Remove image (right-click)
         html.find(".pg-thumb").on("contextmenu", async ev => {
             ev.preventDefault();
             const src = $(ev.currentTarget).data("src");
@@ -304,7 +304,7 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
             await this.render();
         });
 
-        //  Click thumbnail to open the custom image viewer
+        // Click thumbnail to open the custom image viewer
         html.find(".pg-thumb").on("click", ev => {
             const src = $(ev.currentTarget).data("src");
             const folderId = $(ev.currentTarget).closest(".pg-folder-section").data("folderid");
@@ -319,12 +319,12 @@ class LoreRefBoardPinGalleryApp extends HandlebarsApplicationMixin(ApplicationV2
             }).render(true);
         });
 
-        //  Save Name button in header
+        // Save Name button in header
         html.find("#pg-save-name").on("click", async () => {
             await this._save();
         });
 
-        //  Pin journal pane (right column) 
+        // Pin journal pane (right column)
         const journalCol = html.find(".pg-journal-col")[0];
         if (this._journalId) {
             html.find(".pgj-btn-edit").on("click", () => this._openPinJournalSheet());

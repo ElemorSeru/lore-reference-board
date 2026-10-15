@@ -104,7 +104,13 @@
       "JournalMissingBadge": "Linked journal is missing - open the pin to relink.",
       "KeepPins": "Keep Pins",
       "ClearPins": "Clear Pins",
-      "KeepClearBody": "{count} pins on this tab. Keep them (positions unchanged) or clear them? Keep only lines up if it is the same map."
+      "KeepClearBody": "{count} pins on this tab. Keep them (positions unchanged) or clear them? Keep only lines up if it is the same map.",
+      "FieldTitle": "Title",
+      "FieldColor": "Color",
+      "FieldIcon": "Icon",
+      "FieldDescription": "Description",
+      "LinkedJournal": "Linked Lore Journal",
+      "DropOr": "- or -"
     },
     "AddTab": {
       "Title": "Add New Tab",
@@ -330,7 +336,7 @@
       "BtnUndo": "Undo",
       "RelinkAll": "Relink all exact matches ({count})",
       "SuggestFound": "Found \"{name}\" in this world",
-      "SuggestMultiple": "{count} possible matches in this world",
+      "SuggestMultiple": "{count} possible matches",
       "SuggestChoose": "Choose a match...",
       "RemapTitle": "Fix file paths",
       "RemapHint": "{count} broken file links share a folder prefix. Enter their new location to repair them in one step.",
@@ -339,7 +345,9 @@
       "RemapNewPlaceholder": "worlds/my-world/assets/",
       "RemapBrowse": "Browse for the new folder",
       "RemapStatus": "Remap fixes {fixed} of {total} file links.",
-      "LinkScene": "Scene"
+      "LinkScene": "Scene",
+      "GroupWorld": "This world",
+      "GroupCompendium": "Compendium: {title}"
     },
     "Settings": {
       "MaxTabRows": {
@@ -362,7 +370,7 @@
         "Confirm": "Fetch and index every document tab and reference cell in this world? This may take a moment for large collections.",
         "Running": "Indexing all sources...",
         "Done": "All sources indexed.",
-        "Cancelled": "Indexing cancelled. Already indexed documents remain searchable."
+        "Canceled": "Indexing canceled. Already indexed documents remain searchable."
       },
       "AllowAssistantLayerDelete": {
         "Name": "Allow Assistant GMs to delete Pin Layers",
@@ -390,7 +398,11 @@
       "DropReadFail": "Could not read the dropped data.",
       "UnsupportedFile": "Unsupported file type. Supported formats: PDF, TXT, Markdown, HTML, DOCX, and common image types (PNG, JPG, WEBP, GIF, SVG).",
       "LoadFail": "Could not load the file. Check that the path is correct and the server can access it.",
-      "Relink": "Choose New Document"
+      "Relink": "Choose New Document",
+      "RenderFail": "Could not render page.",
+      "PdfMissing": "Couldn't load the PDF viewer. Reload Foundry and try again.",
+      "DocEmpty": "Document appears to be empty.",
+      "MammothMissing": "Couldn't load the Word viewer. Reload Foundry and try again."
     },
     "Gallery": {
       "WindowTitle": "Pin Gallery",

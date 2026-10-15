@@ -5,6 +5,7 @@ import { _loreRefBoard_flushPins, _loreRefBoard_getSetting, loreRefBoard_loadTab
 import { loreRefBoard_normalizeImageTabLayers } from "./pin-layers.js";
 import { loreRefBoard_resolveScene } from "./scene-source.js";
 import { _loreRefBoard_isUrl, loreRefBoard_afterDialogRender, loreRefBoard_escapeHtml } from "./utils.js";
+import { loreRefBoard_enhanceSelect } from "./dropdown.js";
 
 var { DialogV2 } = foundry.applications.api;
 
@@ -173,6 +174,11 @@ async function _loreRefBoard_validateImportLinks(d) {
     const L = key => game.i18n.localize(`lore-reference-board.ImportExport.${key}`);
     const F = (key, data) => game.i18n.format(`lore-reference-board.ImportExport.${key}`, data);
     const esc = loreRefBoard_escapeHtml;
+    const packFolder = pack => {
+        let folder = pack?.folder ?? null;
+        while (folder?.folder) folder = folder.folder;
+        return folder?.name ?? "";
+    };
 
     const fileOk = async (p) => {
         if (!p || _loreRefBoard_isUrl(p)) return true;
@@ -225,12 +231,12 @@ async function _loreRefBoard_validateImportLinks(d) {
             }
             if (tab.sceneName && !(await loreRefBoard_resolveScene(tab))) {
                 const sceneCands = game.scenes.filter(s => s.name === tab.sceneName)
-                    .map(s => ({ value: s.uuid, name: s.name, folder: s.folder?.name ?? "" }));
+                    .map(s => ({ value: s.uuid, name: s.name, folder: s.folder?.name ?? "", source: "world" }));
                 for (const pack of (game.packs ?? [])) {
                     if (pack.documentName !== "Scene") continue;
                     for (const e of pack.index) {
                         if (e.name !== tab.sceneName) continue;
-                        sceneCands.push({ value: e.uuid ?? ("Compendium." + pack.collection + ".Scene." + e._id), name: e.name, folder: pack.title ?? pack.metadata?.label ?? "" });
+                        sceneCands.push({ value: e.uuid ?? ("Compendium." + pack.collection + ".Scene." + e._id), name: e.name, folder: pack.title ?? pack.metadata?.label ?? "", source: "pack", packId: pack.collection, packFolder: packFolder(pack) });
                     }
                 }
                 if (sceneCands.length) {
@@ -345,6 +351,9 @@ async function _loreRefBoard_validateImportLinks(d) {
                     value: e.uuid ?? `Compendium.${pack.collection}.${e._id}`,
                     name: e.name,
                     folder: pack.title ?? pack.metadata?.label ?? "",
+                    source: "pack",
+                    packId: pack.collection,
+                    packFolder: packFolder(pack),
                 });
             }
         }
@@ -358,14 +367,14 @@ async function _loreRefBoard_validateImportLinks(d) {
             if (b.type === "journal") {
                 b.candidates = [
                     ...game.journal.filter(j => j.name === b.label)
-                        .map(j => ({ value: j.uuid, name: j.name, folder: j.folder?.name ?? "" })),
+                        .map(j => ({ value: j.uuid, name: j.name, folder: j.folder?.name ?? "", source: "world" })),
                     ...packCandidates("JournalEntry", b.label),
                 ];
             } else if (b.type === "uuid" && collections[b.docType]) {
                 const col = collections[b.docType]();
                 b.candidates = [
                     ...(col?.filter?.(x => x.name === b.label) ?? [])
-                        .map(x => ({ value: x.uuid, name: x.name, folder: x.folder?.name ?? "" })),
+                        .map(x => ({ value: x.uuid, name: x.name, folder: x.folder?.name ?? "", source: "world" })),
                     ...packCandidates(b.docType, b.label),
                 ];
             }
@@ -393,6 +402,23 @@ async function _loreRefBoard_validateImportLinks(d) {
 
     const uid = foundry.utils.randomID();
 
+    const optionsHtml = (cands) => {
+        const opt = (c, note) => `<option value="${esc(c.value)}"${note ? ` data-note="${esc(note)}"` : ""}>${esc(c.name)}</option>`;
+        const world = cands.filter(c => c.source !== "pack");
+        const packs = new Map();
+        for (const c of cands.filter(c => c.source === "pack")) {
+            if (!packs.has(c.packId)) packs.set(c.packId, []);
+            packs.get(c.packId).push(c);
+        }
+        let html = world.length
+            ? `<optgroup label="${esc(L("GroupWorld"))}" data-icon="fa-solid fa-earth-americas" data-tone="world">${world.map(c => opt(c, c.folder)).join("")}</optgroup>`
+            : "";
+        for (const list of packs.values()) {
+            html += `<optgroup label="${esc(F("GroupCompendium", { title: list[0].folder }))}" data-icon="fa-solid fa-book" data-tone="compendium">${list.map(c => opt(c, c.packFolder)).join("")}</optgroup>`;
+        }
+        return html;
+    };
+
     const rowHtml = (b) => {
         const what = b.label
             ? `<span class="lrb-broken-label" title="${esc(b.ref)}">${esc(b.label)}</span>`
@@ -410,7 +436,7 @@ async function _loreRefBoard_validateImportLinks(d) {
                 <span>${esc(F("SuggestMultiple", { count: b.candidates.length }))}</span>
                 <select class="lrb-ic-pick" data-i="${b.i}">
                   <option value="">${esc(L("SuggestChoose"))}</option>
-                  ${b.candidates.map(c => `<option value="${esc(c.value)}">${esc(c.name)}${c.folder ? ` - ${esc(c.folder)}` : ""}</option>`).join("")}
+                  ${optionsHtml(b.candidates)}
                 </select>
                 <button type="button" class="lrb-ic-accept" data-i="${b.i}" disabled>${esc(L("BtnRelink"))}</button>
               </div>`;
@@ -508,6 +534,7 @@ async function _loreRefBoard_validateImportLinks(d) {
     const setup = () => {
         const listEl = document.getElementById(`lrb-ic-list-${uid}`);
         if (!listEl) return false;
+        listEl.querySelectorAll(".lrb-ic-pick").forEach(loreRefBoard_enhanceSelect);
 
         listEl.addEventListener("click", ev => {
             const btn = ev.target.closest(".lrb-ic-accept");
@@ -700,10 +727,10 @@ async function _loreRefBoard_applyMerge(d) {
     for (const t of (Array.isArray(existingTypes) ? existingTypes : [])) { if (t?.id) typeMap.set(t.id, t); }
     const newTypes = Array.from(typeMap.values());
 
-    // same remap treatment
+    // same remap treatment, existing cards win out so newer notes survive an older export
     const importedCastData = (d.castData && typeof d.castData === "object") ? d.castData : {};
     const existingCastData = _loreRefBoard_getSetting("castData", {});
-    const newCastData = { ...existingCastData, ...importedCastData };
+    const newCastData = { ...importedCastData, ...existingCastData };
 
     const importedCastLinks = (d.castLinks && typeof d.castLinks === "object") ? d.castLinks : {};
     const existingCastLinks = _loreRefBoard_getSetting("castLinks", {});

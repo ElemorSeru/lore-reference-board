@@ -100,10 +100,10 @@ function _loreRefBoard_isUrl(path) {
 
 function loreRefBoard_normalizePath(raw) {
     const trimmed = (raw ?? "").trim();
-    if (_loreRefBoard_isUrl(trimmed)) return trimmed;     
+    if (_loreRefBoard_isUrl(trimmed)) return trimmed;
     let p = trimmed.replace(/\\/g, "/");
-    p = p.replace(/^\/+/, "");                 
-    p = p.replace(/^[Dd]ata\//, "");           
+    p = p.replace(/^\/+/, "");
+    p = p.replace(/^[Dd]ata\//, "");
     return p;
 }
 

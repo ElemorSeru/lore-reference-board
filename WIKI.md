@@ -766,7 +766,7 @@ The search index is cached in localStorage so results are available immediately 
 
 While documents are being indexed in the background (especially large PDFs), a status bar at the top of the results list shows how many items are indexed versus still pending. Once all items are indexed the bar disappears.
 
-While a PDF indexes, the document tab or cell it belongs to shows a small progress badge with the current page count and a cancel button. Cancelling skips that document for the session; it stays fully usable and can be indexed later with Index All in the module settings.
+While a PDF indexes, the document tab or cell it belongs to shows a small progress badge with the current page count and a cancel button. Canceling skips that document for the session; it stays fully usable and can be indexed later with Index All in the module settings.
 
 If results ever seem stale or incomplete, use the **Index All** button in the module settings panel to force a full re-index of all tabs and cells.
 

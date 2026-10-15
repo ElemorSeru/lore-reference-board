@@ -101,7 +101,7 @@
         border-color: #888;
     }
 
-                              
+
 .application .pg-icon-btn {
     width: 32px !important;
     height: 32px;
@@ -120,7 +120,7 @@
 
 #lore-reference-board-gallery .pg-icon-btn {
     padding: 0;
-    display: flex;      
+    display: flex;
     line-height: 1;
 }
 
@@ -147,7 +147,7 @@
     align-items: center;
     gap: 8px;
     margin-bottom: 6px;
-    min-width: 0;   
+    min-width: 0;
 }
 
 .pg-folder-name {
@@ -219,7 +219,7 @@
     margin: 4px 0 0;
 }
 
-                      
+
 .application .pg-save-name-btn {
     padding: 5px 12px;
     width: auto;

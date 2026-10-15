@@ -88,7 +88,7 @@ async function loreRefBoard_wirePageNav(contentEl, journalId) {
     if (!entry) return;
 
     const pages = loreRefBoard_getJournalPages(entry);
-    if (pages.length <= 1) return;   
+    if (pages.length <= 1) return;
 
     // Build nav bar
     const nav = document.createElement("div");

@@ -69,19 +69,19 @@ async function loreRefBoard_pinDialog({ pin, isNew }) {
 
             <div class="pd-row">
               <div class="pd-field pd-field-flex">
-                <label>Title</label>
+                <label>${game.i18n.localize("lore-reference-board.Pin.FieldTitle")}</label>
                 <input type="text" name="pTitle" value="${loreRefBoard_escapeHtml(current.title)}"
                        style="width:100%;box-sizing:border-box" />
               </div>
               <div class="pd-field pd-field-color">
-                <label>Color</label>
+                <label>${game.i18n.localize("lore-reference-board.Pin.FieldColor")}</label>
                 <input id="${idColor}" type="color" name="pColor"
                        value="${loreRefBoard_escapeHtml(current.color)}" />
               </div>
             </div>
 
             <div class="pd-field">
-              <label>Icon</label>
+              <label>${game.i18n.localize("lore-reference-board.Pin.FieldIcon")}</label>
               <select id="${idIcon}" name="pIcon" style="width:100%;box-sizing:border-box">
                 ${[...faIcons, ...svgIcons].map(ic =>
                     `<option value="${loreRefBoard_escapeHtml(ic.value)}"${ic.value === current.icon ? " selected" : ""}>${loreRefBoard_escapeHtml(ic.label)}</option>`
@@ -90,7 +90,7 @@ async function loreRefBoard_pinDialog({ pin, isNew }) {
             </div>
 
             <div class="pd-field">
-              <label>Description</label>
+              <label>${game.i18n.localize("lore-reference-board.Pin.FieldDescription")}</label>
               <textarea name="pDesc" rows="5"
                         style="width:100%;box-sizing:border-box;resize:vertical">${loreRefBoard_escapeHtml(current.description)}</textarea>
             </div>
@@ -101,7 +101,7 @@ async function loreRefBoard_pinDialog({ pin, isNew }) {
           <div class="pd-right">
 
             <div class="pd-journal-label">
-              <i class="fas fa-book"></i> Linked Lore Journal
+              <i class="fas fa-book"></i> ${game.i18n.localize("lore-reference-board.Pin.LinkedJournal")}
             </div>
 
             <!-- Unlinked state -->
@@ -111,7 +111,7 @@ async function loreRefBoard_pinDialog({ pin, isNew }) {
                 <p class="pd-drop-primary">
                   ${game.i18n.localize("lore-reference-board.Pin.DropText")}
                 </p>
-                <div class="pd-drop-or">, or, </div>
+                <div class="pd-drop-or">${game.i18n.localize("lore-reference-board.Pin.DropOr")}</div>
                 <button type="button" class="pd-btn-create" id="${idBtnCreate}">
                   <i class="fas fa-plus"></i> ${game.i18n.localize("lore-reference-board.Pin.CreateLoreEntry")}
                 </button>
@@ -387,7 +387,7 @@ async function loreRefBoard_pinDialog({ pin, isNew }) {
                 showUnlinked();
             });
 
-            return true; 
+            return true;
         };
 
         let tries = 0;

@@ -207,7 +207,7 @@ async function loreRefBoard_setupDocumentTab(app, html, tab) {
             const firstPage = pages[0] ?? null;
             let enriched;
             try { enriched = await loreRefBoard_enrichJournalPage(firstPage, entry); }
-            catch { enriched = '<p style="color:#888;font-style:italic">Could not render page.</p>'; }
+            catch { enriched = `<p style="color:#888;font-style:italic">${game.i18n.localize("lore-reference-board.DocumentTab.RenderFail")}</p>`; }
 
             const pageNavHtml = pages.length > 1 ? `
               <div class="lrt-doc-page-nav">
@@ -243,7 +243,7 @@ async function loreRefBoard_setupDocumentTab(app, html, tab) {
                 const page = pages[currentPageIndex];
                 let enriched2;
                 try { enriched2 = await loreRefBoard_enrichJournalPage(page, entry); }
-                catch { enriched2 = '<p style="color:#888;font-style:italic">Could not render page.</p>'; }
+                catch { enriched2 = `<p style="color:#888;font-style:italic">${game.i18n.localize("lore-reference-board.DocumentTab.RenderFail")}</p>`; }
                 const contentEl = pane.querySelector(`#lrt-doc-content-${tabId}`);
                 if (contentEl) contentEl.innerHTML = enriched2;
             });
@@ -254,7 +254,7 @@ async function loreRefBoard_setupDocumentTab(app, html, tab) {
                 if (updatedPage.id !== pages[currentPageIndex]?.id) return;
                 let enriched3;
                 try { enriched3 = await loreRefBoard_enrichJournalPage(updatedPage, entry); }
-                catch { enriched3 = '<p style="color:#888;font-style:italic">Could not render page.</p>'; }
+                catch { enriched3 = `<p style="color:#888;font-style:italic">${game.i18n.localize("lore-reference-board.DocumentTab.RenderFail")}</p>`; }
                 const contentEl = pane.querySelector(`#lrt-doc-content-${tabId}`);
                 if (contentEl) contentEl.innerHTML = enriched3;
             });
@@ -268,7 +268,7 @@ async function loreRefBoard_setupDocumentTab(app, html, tab) {
             if (!globalThis.pdfjsLib) {
                 pane.innerHTML = `<div class="lrt-doc-not-found">
                     <i class="fas fa-exclamation-triangle lrt-doc-warn-icon"></i>
-                    <p>PDF viewer requires pdf.js. Reload Foundry.</p>
+                    <p>${game.i18n.localize("lore-reference-board.DocumentTab.PdfMissing")}</p>
                   </div>`;
                 return;
             }
@@ -770,9 +770,9 @@ async function loreRefBoard_setupDocumentTab(app, html, tab) {
                 const resp = await fetch(docRef);
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                 const arrayBuffer = await resp.arrayBuffer();
-                if (!window.mammoth) throw new Error("mammoth.js not yet loaded, reload Foundry and try again");
+                if (!window.mammoth) throw new Error(game.i18n.localize("lore-reference-board.DocumentTab.MammothMissing"));
                 const result = await window.mammoth.convertToHtml({ arrayBuffer });
-                htmlContent = result.value || '<p style="color:#888;font-style:italic">Document appears to be empty.</p>';
+                htmlContent = result.value || `<p style="color:#888;font-style:italic">${game.i18n.localize("lore-reference-board.DocumentTab.DocEmpty")}</p>`;
             } catch (err) {
                 const msg = err?.message ?? game.i18n.localize("lore-reference-board.DocumentTab.LoadFail");
                 pane.innerHTML = `<div class="lrt-doc-not-found">

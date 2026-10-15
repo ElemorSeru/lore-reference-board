@@ -15,7 +15,7 @@ async function loreRefBoard_saveTabs(tabs) {
     return true;
 }
 
-let _loreRefBoard_pinsWriteCache = null;   
+let _loreRefBoard_pinsWriteCache = null;
 let _loreRefBoard_pinsDebounceId = null;
 
 // Ensure the cache is populated from the settings store.

@@ -1,8 +1,8 @@
 {
   "id": "lore-reference-board",
   "title": "GM Tools: Lore Reference Board",
-  "description": "A GM aid for theater-of-the-mind campaigns with maps, pins, and galleries that inspired you.",
-  "version": "2.3.1",
+  "description": "A GM aid for theater-of-the-mind campaigns: maps and pins, image galleries, reference documents, faction relationships, conversation threads, and a cast of the people in your world.",
+  "version": "2.3.2",
   "compatibility": {
     "minimum": "12.328",
     "verified": "14"
@@ -15,6 +15,8 @@
     }
   ],
   "scripts": [
+    "scripts/libs/marked.min.js",
+    "scripts/libs/panzoom.min.js",
     "scripts/libs/mammoth.browser.min.js",
     "scripts/libs/pdf.min.js"
   ],
@@ -35,6 +37,7 @@
     "scripts/scene-source.js",
     "scripts/pin-layers.js",
     "scripts/utils.js",
+    "scripts/dropdown.js",
     "scripts/journal-helpers.js",
     "scripts/faction-canvas.js",
     "scripts/faction-circles.js",

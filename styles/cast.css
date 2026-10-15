@@ -260,8 +260,8 @@
     font-style: italic;
 }
 
-.lrcd-group {
-    border-bottom: 1px solid #3a3a3a;
+.lrcd-group + .lrcd-group {
+    margin-top: 10px;
 }
 
 .lrcd-group-header {
@@ -269,14 +269,17 @@
     align-items: center;
     gap: 8px;
     padding: 8px 14px;
-    background: #1e1e1e;
+    background: color-mix(in srgb, var(--lrc-accent, #d6588a) 14%, #1e1e1e);
+    border-top: 1px solid var(--lrb-border, #3a3a3a);
+    border-bottom: 2px solid color-mix(in srgb, var(--lrc-accent, #d6588a) 55%, transparent);
     cursor: pointer;
     font-size: 13px;
+    font-weight: 600;
     user-select: none;
 }
 
 .lrcd-group-header:hover {
-    background: #2a2a2a;
+    background: color-mix(in srgb, var(--lrc-accent, #d6588a) 24%, #1e1e1e);
 }
 
 .lrcd-group-header .lrcd-chevron {
@@ -326,10 +329,8 @@
     gap: 8px;
     padding: 5px 8px;
     border: 1px solid var(--lrb-border, #3a3a3a);
-    border-top: 1.5px solid color-mix(in srgb, var(--lrcd-ac) 60%, transparent);
-    border-bottom: 1.5px solid color-mix(in srgb, var(--lrcd-ac) 60%, transparent);
-    border-left: 12px solid color-mix(in srgb, var(--lrcd-ac) 60%, transparent);
-    border-right: 1px solid color-mix(in srgb, var(--lrcd-ac) 60%, transparent);
+    border-top-width: 1.5px;
+    border-bottom-width: 1.5px;
     border-radius: 0;
     background: #1a1a1a;
     cursor: pointer;
@@ -346,10 +347,7 @@
 
 .lrcd-tile.lrcd-tile--selected {
     background: color-mix(in srgb, var(--lrc-accent, #d6588a) 18%, #1a1a1a);
-    border-top-color: var(--lrcd-ac);
-    border-bottom-color: var(--lrcd-ac);
-    border-left-color: var(--lrcd-ac);
-    border-right-color: var(--lrcd-ac);
+    border-color: var(--lrcd-ac);
 }
 
 .lrcd-tile-art {
@@ -360,6 +358,12 @@
     background-size: cover;
     background-position: center;
     background-color: #2a2a2a;
+}
+
+/* a broken ring on the portrait */
+.lrcd-tile--orphan .lrcd-tile-art {
+    outline: 2px dashed var(--lrcd-ac);
+    outline-offset: 1px;
 }
 
 .lrcd-tile-text {

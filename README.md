@@ -1,8 +1,8 @@
 # Lore Reference Board
 
 [![Patreon](https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white)](https://patreon.com/Elemor)
-[![Foundry Version](https://img.shields.io/badge/Foundry-v12%20%7C%20v13%20%7C%20v14-informational?style=for-the-badge)](https://foundryvtt.com)
-[![Module Version](https://img.shields.io/badge/Version-2.3.1-success?style=for-the-badge)](https://github.com/ElemorSeru/lore-reference-board/releases/latest)
+[![Foundry Version](https://img.shields.io/badge/Foundry-v12--v14-informational?style=for-the-badge)](https://foundryvtt.com)
+[![Module Version](https://img.shields.io/badge/Version-2.3.2-success?style=for-the-badge)](https://github.com/ElemorSeru/lore-reference-board/releases/latest)
 <img alt="GitHub Downloads (all assets, latest release)" src="https://img.shields.io/github/downloads/ElemorSeru/lore-reference-board/latest/total">
 
 A system agnostic Foundry VTT module built for GMs who want an organized reference board that stores all your information as well as image references of your favorite art. Keep your maps, image references, documents, and world documents organized and accessible in one window that stays consistent no matter which scene or scenario you're running.
@@ -170,7 +170,7 @@ Type at least two characters to search. Results are grouped by tab or cell, with
 
 Indexing runs automatically when items are added, changed, or deleted. PDF pages are read from the file directly, not from what you have scrolled through, so the entire document is searchable immediately after it is loaded. While a large PDF indexes, its tab or cell shows a small progress badge with a cancel button.
 
-The module settings panel includes an **Index All** button to force a full re-index of everything if results ever seem off, with a progress dialog that can be cancelled if things get stuck or take too long.
+The module settings panel includes an **Index All** button to force a full re-index of everything if results ever seem off, with a progress dialog that can be canceled if things get stuck or take too long.
 
 ---
 

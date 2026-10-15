@@ -15,7 +15,7 @@ let loreRefBoard_searchIsDragging = false;
 let loreRefBoard_searchDebounceTimer = null;
 const loreRefBoard_searchCollapsedIds = new Set();
 const loreRefBoard_indexProgress = new Map();
-const loreRefBoard_indexCancelled = new Set();
+const loreRefBoard_indexCanceled = new Set();
 
 function loreRefBoard_indexBadgeAnchor(id) {
     if (id.startsWith("doc::")) {
@@ -45,7 +45,7 @@ function loreRefBoard_updateIndexBadge(id) {
             `<a class="lrb-index-badge-cancel" title="${loreRefBoard_escapeHtml(game.i18n.localize("lore-reference-board.Search.CancelIndexing"))}"><i class="fas fa-times"></i></a>`;
         badge.querySelector(".lrb-index-badge-cancel").addEventListener("click", (ev) => {
             ev.preventDefault();
-            loreRefBoard_indexCancelled.add(id);
+            loreRefBoard_indexCanceled.add(id);
             loreRefBoard_indexProgress.delete(id);
             loreRefBoard_updateIndexBadge(id);
         });
@@ -56,7 +56,7 @@ function loreRefBoard_updateIndexBadge(id) {
 }
 
 function loreRefBoard_indexProgressStart(id, total) {
-    loreRefBoard_indexCancelled.delete(id);
+    loreRefBoard_indexCanceled.delete(id);
     loreRefBoard_indexProgress.set(id, { done: 0, total });
     loreRefBoard_updateIndexBadge(id);
 }
@@ -101,7 +101,8 @@ async function loreRefBoard_forceIndexAll(onProgress, shouldCancel) {
         onProgress?.(++done, items.length);
     }
     loreRefBoard_maybeRefreshSearch();
-    return true;
+    // canceled while the last source was indexing
+    return !shouldCancel?.();
 }
 
 function loreRefBoard_searchWorldKey(pfx) {
@@ -155,7 +156,7 @@ async function loreRefBoard_pdfToChunks(path, progressId = null) {
         if (progressId) loreRefBoard_indexProgressStart(progressId, pdf.numPages);
         const chunks = [];
         for (let i = 1; i <= pdf.numPages; i++) {
-            if (progressId && loreRefBoard_indexCancelled.has(progressId)) return "cancelled";
+            if (progressId && loreRefBoard_indexCanceled.has(progressId)) return "canceled";
             const pg = await pdf.getPage(i);
             const ct = await pg.getTextContent();
             const text = ct.items.map(it => it.str).join(" ").trim();
@@ -257,8 +258,8 @@ async function loreRefBoard_indexDocTab(tab, awaitHeavy = false) {
         loreRefBoard_memIndex.set(id, { id, name, type: "pdf-indexing", chunks: [], docRef });
         const work = (async () => {
             const chunks = await loreRefBoard_pdfToChunks(docRef, id);
-            if (chunks === "cancelled") {
-                loreRefBoard_memIndex.set(id, { id, name, type: "cancelled", chunks: [], docRef });
+            if (chunks === "canceled") {
+                loreRefBoard_memIndex.set(id, { id, name, type: "canceled", chunks: [], docRef });
                 return;
             }
             if (!chunks) return;
@@ -350,8 +351,8 @@ async function loreRefBoard_indexRefCell(cell, cellName, tabId = null, awaitHeav
             loreRefBoard_memIndex.set(id, { id, name: cellName, type: "pdf-indexing", chunks: [], docRef: fPath, parentTabId: tabId });
             const work = (async () => {
                 const chunks = await loreRefBoard_pdfToChunks(fPath, id);
-                if (chunks === "cancelled") {
-                    loreRefBoard_memIndex.set(id, { id, name: cellName, type: "cancelled", chunks: [], docRef: fPath, parentTabId: tabId });
+                if (chunks === "canceled") {
+                    loreRefBoard_memIndex.set(id, { id, name: cellName, type: "canceled", chunks: [], docRef: fPath, parentTabId: tabId });
                     return;
                 }
                 if (!chunks) return;

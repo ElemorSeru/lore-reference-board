@@ -5,21 +5,8 @@ const { DialogV2 } = foundry.applications.api;
 
 console.log("[lore-reference-board] Loading...");
 
-if (typeof window.Panzoom === "undefined") {
-    const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/@panzoom/panzoom/dist/panzoom.min.js";
-    script.onload = () => (window.PanzoomLoaded = true);
-    document.head.appendChild(script);
-} else {
-    window.PanzoomLoaded = true;
-}
-
-// Markdown to HTML for Document tabs with .md files.
-if (typeof window.marked === "undefined") {
-    const _ms = document.createElement("script");
-    _ms.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
-    document.head.appendChild(_ms);
-}
+// image and faction tabs flag
+window.PanzoomLoaded = typeof window.Panzoom !== "undefined";
 
 Hooks.once("init", () => {
     if (typeof pdfjsLib !== "undefined") {
@@ -81,7 +68,7 @@ class LoreRefBoardIndexAllMenu extends foundry.applications.api.ApplicationV2 {
         });
         if (!confirmed) return;
 
-        let cancelled = false;
+        let canceled = false;
         const dlg = await new DialogV2({
             window: { title: game.i18n.localize("lore-reference-board.Settings.IndexAll.Title") },
             classes: ["lore-rb-dialog"],
@@ -94,12 +81,12 @@ class LoreRefBoardIndexAllMenu extends foundry.applications.api.ApplicationV2 {
             buttons: [{
                 action: "cancel",
                 label: game.i18n.localize("lore-reference-board.Common.Cancel"),
-                callback: () => { cancelled = true; },
+                callback: () => { canceled = true; },
             }],
         }).render(true);
 
         // Closing the dialog cancels the run
-        const shouldCancel = () => cancelled || !dlg.rendered;
+        const shouldCancel = () => canceled || !dlg.rendered;
         const onProgress = (done, total) => {
             if (!dlg.rendered) return;
             const bar = dlg.element?.querySelector?.("progress");
@@ -113,7 +100,7 @@ class LoreRefBoardIndexAllMenu extends foundry.applications.api.ApplicationV2 {
 
         if (dlg.rendered) await dlg.close();
         ui.notifications.info(game.i18n.localize(
-            completed ? "lore-reference-board.Settings.IndexAll.Done" : "lore-reference-board.Settings.IndexAll.Cancelled"
+            completed ? "lore-reference-board.Settings.IndexAll.Done" : "lore-reference-board.Settings.IndexAll.Canceled"
         ));
     }
 }
